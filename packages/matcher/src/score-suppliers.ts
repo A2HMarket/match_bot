@@ -23,7 +23,11 @@ function isSoon(iso: string | undefined, now: Date): boolean {
 }
 
 /** 确定性打分；分数 0–1，理由给审批卡和回复用（架构 §4.2）。 */
-export function scoreSuppliers(p: { demand: DemandDraft; suppliers: Supplier[]; now: Date }): ScoredCandidate[] {
+export function scoreSuppliers(p: {
+  demand: DemandDraft;
+  suppliers: Supplier[];
+  now: Date;
+}): ScoredCandidate[] {
   const out: ScoredCandidate[] = [];
   for (const s of p.suppliers) {
     if (s.category !== p.demand.category) continue;
@@ -57,7 +61,9 @@ export function scoreSuppliers(p: { demand: DemandDraft; suppliers: Supplier[]; 
       score += W.price;
       reasons.push(`${s.priceType} price known`);
     }
-    const ageDays = s.lastVerifiedAt ? (p.now.getTime() - s.lastVerifiedAt.getTime()) / 86400e3 : Infinity;
+    const ageDays = s.lastVerifiedAt
+      ? (p.now.getTime() - s.lastVerifiedAt.getTime()) / 86400e3
+      : Infinity;
     if (ageDays <= STALE_DAYS) {
       score += W.fresh;
     } else {
