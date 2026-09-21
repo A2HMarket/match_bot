@@ -1,6 +1,6 @@
 # P9 approval 实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 把 `run_states` 里的中断快照发成运营群审批卡，把按钮回调变成 `approvals` 记录并入队 `resume_run`。
 
@@ -25,7 +25,7 @@
 - Modify: `packages/approval/src/index.ts`
 - Test: `packages/approval/tests/publish.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/approval/tests/publish.test.ts
@@ -43,12 +43,12 @@ describe('publishApproval', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/approval/tests/publish.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/approval/src/publish.ts
@@ -80,12 +80,12 @@ export async function publishApproval(p: { repos: Repositories; cards: ReturnTyp
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/approval/tests/publish.test.ts`
 Expected: 1 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/approval
@@ -101,7 +101,7 @@ git commit -m "feat(approval): publish approval card to ops group"
 - Modify: `packages/approval/src/index.ts`
 - Test: `packages/approval/tests/callback.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/approval/tests/callback.test.ts
@@ -138,12 +138,12 @@ describe('handleApprovalCallback', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/approval/tests/callback.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/approval/src/callback.ts
@@ -166,12 +166,12 @@ export async function handleApprovalCallback(p: { repos: Repositories; queues: Q
 
 `index.ts` re-export `publish.js`、`callback.js`。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/approval/tests/callback.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿
@@ -187,8 +187,15 @@ git commit -m "feat(approval): handle approval callbacks with atomic snapshot co
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| 备注 | |
+| 状态 | 完成（待合并 main，并行期间合并由协调者执行） |
+| 执行者 | kimi |
+| PR | `feat/P9-approval`（8b0c6ea + 60f8390，基于 main 5e252fe） |
+| 与 interfaces.md 的偏差 | 无。签名与 §approval 一致；依赖包（db / queue / channel-telegram）实际签名与契约一致 |
+| 备注 | 见下 |
+
+### 偏差与说明
+
+- **测试比计划多 2 条**：`publishApproval` 增加「无 interruptions 不发卡」用例；`handleApprovalCallback` 增加「reject 也入队 resume」用例（对应实现注释：拒绝也要恢复 run 让模型收到反馈并结束，计划代码本就如此，但计划测试未覆盖）。
+- **测试 mock 写法**：用 `vi.fn().mockResolvedValue(...)` 替代计划里的 `async () => ...`，否则 eslint `require-await` 报错；去掉 `cards as never`（`no-unnecessary-type-assertion`）。
+- **检查结果**：`packages/approval` 的 typecheck / eslint / prettier / vitest 全绿（7 个用例通过），`check-deps.mjs` 通过。全仓 `pnpm check` 当前被 `apps/bot`（P10 并行 WIP）的 lint/type 错误阻断，与 P9 无关。
+- **git 事故记录**：并行 agent（P10）在同一工作树切到 `feat/P10-app-bot`（其分支基于 `feat/P9-approval` 8b0c6ea），导致 Task 2 提交 1d6181c 落在对方分支上。已用 plumbing 在 `feat/P9-approval` 上重建等价提交 60f8390（父为 8b0c6ea，内容与 1d6181c 的 approval 部分逐字节一致）；1d6181c 留在 P10 分支无害（内容相同，合并时不冲突），但其分支指针未被改动，避免干扰对方工作区。
