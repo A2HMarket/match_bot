@@ -1,10 +1,16 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createJevClient } from '../src/client.js';
 
 const ok = readFileSync(new URL('./fixtures/inbound-ok.json', import.meta.url), 'utf8');
 const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } as never;
 const traces = { create: vi.fn(() => Promise.resolve({} as never)), listByKind: vi.fn() };
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  traces.create.mockResolvedValue({} as never);
+});
+
 const questions = {
   is_demand: { type: 'noul' as const, instructions: 'x' },
   category: {
@@ -39,7 +45,11 @@ describe('createJevClient', () => {
       'man_and_van',
     );
     expect(traces.create).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'jev', inputRef: 'm1', costMicro: Math.round(412 * 0.042) }),
+      expect.objectContaining({
+        kind: 'jev',
+        inputRef: 'm1',
+        costMicro: Math.round(0.000138 * 1e6),
+      }),
     );
     const [, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,
@@ -80,5 +90,46 @@ describe('createJevClient', () => {
     ) as unknown as typeof fetch;
     const r = await mk(fetchImpl).evaluate({ state: 's', questions, inputRef: 'm5', phase: 0 });
     expect(r).toEqual({ ok: false, reason: 'invalid_response' });
+  });
+  it('returns invalid_response when a response omits an asked answer key', async () => {
+    const body = JSON.stringify({
+      model: 'jev-latest',
+      answers: {
+        is_demand: { type: 'noul', noul: 0.9 },
+        // category is asked but missing from the response
+      },
+      usage: { input_tokens: 10, output_tokens: 5, cost: 0.00001 },
+      id: 'gen-x',
+      provider: 'typesafe',
+    });
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response(body, { status: 200 })),
+    ) as unknown as typeof fetch;
+    const r = await mk(fetchImpl).evaluate({ state: 's', questions, inputRef: 'm6', phase: 0 });
+    expect(r).toEqual({ ok: false, reason: 'invalid_response' });
+  });
+  it('still resolves the outcome when traces.create rejects', async () => {
+    traces.create.mockRejectedValueOnce(new Error('db unavailable'));
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response(ok, { status: 200 })),
+    ) as unknown as typeof fetch;
+    const r = await mk(fetchImpl).evaluate({
+      state: { text: 'van' },
+      questions,
+      inputRef: 'm7',
+      phase: 0,
+    });
+    expect(r.ok).toBe(true);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ inputRef: 'm7' }),
+      expect.stringContaining('trace write failed'),
+    );
+  });
+  it('returns http_error on a plain non-retry, non-2xx status', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response('server exploded', { status: 500 })),
+    ) as unknown as typeof fetch;
+    const r = await mk(fetchImpl).evaluate({ state: 's', questions, inputRef: 'm8', phase: 0 });
+    expect(r).toEqual({ ok: false, reason: 'http_error' });
   });
 });

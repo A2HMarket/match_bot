@@ -17,7 +17,9 @@ export type JevAnswer =
 export interface JevResponse<Q extends string> {
   model: string;
   answers: Record<Q, JevAnswer>;
-  usage: { input_tokens: number; output_tokens: number };
+  usage: { input_tokens: number; output_tokens: number; cost: number };
+  id: string;
+  provider: string;
 }
 
-export const JEV_ENDPOINT = '/v1/systemone';
+export const JEV_ENDPOINT = '/decisions';

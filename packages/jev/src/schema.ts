@@ -18,5 +18,11 @@ export const jevAnswerSchema = z.discriminatedUnion('type', [noul, choice, score
 export const jevResponseSchema = z.object({
   model: z.string(),
   answers: z.record(z.string(), jevAnswerSchema),
-  usage: z.object({ input_tokens: z.number().int(), output_tokens: z.number().int() }),
+  usage: z.object({
+    input_tokens: z.number().int(),
+    output_tokens: z.number().int(),
+    cost: z.number(),
+  }),
+  id: z.string(),
+  provider: z.string(),
 });

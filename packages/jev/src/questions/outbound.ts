@@ -2,6 +2,8 @@ import type { DemandDraft, OutboundQuestionId, Phase } from '@matchbot/domain';
 import type { JevClient } from '../client.js';
 import type { JevQuestion } from '../types.js';
 
+/** NOTE: unlike inboundQuestions(), this text is NOT PoC-calibrated — PoC V4 covered only
+ * the inbound question set (scripts/poc/v4-jev-inbound/). Treat this as a first draft. */
 export function outboundQuestions(): Record<OutboundQuestionId, JevQuestion> {
   return {
     worth_replying: {
