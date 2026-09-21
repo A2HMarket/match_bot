@@ -1,0 +1,84 @@
+// 架构依赖方向校验（AGENTS.md §3）。违反即 lint 失败。
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+const ALLOWED = {
+  '@matchbot/shared': [],
+  '@matchbot/domain': ['@matchbot/shared'],
+  '@matchbot/db': ['@matchbot/shared', '@matchbot/domain'],
+  '@matchbot/queue': ['@matchbot/shared', '@matchbot/domain'],
+  '@matchbot/jev': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
+  '@matchbot/gating': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
+  '@matchbot/matcher': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
+  '@matchbot/channel-telegram': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
+  '@matchbot/approval': [
+    '@matchbot/shared',
+    '@matchbot/domain',
+    '@matchbot/db',
+    '@matchbot/queue',
+    '@matchbot/channel-telegram',
+  ],
+  '@matchbot/agent': [
+    '@matchbot/shared',
+    '@matchbot/domain',
+    '@matchbot/db',
+    '@matchbot/jev',
+    '@matchbot/gating',
+    '@matchbot/matcher',
+  ],
+  '@matchbot/eval': [
+    '@matchbot/shared',
+    '@matchbot/domain',
+    '@matchbot/db',
+    '@matchbot/jev',
+    '@matchbot/agent',
+  ],
+};
+// 外部包的白名单：谁可以直接依赖模型 SDK / 渠道 SDK / 数据库驱动
+const EXTERNAL_OWNERS = {
+  '@openai/agents': ['@matchbot/agent'],
+  grammy: ['@matchbot/channel-telegram'],
+  '@prisma/client': ['@matchbot/db'],
+  '@prisma/adapter-pg': ['@matchbot/db'],
+  pg: ['@matchbot/db'],
+  bullmq: ['@matchbot/queue', '@matchbot/worker', '@matchbot/bot'],
+  ioredis: ['@matchbot/queue'],
+};
+
+let failed = false;
+for (const dir of ['packages', 'apps']) {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name, 'package.json');
+    if (!existsSync(p)) continue;
+    const pkg = JSON.parse(readFileSync(p, 'utf8'));
+    const deps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+    for (const dep of deps) {
+      if (dep.startsWith('@matchbot/') && pkg.name in ALLOWED && !ALLOWED[pkg.name].includes(dep)) {
+        console.error(`✗ ${pkg.name} 不得依赖 ${dep}（见 AGENTS.md §3 依赖方向）`);
+        failed = true;
+      }
+      if (dep in EXTERNAL_OWNERS && !EXTERNAL_OWNERS[dep].includes(pkg.name)) {
+        console.error(
+          `✗ ${pkg.name} 不得直接依赖 ${dep}，只有 ${EXTERNAL_OWNERS[dep].join(', ')} 可以`,
+        );
+        failed = true;
+      }
+      if (
+        pkg.name.startsWith('@matchbot/') &&
+        dir === 'packages' &&
+        dep.startsWith('@matchbot/') &&
+        !dep.startsWith('@matchbot/')
+      )
+        failed = true;
+    }
+    if (
+      dir === 'packages' &&
+      deps.some((d) => ['@matchbot/bot', '@matchbot/worker', '@matchbot/admin'].includes(d))
+    ) {
+      console.error(`✗ ${pkg.name}：packages 不得依赖 apps`);
+      failed = true;
+    }
+  }
+}
+if (failed) process.exit(1);
+console.log('✓ dependency direction ok');

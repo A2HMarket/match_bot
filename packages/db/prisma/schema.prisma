@@ -1,0 +1,309 @@
+// 命名契约见 AGENTS.md §4：模型 PascalCase 单数，字段 camelCase，表/列 snake_case 复数，
+// 主键 id (cuid)，外键 xxxId，时间 xxxAt (timestamptz, UTC)，布尔 is/has 前缀，金额 pence 整数。
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Channel {
+  telegram
+  whatsapp
+}
+
+enum DemandCategory {
+  man_and_van
+  eot_cleaning
+  furniture_service
+  housing
+  job
+  second_hand
+  other
+}
+
+enum DemandStatus {
+  open
+  clarifying
+  matched
+  closed
+  expired
+}
+
+enum SupplierPool {
+  A
+  B
+}
+
+enum OutboundStatus {
+  dry_run
+  pending
+  sent
+  failed
+}
+
+enum RunStateStatus {
+  pending
+  consumed
+  expired
+}
+
+enum TraceKind {
+  rule
+  jev
+  agent_run
+  gate
+}
+
+model User {
+  id           String   @id @default(cuid())
+  channel      Channel
+  externalId   String   @map("external_id") // Telegram user id 等，字符串存
+  languages    String[] // ISO 639-1
+  homePostcode String?  @map("home_postcode")
+  profile      Json     @default("{}")
+  lastSeenAt   DateTime @map("last_seen_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  messages     Message[]
+  demands      Demand[]
+  supplies     Supply[]
+  sessionItems SessionItem[]
+  runStates    RunState[]
+
+  @@unique([channel, externalId])
+  @@map("users")
+}
+
+model Group {
+  id                String   @id @default(cuid())
+  channel           Channel
+  externalId        String   @map("external_id")
+  name              String
+  phase             Int      @default(0) // 0 shadow / 1 review / 2 auto
+  categoriesEnabled String[] @map("categories_enabled")
+  adminContact      String?  @map("admin_contact")
+  rateLimitPerDay   Int      @default(3) @map("rate_limit_per_day")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  messages Message[]
+  supplies Supply[]
+
+  @@unique([channel, externalId])
+  @@map("groups")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  groupId    String?  @map("group_id")
+  userId     String   @map("user_id")
+  externalId String   @map("external_id") // 渠道 message id
+  text       String   // 保留 30 天后置空，见架构 §9
+  textHash   String   @map("text_hash")
+  lang       String?
+  receivedAt DateTime @map("received_at") @db.Timestamptz
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  group Group? @relation(fields: [groupId], references: [id])
+  user  User   @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, externalId])
+  @@index([userId, receivedAt])
+  @@map("messages")
+}
+
+model Demand {
+  id               String         @id @default(cuid())
+  userId           String         @map("user_id")
+  category         DemandCategory
+  status           DemandStatus   @default(open)
+  whenText         String?        @map("when_text")
+  whenAt           DateTime?      @map("when_at") @db.Timestamptz
+  fromPostcode     String?        @map("from_postcode")
+  toPostcode       String?        @map("to_postcode")
+  quantity         String?
+  budgetPence      Int?           @map("budget_pence")
+  lang             String?
+  confidence       Float
+  isMoveEvent      Boolean        @default(false) @map("is_move_event")
+  sourceMessageIds String[]       @map("source_message_ids")
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id])
+  matches Match[]
+
+  @@index([userId, status])
+  @@map("demands")
+}
+
+model Supply {
+  id              String         @id @default(cuid())
+  userId          String         @map("user_id")
+  groupId         String         @map("group_id")
+  category        DemandCategory
+  availability    String?
+  area            String?
+  expiresAt       DateTime       @map("expires_at") @db.Timestamptz
+  sourceMessageId String         @map("source_message_id")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id])
+  group   Group   @relation(fields: [groupId], references: [id])
+  matches Match[]
+
+  @@index([category, expiresAt])
+  @@map("supplies")
+}
+
+model Supplier {
+  id                     String       @id @default(cuid())
+  category               DemandCategory
+  name                   String
+  phone                  String?
+  whatsapp               String?
+  telegram               String?
+  website                String?
+  serviceArea            String[]     @map("service_area") // outward codes 或 "LONDON"
+  basePostcode           String?      @map("base_postcode")
+  priceType              String?      @map("price_type") // hourly / fixed / quote
+  roughPrice             String?      @map("rough_price")
+  isSameDay              Boolean      @default(false) @map("is_same_day")
+  isWeekend              Boolean      @default(false) @map("is_weekend")
+  languages              String[]
+  rating                 Float?
+  reviewCount            Int?         @map("review_count")
+  source                 String?
+  sourceUrl              String?      @map("source_url")
+  pool                   SupplierPool @default(B)
+  lastVerifiedAt         DateTime?    @map("last_verified_at") @db.Timestamptz
+  isContacted            Boolean      @default(false) @map("is_contacted")
+  isWillingToReceiveLeads Boolean     @default(false) @map("is_willing_to_receive_leads")
+  createdAt              DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  matches Match[]
+
+  @@index([category, pool])
+  @@map("suppliers")
+}
+
+model Match {
+  id           String   @id @default(cuid())
+  demandId     String   @map("demand_id")
+  supplierId   String?  @map("supplier_id")
+  supplyId     String?  @map("supply_id")
+  matcherScore Float    @map("matcher_score")
+  jevFit       Float?   @map("jev_fit")
+  rank         Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  demand   Demand    @relation(fields: [demandId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+  supply   Supply?   @relation(fields: [supplyId], references: [id])
+  leads    Lead[]
+
+  @@index([demandId, rank])
+  @@map("matches")
+}
+
+model Lead {
+  id               String    @id @default(cuid())
+  matchId          String    @map("match_id")
+  sentVia          Channel   @map("sent_via")
+  sentAt           DateTime  @map("sent_at") @db.Timestamptz
+  supplierResponse String?   @map("supplier_response") // quote / pass / none
+  isConverted      Boolean   @default(false) @map("is_converted")
+  isPaid           Boolean   @default(false) @map("is_paid")
+  followedUpAt     DateTime? @map("followed_up_at") @db.Timestamptz
+
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@map("leads")
+}
+
+/// OpenAI Agents SDK Session 存储：一个用户一个 session。
+model SessionItem {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  seq         Int
+  item        Json
+  operationId String?  @map("operation_id") // SessionHistoryTransactionAwareSession 幂等
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, seq])
+  @@index([userId, operationId])
+  @@map("session_items")
+}
+
+/// HITL 快照。snapshot 为 RunState.toString()，落库前加密（架构 §9）。
+model RunState {
+  id            String         @id @default(cuid())
+  userId        String         @map("user_id")
+  snapshot      String
+  agentVersion  String         @map("agent_version")
+  sdkVersion    String         @map("sdk_version")
+  status        RunStateStatus @default(pending)
+  interruptions Json
+  expiresAt     DateTime       @map("expires_at") @db.Timestamptz
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  consumedAt    DateTime?      @map("consumed_at") @db.Timestamptz
+
+  user      User       @relation(fields: [userId], references: [id])
+  approvals Approval[]
+
+  @@index([status, expiresAt])
+  @@map("run_states")
+}
+
+model Approval {
+  id         String   @id @default(cuid())
+  runStateId String   @map("run_state_id")
+  reviewer   String
+  decision   String   // approve / reject / edit / ignore
+  editedText String?  @map("edited_text")
+  decidedAt  DateTime @default(now()) @map("decided_at") @db.Timestamptz
+
+  runState RunState @relation(fields: [runStateId], references: [id])
+
+  @@map("approvals")
+}
+
+model OutboundMessage {
+  id         String         @id @default(cuid())
+  channel    Channel
+  target     String         // chat id / user id / supplier contact
+  text       String
+  status     OutboundStatus @default(pending)
+  toolCallId String?        @map("tool_call_id")
+  error      String?
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  sentAt     DateTime?      @map("sent_at") @db.Timestamptz
+
+  @@index([status, createdAt])
+  @@map("outbound_messages")
+}
+
+/// 每一次判断留痕：规则、Jev、agent run、门。评测与看板的唯一来源。
+model DecisionTrace {
+  id        String    @id @default(cuid())
+  kind      TraceKind
+  inputRef  String    @map("input_ref") // message id / run id 等
+  output    Json
+  phase     Int
+  latencyMs Int       @map("latency_ms")
+  costMicro Int       @default(0) @map("cost_micro") // 美元微分（1e-6 USD）
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([kind, createdAt])
+  @@index([inputRef])
+  @@map("decision_traces")
+}

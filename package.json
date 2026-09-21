@@ -1,0 +1,36 @@
+{
+  "name": "match-bot",
+  "private": true,
+  "version": "0.0.0",
+  "description": "London Community Matching Bot — Telegram 群供需撮合",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/**' --filter './apps/**' run build",
+    "typecheck": "tsc -b tsconfig.json",
+    "lint": "eslint . && node scripts/check-deps.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "dev:bot": "pnpm --filter @matchbot/bot dev",
+    "dev:worker": "pnpm --filter @matchbot/worker dev",
+    "db:generate": "pnpm --filter @matchbot/db generate",
+    "db:migrate": "pnpm --filter @matchbot/db migrate",
+    "db:studio": "pnpm --filter @matchbot/db studio",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.8",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1"
+  }
+}
