@@ -16,6 +16,10 @@ export const SERVICE_CATEGORIES: readonly DemandCategory[] = [
   'furniture_service',
 ];
 
+export function isServiceCategory(c: DemandCategory): boolean {
+  return SERVICE_CATEGORIES.includes(c);
+}
+
 export const DEMAND_STATUSES = ['open', 'clarifying', 'matched', 'closed', 'expired'] as const;
 export type DemandStatus = (typeof DEMAND_STATUSES)[number];
 

@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: `hashText(text: string): string`（sha256 hex，小写，64 字符）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/shared/tests/hash.test.ts
@@ -46,12 +46,12 @@ describe('hashText', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/shared/tests/hash.test.ts`
 Expected: FAIL，找不到模块 `../src/hash.js`
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/shared/src/hash.ts
@@ -65,12 +65,12 @@ export function hashText(text: string): string {
 
 `packages/shared/src/index.ts` 追加 `export * from './hash.js';`
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/shared/tests/hash.test.ts`
 Expected: 2 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared
@@ -90,7 +90,7 @@ git commit -m "feat(shared): add hashText"
 **Interfaces:**
 - Produces: `demandDraftSchema`/`DemandDraft`、`supplyDraftSchema`/`SupplyDraft`、`outboundDraftSchema`/`OutboundDraft`、`isServiceCategory(c)`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/domain/tests/drafts.test.ts
@@ -133,12 +133,12 @@ describe('isServiceCategory', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/domain/tests/drafts.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/domain/src/drafts.ts
@@ -186,12 +186,12 @@ export function isServiceCategory(c: DemandCategory): boolean {
 
 `packages/domain/src/index.ts` 追加 `export * from './drafts.js';`
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/domain/tests/drafts.test.ts`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/domain
@@ -211,7 +211,7 @@ git commit -m "feat(domain): add demand/supply/outbound draft schemas"
 **Interfaces:**
 - Produces: `TRACE_KINDS`/`TraceKind`、`decisionTraceInputSchema`/`DecisionTraceInput`、`INBOUND_QUESTION_IDS`/`InboundQuestionId`、`OUTBOUND_QUESTION_IDS`/`OutboundQuestionId`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/domain/tests/trace.test.ts
@@ -240,12 +240,12 @@ describe('question ids', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/domain/tests/trace.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/domain/src/trace.ts
@@ -286,12 +286,12 @@ export type OutboundQuestionId = (typeof OUTBOUND_QUESTION_IDS)[number];
 
 `index.ts` 追加两行 export。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/domain/tests/trace.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿
@@ -307,8 +307,8 @@ git commit -m "feat(domain): add decision trace schema and jev question ids"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| 备注 | |
+| 状态 | 完成（`pnpm check` 全绿：5 个测试文件 / 17 个用例） |
+| 执行者 | claude，分支 `feat/P1-domain-shared`，3 个提交 |
+| PR | 待开 |
+| 与 interfaces.md 的偏差 | 无。`interfaces.md` §shared、§domain 要求的 9 项（`hashText`、`isServiceCategory`、三个 draft schema、`TRACE_KINDS`、`decisionTraceInputSchema`、两组 question ids）已逐项核对导出，签名一致 |
+| 备注 | 与**计划示例代码**有两处有意偏差，均不影响签名：<br>① `z.string().datetime()` 在 zod 4 已废弃，改用 `z.iso.datetime()`（行为实测一致：接受 `2026-10-01T00:00:00Z`、拒绝 `tomorrow`）。<br>② 出站渠道抽成 `OUTBOUND_CHANNELS` as const 数组 + `OutboundChannel` 派生类型，而非在 `z.enum` 里写字面量数组——落实 AGENTS.md §4.2「常量集合用 as const 数组加派生联合类型」。这是**新增导出**，不改 `outboundDraftSchema` 签名。<br>③ `INBOUND_QUESTION_IDS` 与 P0/V4 实跑验证过的 7 个问题 id 完全一致，P4 可直接用；V4 已给出阈值实测依据（`T_IS_DEMAND_ENTER = 0.70` 等，见 `plan/P0-poc.md` 完成记录）。<br>④ `exactOptionalPropertyTypes` 下 zod 的 `z.infer` + `.optional()` 推导已过 `tsc -b`，下游包可安全消费。 |
