@@ -192,7 +192,7 @@ parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' |
 ```ts
 AGENT_VERSION: string                          // 已有，改 instructions/工具描述时递增
 createMatchAgent(deps: AgentDeps): { agent: Agent<MatchContext>; runner: Runner }
-interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound }
+interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; modelProvider?: ModelProvider }
 interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; demandId?: string; demand?: DemandDraft; recentReplies: string[] }
 runInbound(p: { deps: AgentDeps; ctx: MatchContext; input: string }): Promise<RunOutcome>
 resumeRun(p: { deps: AgentDeps; runState: RunState; approval: Approval }): Promise<RunOutcome>
