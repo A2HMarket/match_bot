@@ -1,6 +1,6 @@
 # P2 db：迁移与仓储层 实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 生成首个迁移，实现 `createRepositories(prisma)`，用真实 Postgres 跑集成测试，让上层包只通过仓储访问数据库。
 
@@ -30,12 +30,12 @@
 **Interfaces:**
 - Produces: `withTestDb(fn: (prisma: PrismaClient) => Promise<void>)`，在事务中执行并回滚
 
-- [ ] **Step 1: 起库并生成迁移**
+- [x] **Step 1: 起库并生成迁移**
 
 Run: `pnpm infra:up && cp -n .env.example .env; cd packages/db && DATABASE_URL=postgresql://matchbot:matchbot@localhost:5432/matchbot pnpm exec prisma migrate dev --name init`
 Expected: `prisma/migrations/<ts>_init/migration.sql` 生成，包含 13 张表与 8 个 enum。
 
-- [ ] **Step 2: 测试基座**
+- [x] **Step 2: 测试基座**
 
 ```ts
 // packages/db/tests/integration/setup.ts
@@ -59,7 +59,7 @@ export async function withTestDb(fn: (tx: PrismaClient) => Promise<void>): Promi
 }
 ```
 
-- [ ] **Step 3: 冒烟测试**
+- [x] **Step 3: 冒烟测试**
 
 ```ts
 // packages/db/tests/integration/smoke.test.ts
@@ -79,7 +79,7 @@ describe('db smoke', () => {
 Run: `pnpm vitest run packages/db/tests/integration/smoke.test.ts`
 Expected: 1 passed；再跑一次仍通过（证明回滚生效，无唯一键冲突）。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/db/prisma/migrations packages/db/tests
@@ -99,7 +99,7 @@ git commit -m "feat(db): initial migration and integration test harness"
 **Interfaces:**
 - Produces: `createRepositories(prisma): Repositories`（本任务先挂 users/groups/messages，后续任务逐个补齐）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/db/tests/integration/users-groups-messages.test.ts
@@ -142,12 +142,12 @@ describe('users/groups/messages', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/db/tests/integration/users-groups-messages.test.ts`
 Expected: FAIL，模块不存在
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/db/src/repos/users.ts
@@ -242,12 +242,12 @@ export type Repositories = ReturnType<typeof createRepositories>;
 
 注意 `Message.groupId` 为 `null` 时 `@@unique([groupId, externalId])` 在 Postgres 里不约束私聊消息重复，这是预期（私聊去重靠队列 jobId）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/db/tests/integration/users-groups-messages.test.ts`
 Expected: 3 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/db
@@ -263,7 +263,7 @@ git commit -m "feat(db): users, groups, messages repositories"
 - Modify: `packages/db/src/repos/index.ts`
 - Test: `packages/db/tests/integration/marketplace.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/db/tests/integration/marketplace.test.ts
@@ -327,12 +327,12 @@ describe('supplies', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/db/tests/integration/marketplace.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/db/src/repos/demands.ts
@@ -453,12 +453,12 @@ export function leadsRepo(prisma: PrismaClient) {
 
 `exactOptionalPropertyTypes` 下 `undefined` 传给 Prisma 可选字段是允许的（Prisma 输入类型含 `| undefined`）；若类型报错，在 `draftToData` 里用 `?? null` 显式转换。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/db/tests/integration/marketplace.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/db
@@ -474,7 +474,7 @@ git commit -m "feat(db): demands, supplies, suppliers, matches, leads repositori
 - Modify: `packages/db/src/repos/index.ts`
 - Test: `packages/db/tests/integration/runtime.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/db/tests/integration/runtime.test.ts
@@ -544,12 +544,12 @@ describe('traces', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/db/tests/integration/runtime.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/db/src/repos/session-items.ts
@@ -671,12 +671,12 @@ export function tracesRepo(prisma: PrismaClient) {
 
 `repos/index.ts` 补齐五个仓储；此时 `Repositories` 与 interfaces.md §db 完全对应。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/db/tests/integration/runtime.test.ts`
 Expected: 5 passed
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿
@@ -692,8 +692,8 @@ git commit -m "feat(db): session items, run states, approvals, outbound, traces 
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| 备注 | |
+| 状态 | 完成 |
+| 执行者 | kimi |
+| PR | `feat/P2-db`（本地合并，同 P1 先例） |
+| 与 interfaces.md 的偏差 | 无接口偏差。`sessionItems.popLast` 返回类型为 `Promise<unknown>`（`unknown` 已含 `null`，eslint `no-redundant-type-constituents` 不允许 `unknown \| null`） |
+| 备注 | ① 迁移含 13 张表、**7** 个 enum（计划写 8 个系笔误，schema 实际 7 个）。② 迁移前已给 `RunState` 加 `chatId`/`phase` 两列（interfaces.md §db 要求）。③ Prisma 7 输入类型在 `exactOptionalPropertyTypes` 下不收 `undefined`：create 用 `?? null`，`demands.update` 只写补丁中出现的键。④ runtime 测试比计划多一条 approvals 往返用例（6 passed）。⑤ 首次 `migrate dev` 检测到 P0 PoC 遗留的 `poc_session_items` 漂移表，已 reset 本地开发库。⑥ `pnpm check` 全绿（31 tests passed）。 |
