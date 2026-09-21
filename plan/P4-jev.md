@@ -397,8 +397,8 @@ git commit -m "feat(jev): outbound question set"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| PoC V4 校准后替换的文案 | |
+| 状态 | 完成，`pnpm check` 全绿 |
+| 执行者 | claude（subagent-driven-development，3 个 Task 子 agent + 1 轮 final review 修复） |
+| PR | 分支 `worktree-p4-jev`（待开 PR） |
+| 与 interfaces.md 的偏差 | 无。`JevOutcome.ok:true` 分支新增 `usage.cost`、`id`、`provider`、`model` 字段（interfaces.md 未列出，但 additive，不破坏 `evaluateInbound`/`evaluateOutbound` 只读 `.answers` 的既有用法）——因为 PoC V4 证实真实响应带这些字段且 `costMicro` 必须由 `usage.cost` 算，未来若要收紧 interfaces.md 的 `JevOutcome` 定义，回写到那里。 |
+| PoC V4 校准后替换的文案 | `inboundQuestions()` 已从计划文件里的 v0 草稿换成 `scripts/poc/v4-jev-inbound/main.ts` 的 `QUESTIONS_V3`（逐字核对）。`outboundQuestions()` 未经 PoC 校准（V4 只测了入站），保留计划原文并加注释说明。另外：`JEV_ENDPOINT` 改为 `/decisions`（PoC 证实 `/v1/systemone` 直连返回 401），`decision_traces` 的 `costMicro` 改为 `usage.cost * 1e6`（不再用本地价格表）；ZDR 仍未实现（PoC 未记录头部字段），已在 `client.ts` 加 `TODO(P4)` 注释而非留空。最终审阅报告见 `.superpowers/sdd/P4-jev/`（未提交，SDD 工作区）。 |
