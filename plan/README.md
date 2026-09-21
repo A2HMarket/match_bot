@@ -19,7 +19,7 @@
 | P4 | jev 客户端与问题集 | [P4-jev.md](./P4-jev.md) | P1, P2 | 1 | | 待开始 | | |
 | P5 | gating | [P5-gating.md](./P5-gating.md) | P1, P2 | 1 | | 待开始 | | |
 | P6 | matcher | [P6-matcher.md](./P6-matcher.md) | P1, P2 | 1 | | 待开始 | | |
-| P7 | channel-telegram | [P7-channel-telegram.md](./P7-channel-telegram.md) | P1, P2 | 1 | | 待开始 | | |
+| P7 | channel-telegram | [P7-channel-telegram.md](./P7-channel-telegram.md) | P1, P2 | 1 | claude | 完成 | `feat/P7-channel-telegram`（本地合并） | 2026-09-21 |
 | P8 | agent | [P8-agent.md](./P8-agent.md) | P0(V1,V2,V3,V6), P2, P4, P5, P6 | 2 | | 待开始 | | |
 | P9 | approval | [P9-approval.md](./P9-approval.md) | P2, P3, P7 | 2 | | 待开始 | | |
 | P10 | apps/bot | [P10-app-bot.md](./P10-app-bot.md) | P0(V5), P2, P3, P7 | 2 | | 待开始 | | |

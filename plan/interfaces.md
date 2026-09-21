@@ -180,7 +180,7 @@ interface ScoredCandidate { id: string; kind: 'supplier' | 'supply'; score: numb
 ## @matchbot/channel-telegram
 
 ```ts
-toInboundMessage(update: Update): InboundMessage | null      // 非文本、非群/私聊、Bot 自己的消息返回 null
+toInboundMessage(update: Update, p: { botId: number }): InboundMessage | null      // 非文本、非群/私聊、Bot 自己的消息返回 null
 createTelegramSender(p: { bot: Bot; logger: Logger }): { send(m: OutboundMessage): Promise<void> }   // target 为 chat id，出错抛 TelegramSendError
 createOpsCardSender(p: { bot: Bot; opsChatId: string }): { sendApprovalCard(card: ApprovalCard): Promise<{ messageId: string }> }
 interface ApprovalCard { runStateId: string; title: string; draftText: string; supplierLines: string[]; confidence: number }

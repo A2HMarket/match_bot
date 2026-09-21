@@ -9,6 +9,7 @@ export class TelegramSendError extends Error {
   ) {
     super(
       `telegram send failed for ${outboundMessageId}: ${cause instanceof Error ? cause.message : String(cause)}`,
+      { cause },
     );
     this.name = 'TelegramSendError';
   }

@@ -6,4 +6,5 @@ export {
   parseApprovalCallback,
   renderApprovalCard,
   type ApprovalCard,
+  type Decision,
 } from './ops-card.js';

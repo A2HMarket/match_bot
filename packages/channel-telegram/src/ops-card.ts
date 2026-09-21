@@ -8,8 +8,8 @@ export interface ApprovalCard {
   supplierLines: string[];
   confidence: number;
 }
-const _DECISIONS = ['approve', 'reject', 'ignore'] as const;
-type Decision = (typeof _DECISIONS)[number];
+export const DECISIONS = ['approve', 'reject', 'ignore'] as const;
+export type Decision = (typeof DECISIONS)[number];
 
 /** Phase 1 审批台就是运营群里的一张卡（架构 §8.4）。「改文案」走人工旁路，不做按钮。 */
 export function renderApprovalCard(c: ApprovalCard): { text: string; keyboard: InlineKeyboard } {

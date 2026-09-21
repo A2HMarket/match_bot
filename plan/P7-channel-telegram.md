@@ -310,8 +310,8 @@ git commit -m "feat(channel-telegram): approval card rendering and callback pars
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| 备注 | |
+| 状态 | 完成 |
+| 执行者 | claude (subagent-driven-development) |
+| PR | `feat/P7-channel-telegram`（本地合并） |
+| 与 interfaces.md 的偏差 | 无实质偏差；仅发现 interfaces.md 对 `toInboundMessage` 签名的记录过时（缺 `p: { botId }` 参数），已回写修正。 |
+| 备注 | 3 tasks 完成，pnpm check 全绿（12 files / 42 tests）。发现的非阻塞 minor 已记录在 SDD ledger，留给 P9/P10 跟进：ops-card.ts 未包裹发送错误（不像 sender.ts 有 TelegramSendError）；`Number(target)`/`Number(opsChatId)` 非数字输入会得到 NaN；inbound.ts 对 schema 校验失败会 throw 而非返回 null；缺少部分测试边界 fixture（带 caption 的图片、其他 bot 消息、无 language_code）。 |
