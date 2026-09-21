@@ -8,7 +8,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/generated/**',
       'docs/**',
-      'scripts/poc/**/*.js',
+      // PoC 脚本按 plan/P0-poc.md 的约定不进 packages、不要求过 lint（原 glob 只写了 *.js，PoC 实际是 *.ts）
+      'scripts/poc/**',
     ],
   },
   ...tseslint.configs.recommendedTypeChecked,
