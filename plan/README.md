@@ -13,7 +13,7 @@
 | ID | 工作包 | 计划文件 | 依赖 | 波次 | 负责人 | 状态 | PR | 最后更新 |
 |---|---|---|---|---|---|---|---|---|
 | P0 | PoC 六项验证 | [P0-poc.md](./P0-poc.md) | 无 | 0 | | 待开始 | | |
-| P1 | domain + shared 补全 | [P1-domain-shared.md](./P1-domain-shared.md) | 无 | 1 | | 待开始 | | |
+| P1 | domain + shared 补全 | [P1-domain-shared.md](./P1-domain-shared.md) | 无 | 1 | claude | 评审中 | `feat/P1-domain-shared`（待开 PR） | 2026-09-21 |
 | P2 | db：迁移与仓储层 | [P2-db.md](./P2-db.md) | P1 | 1 | | 待开始 | | |
 | P3 | queue | [P3-queue.md](./P3-queue.md) | P1 | 1 | | 待开始 | | |
 | P4 | jev 客户端与问题集 | [P4-jev.md](./P4-jev.md) | P1, P2 | 1 | | 待开始 | | |
