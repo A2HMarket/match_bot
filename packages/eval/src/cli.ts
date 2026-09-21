@@ -1,6 +1,6 @@
 import { createRepositories, disconnectPrisma, getPrisma } from '@matchbot/db';
 import { createJevClient, evaluateInbound } from '@matchbot/jev';
-import { createLogger, loadEnv } from '@matchbot/shared';
+import { createLogger, envSchema } from '@matchbot/shared';
 import { createFixtureFetch, loadJevFixture, recordedLatencies } from './fixture-jev.js';
 import { loadInboundGate } from './gate.js';
 import { computeDailyMetrics, percentile } from './metrics.js';
@@ -19,7 +19,18 @@ const live = args.has('--live');
 const skipMetrics = args.has('--skip-metrics');
 const skipReplay = args.has('--skip-replay');
 
-const env = loadEnv();
+// 默认（fixture）模式既不联网也不连真实 Jev，不该因为缺 TELEGRAM_* 这类无关变量就跑不起来——
+// 直接 loadEnv() 会让 `pnpm eval` 在 CI 和新克隆里硬失败。只有 --live 仍然真的需要 JEV_API_KEY。
+const env = envSchema.parse({
+  ...process.env,
+  DATABASE_URL:
+    process.env.DATABASE_URL ?? 'postgresql://matchbot:matchbot@localhost:5432/matchbot',
+  REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  JEV_API_KEY: live ? process.env.JEV_API_KEY : (process.env.JEV_API_KEY ?? 'fixture'),
+  DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? 'unused-in-eval',
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ?? 'unused-in-eval',
+  TELEGRAM_OPS_CHAT_ID: process.env.TELEGRAM_OPS_CHAT_ID ?? 'unused-in-eval',
+});
 const logger = createLogger('eval', env.LOG_LEVEL);
 const WINDOW_MS = 86_400_000;
 
