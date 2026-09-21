@@ -37,7 +37,9 @@ const ALLOWED = {
 // 外部包的白名单：谁可以直接依赖模型 SDK / 渠道 SDK / 数据库驱动
 const EXTERNAL_OWNERS = {
   '@openai/agents': ['@matchbot/agent'],
-  grammy: ['@matchbot/channel-telegram'],
+  // apps/bot 创建并持有 Bot 实例（interfaces.md 的 createTelegramSender / createOpsCardSender
+  // 都要求传入 Bot），发送仍必须经 channel-telegram。参照 bullmq 的先例同时允许 app。
+  grammy: ['@matchbot/channel-telegram', '@matchbot/bot'],
   '@prisma/client': ['@matchbot/db'],
   '@prisma/adapter-pg': ['@matchbot/db'],
   pg: ['@matchbot/db'],

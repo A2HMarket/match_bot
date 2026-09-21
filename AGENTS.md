@@ -17,7 +17,7 @@
 | 语言        | TypeScript 5.9（typescript-eslint 尚不支持 7），`strict` 全开，`exactOptionalPropertyTypes`、`noUncheckedIndexedAccess` 开 | 见 `tsconfig.base.json`，不得在子包放宽                                    |
 | Agent       | `@openai/agents` 0.18.x                                                                                                    | 只在 `packages/agent` 直接 import                                          |
 | 生成模型    | deepseek-flash，经 `OpenAIProvider({ baseURL, useResponses: false })`                                                      | 不用 Vercel AI SDK 适配器                                                  |
-| 决策模型    | Jev（TypeSafe AI）`POST /v1/systemone`                                                                                     | 只在 `packages/jev` 直接调用                                               |
+| 决策模型    | Jev（TypeSafe AI）`POST {JEV_BASE_URL}/decisions`，经 OpenRouter（`typesafe/jev-1.13`）                                    | 只在 `packages/jev` 直接调用；直连 api.typesafe.ai 需另一把 key（PoC V4）  |
 | 渠道        | grammY                                                                                                                     | 只在 `packages/channel-telegram` 直接 import                               |
 | 数据库      | Postgres 17 + Prisma 7（`prisma-client` 生成器 + `@prisma/adapter-pg`）                                                    | 只在 `packages/db` 直接 import                                             |
 | 队列        | BullMQ + Redis 7                                                                                                           | 定义在 `packages/queue`，消费在 `apps/*`                                   |
@@ -56,7 +56,7 @@ packages/eval         回放与指标
 - `domain` 不依赖任何有 IO 的包，也不依赖 `db`。
 - `gating` 和 `matcher` **禁止**依赖 `jev` 或 `@openai/agents`：它们必须是确定性的，可以被 Jev 的结果驱动，但自己不调模型。
 - `agent` 不依赖 `approval`：agent 只产出 `run_states` 快照，由 worker 把它交给 approval。
-- 外部 SDK 只允许在指定包直接 import：`@openai/agents` → agent，`grammy` → channel-telegram，`@prisma/client` → db，`bullmq/ioredis` → queue 与 apps。其他包通过这些包暴露的接口使用。
+- 外部 SDK 只允许在指定包直接 import：`@openai/agents` → agent，`grammy` → channel-telegram 与 `apps/bot`（后者只创建 `Bot` 实例并注册 middleware，发送一律经 `createTelegramSender`），`@prisma/client` → db，`bullmq/ioredis` → queue 与 apps。其他包通过这些包暴露的接口使用。
 
 新增包时同步更新 `check-deps.mjs` 的矩阵、根 `tsconfig.json` 的 references 和本节列表，三处缺一不可。
 

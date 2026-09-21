@@ -1,0 +1,31 @@
+import { describe, expect, it } from 'vitest';
+import { loadEnv } from '../src/env.js';
+
+const base = {
+  DATABASE_URL: 'postgresql://u:p@localhost:5432/d',
+  REDIS_URL: 'redis://localhost:6379',
+  DEEPSEEK_API_KEY: 'k',
+  JEV_API_KEY: 'k',
+  TELEGRAM_BOT_TOKEN: 'k',
+  TELEGRAM_OPS_CHAT_ID: '-100',
+};
+
+describe('loadEnv', () => {
+  it('defaults Jev to the OpenRouter decisions host (PoC V4)', () => {
+    // 客户端拼 `${JEV_BASE_URL}/decisions`；默认必须指向实际可用的端点，
+    // 否则未显式配置时会打到不存在的 api.typesafe.ai/decisions。
+    const e = loadEnv(base);
+    expect(e.JEV_BASE_URL).toBe('https://openrouter.ai/api/alpha');
+    expect(e.JEV_MODEL).toBe('typesafe/jev-1.13');
+  });
+
+  it('requires an ops chat id', () => {
+    const { TELEGRAM_OPS_CHAT_ID: _omit, ...without } = base;
+    expect(() => loadEnv(without)).toThrow();
+  });
+
+  it('coerces DEFAULT_PHASE and defaults it to 0', () => {
+    expect(loadEnv(base).DEFAULT_PHASE).toBe(0);
+    expect(loadEnv({ ...base, DEFAULT_PHASE: '2' }).DEFAULT_PHASE).toBe(2);
+  });
+});

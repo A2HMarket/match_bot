@@ -10,8 +10,10 @@ export const envSchema = z.object({
   DEEPSEEK_BASE_URL: z.string().url().default('https://api.deepseek.com'),
   DEEPSEEK_MODEL: z.string().default('deepseek-flash'),
   JEV_API_KEY: z.string().min(1),
-  JEV_BASE_URL: z.string().url().default('https://api.typesafe.ai'),
-  JEV_MODEL: z.string().default('jev-latest'),
+  // Jev 经 OpenRouter 的 decisions 端点；客户端拼 `${JEV_BASE_URL}/decisions`（PoC V4 结论，
+  // 见 plan/P0-poc.md「对后续工作包的跨项结论」第 2 条）。直连 api.typesafe.ai 需要另一把 key。
+  JEV_BASE_URL: z.string().url().default('https://openrouter.ai/api/alpha'),
+  JEV_MODEL: z.string().default('typesafe/jev-1.13'),
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_OPS_CHAT_ID: z.string().min(1),
   DEFAULT_PHASE: z.coerce.number().int().min(0).max(2).default(0),
