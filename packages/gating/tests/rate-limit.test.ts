@@ -1,0 +1,12 @@
+import { describe, expect, it, vi } from 'vitest';
+import { createRateLimiter } from '../src/rate-limit.js';
+
+describe('createRateLimiter', () => {
+  it('allows below limit, blocks at limit', async () => {
+    const count = vi.fn(async () => 2);
+    const rl = createRateLimiter({ countSentToTargetSince: count } as never);
+    expect(await rl.check({ target: '-1', limitPerDay: 3, now: new Date() })).toBe(true);
+    count.mockResolvedValueOnce(3);
+    expect(await rl.check({ target: '-1', limitPerDay: 3, now: new Date() })).toBe(false);
+  });
+});
