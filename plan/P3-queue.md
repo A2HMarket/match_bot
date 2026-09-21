@@ -1,6 +1,6 @@
 # P3 queue 实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 提供四条 BullMQ 队列的创建、入队、消费封装，入队自带幂等 jobId 与 zod 校验。
 
@@ -28,7 +28,7 @@
 **Interfaces:**
 - Produces: `createQueues(redisUrl): Queues`、`enqueueInbound`、`enqueueResume`、`enqueueOutbound`、`closeQueues`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/queue/tests/integration/queues.test.ts
@@ -55,12 +55,12 @@ describe('enqueueInbound', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm infra:up && pnpm vitest run packages/queue/tests/integration/queues.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/queue/src/queues.ts
@@ -108,12 +108,12 @@ export async function closeQueues(q: Queues): Promise<void> {
 
 `packages/queue/src/index.ts` 末尾追加 `export * from './queues.js';`（注意 `queues.ts` 反向 import `index.ts` 的常量会形成循环；把常量与 schema 移到 `packages/queue/src/contracts.ts`，`index.ts` 只 re-export `contracts.js` 与 `queues.js`）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/queue/tests/integration/queues.test.ts`
 Expected: 2 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/queue
@@ -132,7 +132,7 @@ git commit -m "feat(queue): create queues and idempotent enqueue helpers"
 **Interfaces:**
 - Produces: `createWorker<T>(name, redisUrl, handler, opts?)`，handler 收到已按 schema 校验的 `data` 与 `jobName`（cron 队列靠它分派）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/queue/tests/integration/worker.test.ts
@@ -158,12 +158,12 @@ describe('createWorker', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/queue/tests/integration/worker.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/queue/src/worker.ts
@@ -188,12 +188,12 @@ export function createWorker<T>(name: QueueName, redisUrl: string, handler: (dat
 
 `index.ts` 追加 `export * from './worker.js';`
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/queue/tests/integration/worker.test.ts`
 Expected: 1 passed
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿
@@ -209,8 +209,8 @@ git commit -m "feat(queue): add createWorker with payload validation"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| 备注 | |
+| 状态 | 完成 |
+| 执行者 | kimi |
+| PR | `feat/P3-queue`（本地合并，同 P1 先例） |
+| 与 interfaces.md 的偏差 | `enqueueOutbound` 的 jobId 直接用 `outboundMessageId`（cuid），不加 `out:` 前缀：bullmq 6.3.8 只允许恰好含两个冒号的自定义 jobId（兼容旧 repeatable job 的临时逻辑，源码注明下个大版本将全禁冒号）。幂等性不变 |
+| 备注 | ① 常量与 schema 从 `index.ts` 移到 `contracts.ts` 避免循环 import。② ioredis 6 在 NodeNext 下默认导出不可构造，改用命名导出 `import { Redis } from 'ioredis'`。③ 执行期间主工作区被 P5 agent 切到 `feat/P5-gating`，P3 后半在 `.claude/worktrees/p3-queue` 完成；`feat/P3-queue` 分支指针曾被重置，已通过 ff 恢复。④ `pnpm check` 全绿（34 tests passed）。 |

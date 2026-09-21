@@ -11,7 +11,14 @@ afterAll(async () => {
   await closeQueues(q);
 });
 
-const msg = { channel: 'telegram' as const, chatId: '-100', messageId: '1', userId: '42', text: 'hi', receivedAt: new Date().toISOString() };
+const msg = {
+  channel: 'telegram' as const,
+  chatId: '-100',
+  messageId: '1',
+  userId: '42',
+  text: 'hi',
+  receivedAt: new Date().toISOString(),
+};
 
 describe('enqueueInbound', () => {
   it('dedupes by jobId', async () => {
