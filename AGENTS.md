@@ -210,10 +210,16 @@ packages/eval         回放与指标
 - 不改 `package.json`、`pnpm-lock.yaml`，不跑 `pnpm add`：依赖由协调者在开工前一次装齐。缺依赖就停下来报告，不要自己装。
 - 跨包改动（含 `interfaces.md`、`AGENTS.md`、`scripts/check-deps.mjs`）一律先报协调者，不得自行修改——这类冲突事后极难发现。
 
+**工作树隔离**
+
+- 并行的 agent **不得共用同一个工作树**。要么全部只在主工作树里改文件、完全不碰分支（提交交给协调者），要么每人一个 `git worktree`。
+- 尤其**不得在共用的工作树里 `git checkout` / `git switch`**：切分支会改变所有人看到的文件，另一个 agent 的提交会落到你的分支上。这已经发生过一次——P9 的提交落进了 P10 的分支，事后只能用 plumbing 重建。
+
 **提交**
 
-- 并行期间不跑任何 `git` 命令，提交由协调者串行完成；`git` 的索引锁不支持并发写。
-- 在 worktree 或分支上完成的工作，**必须合并回 `main` 才算完成**。看板状态以 `main` 上的实际代码为准，不以分支上的自述为准。协调者收尾时应 `git worktree list` 和 `git branch --no-merged main` 各查一遍——只看 `main` 的历史是发现不了漏合的分支的。
+- 并行期间不跑任何 `git` 命令，提交由协调者串行完成；`git` 的索引锁不支持并发写，且分支操作会互相干扰（见上）。
+- 在 worktree 或分支上完成的工作，**必须合并回 `main` 才算完成**。看板状态以 `main` 上的实际代码为准，不以分支上的自述为准。
+- 协调者收尾时**逐项**查：`git status -uall`（未提交的工作）、`git worktree list`、`git branch --no-merged main`、`git stash list`。只看 `main` 的历史四种情况都发现不了。判断分支是否真有独有内容用两点 `git diff main <branch>`，不要用三点——三点比的是分叉点，分支落后于 `main` 时会把「缺少 main 的新代码」误报成差异。
 
 **执行**
 

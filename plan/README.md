@@ -20,9 +20,9 @@
 | P5 | gating | [P5-gating.md](./P5-gating.md) | P1, P2 | 1 | claude | 完成 | | 2026-09-21 |
 | P6 | matcher | [P6-matcher.md](./P6-matcher.md) | P1, P2 | 1 | claude | 完成 | `feat/P6-matcher`（本地合并） | 2026-09-21 |
 | P7 | channel-telegram | [P7-channel-telegram.md](./P7-channel-telegram.md) | P1, P2 | 1 | claude | 完成 | `feat/P7-channel-telegram`（本地合并） | 2026-09-21 |
-| P8 | agent | [P8-agent.md](./P8-agent.md) | P0(V1,V2,V3,V6), P2, P4, P5, P6 | 2 | | 待开始 | | |
-| P9 | approval | [P9-approval.md](./P9-approval.md) | P2, P3, P7 | 2 | | 待开始 | | |
-| P10 | apps/bot | [P10-app-bot.md](./P10-app-bot.md) | P0(V5), P2, P3, P7 | 2 | | 待开始 | | |
+| P8 | agent | [P8-agent.md](./P8-agent.md) | P0(V1,V2,V3,V6), P2, P4, P5, P6 | 2 | claude | 完成 | 直接提交 main | 2026-09-21 |
+| P9 | approval | [P9-approval.md](./P9-approval.md) | P2, P3, P7 | 2 | kimi | 完成 | 直接提交 main | 2026-09-21 |
+| P10 | apps/bot | [P10-app-bot.md](./P10-app-bot.md) | P0(V5), P2, P3, P7 | 2 | kimi | 完成 | 直接提交 main | 2026-09-21 |
 | P11 | apps/worker | [P11-app-worker.md](./P11-app-worker.md) | P8, P9, P10 | 3 | | 待开始 | | |
 | P12 | eval | [P12-eval.md](./P12-eval.md) | P8 | 3 | | 待开始 | | |
 | P13 | Phase 0 上线清单 | [P13-phase0-launch.md](./P13-phase0-launch.md) | P11, P12 | 3 | | 待开始 | | |
