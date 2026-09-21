@@ -161,7 +161,7 @@ resolvePhase(p: { group: Group | null; defaultPhase: Phase }): Phase
 decideInbound(v: InboundVerdict, t: Thresholds): InboundDecision
 type InboundDecision =
   | { action: 'drop'; reason: 'sensitive' | 'not_demand' }
-  | { action: 'tag_move_event' }           // housing / job / second_hand 且 isMoveEvent 高
+  | { action: 'tag_move_event' }           // 非服务品类（含 other）且 isMoveEvent 高，仅打标签用于观测
   | { action: 'enter_agent'; category: DemandCategory; kind: 'demand' | 'supply' | 'both' }
 decideOutbound(p: { phase: Phase; verdict: OutboundVerdict | null; rateOk: boolean; t: Thresholds }): OutboundDecision
 type OutboundDecision = 'dry_run' | 'review' | 'auto' | 'drop'

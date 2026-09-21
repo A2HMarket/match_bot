@@ -1,7 +1,13 @@
 import { isServiceCategory, type DemandCategory } from '@matchbot/domain';
 import type { Thresholds } from './thresholds.js';
 
-export interface InboundSignals { isDemand: number; isSupply: number; category: DemandCategory; isSensitive: number; isMoveEvent: number }
+export interface InboundSignals {
+  isDemand: number;
+  isSupply: number;
+  category: DemandCategory;
+  isSensitive: number;
+  isMoveEvent: number;
+}
 export type InboundDecision =
   | { action: 'drop'; reason: 'sensitive' | 'not_demand' }
   | { action: 'tag_move_event' }
@@ -13,7 +19,9 @@ export function decideInbound(v: InboundSignals, t: Thresholds): InboundDecision
   const demand = v.isDemand >= t.T_IS_DEMAND_ENTER;
   const supply = v.isSupply >= t.T_IS_SUPPLY_ENTER;
   if (!isServiceCategory(v.category)) {
-    return v.isMoveEvent >= t.T_IS_MOVE_EVENT_TAG ? { action: 'tag_move_event' } : { action: 'drop', reason: 'not_demand' };
+    return v.isMoveEvent >= t.T_IS_MOVE_EVENT_TAG
+      ? { action: 'tag_move_event' }
+      : { action: 'drop', reason: 'not_demand' };
   }
   if (demand && supply) return { action: 'enter_agent', category: v.category, kind: 'both' };
   if (demand) return { action: 'enter_agent', category: v.category, kind: 'demand' };

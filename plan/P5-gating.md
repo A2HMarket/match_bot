@@ -26,7 +26,7 @@
 - Modify: `packages/gating/src/index.ts`
 - Test: `packages/gating/tests/phase.test.ts`、`tests/blacklist.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/gating/tests/phase.test.ts
@@ -63,12 +63,12 @@ describe('isBlacklisted', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/gating/tests/phase.test.ts packages/gating/tests/blacklist.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/gating/src/thresholds.ts
@@ -119,12 +119,12 @@ export function isBlacklisted(text: string): boolean {
 
 `index.ts` re-export 三者。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/gating/tests/phase.test.ts packages/gating/tests/blacklist.test.ts`
 Expected: 8 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/gating
@@ -144,7 +144,7 @@ git commit -m "feat(gating): thresholds, phase resolution and blacklist"
 - Consumes: verdict 形状 `{ isDemand, isSupply, category, isSensitive, isMoveEvent }`（与 `@matchbot/jev` 的 `InboundVerdict` 结构相同，但本包用自己的结构类型声明，不 import jev）
 - Produces: `decideInbound(v, t): InboundDecision`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/gating/tests/inbound.test.ts
@@ -168,12 +168,12 @@ describe('decideInbound', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/gating/tests/inbound.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/gating/src/inbound.ts
@@ -201,12 +201,12 @@ export function decideInbound(v: InboundSignals, t: Thresholds): InboundDecision
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/gating/tests/inbound.test.ts`
 Expected: 7 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/gating
@@ -222,7 +222,7 @@ git commit -m "feat(gating): decideInbound"
 - Modify: `packages/gating/src/index.ts`
 - Test: `packages/gating/tests/outbound.test.ts`、`tests/rate-limit.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/gating/tests/outbound.test.ts
@@ -263,12 +263,12 @@ describe('createRateLimiter', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/gating/tests/outbound.test.ts packages/gating/tests/rate-limit.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/gating/src/outbound.ts
@@ -310,12 +310,12 @@ export function createRateLimiter(outbound: Pick<Repositories['outbound'], 'coun
 
 把 `T_MENTIONS_UNVERIFIED_DROP`、`T_WORTH_REPLYING_DROP` 移进 `Thresholds`（interfaces.md 同步加两项）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/gating/tests/outbound.test.ts packages/gating/tests/rate-limit.test.ts`
 Expected: 9 passed
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿（含 check-deps：gating 未依赖 jev）
@@ -331,8 +331,8 @@ git commit -m "feat(gating): decideOutbound and rate limiter"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
+| 状态 | 完成 |
+| 执行者 | subagent-driven-development via Claude Code |
+| PR | 留空（未开 PR） |
+| 与 interfaces.md 的偏差 | 无，仅补充了 `tag_move_event` 的注释澄清（适用于任意非服务品类，不限于 housing/job/second_hand） |
 | 备注 | |
