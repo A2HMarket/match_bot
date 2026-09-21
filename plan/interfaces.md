@@ -183,6 +183,7 @@ interface ScoredCandidate { id: string; kind: 'supplier' | 'supply'; score: numb
 toInboundMessage(update: Update, p: { botId: number }): InboundMessage | null      // 非文本、非群/私聊、Bot 自己的消息返回 null
 createTelegramSender(p: { bot: Bot; logger: Logger }): { send(m: OutboundMessage): Promise<void> }   // target 为 chat id，出错抛 TelegramSendError
 createOpsCardSender(p: { bot: Bot; opsChatId: string }): { sendApprovalCard(card: ApprovalCard): Promise<{ messageId: string }> }
+createOpsCardSenderFromToken(p: { token: string; opsChatId: string }): ReturnType<typeof createOpsCardSender>   // 给 apps/worker：只发不收，不 start()，不与 apps/bot 的长轮询冲突
 interface ApprovalCard { runStateId: string; title: string; draftText: string; supplierLines: string[]; confidence: number }
 parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' | 'reject' | 'ignore' } | null   // callback_data 格式 `apv:<runStateId>:<decision>`
 ```

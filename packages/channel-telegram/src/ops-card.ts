@@ -1,5 +1,4 @@
-import type { Bot } from 'grammy';
-import { InlineKeyboard } from 'grammy';
+import { Bot, InlineKeyboard } from 'grammy';
 
 export interface ApprovalCard {
   runStateId: string;
@@ -39,6 +38,17 @@ export function createOpsCardSender(p: { bot: Bot; opsChatId: string }) {
       return { messageId: String(r.message_id) };
     },
   };
+}
+
+/**
+ * 给没有 Bot 实例的进程（`apps/worker`）用的工厂：只暴露「发审批卡」这一个能力，
+ * 让 grammY 的 API 仍然只活在本包里（AGENTS.md §3.2）。
+ *
+ * 这里新建的 Bot **只发不收**——不调 `bot.start()`，所以不会和 `apps/bot` 的长轮询
+ * 抢 getUpdates（同一 token 并发长轮询会 409，单纯发消息不会）。
+ */
+export function createOpsCardSenderFromToken(p: { token: string; opsChatId: string }) {
+  return createOpsCardSender({ bot: new Bot(p.token), opsChatId: p.opsChatId });
 }
 
 export function parseApprovalCallback(

@@ -26,11 +26,19 @@ const ALLOWED = {
     '@matchbot/gating',
     '@matchbot/matcher',
   ],
+  // §3.2 的链条是 `… ← { approval, agent } ← eval`，即 eval 可依赖它之前的一切。
+  // 原先只列了 5 个，漏掉 gating / queue / matcher / channel-telegram / approval，
+  // 导致 eval 无法跑真实入站门（P12 因此阻塞）。
   '@matchbot/eval': [
     '@matchbot/shared',
     '@matchbot/domain',
     '@matchbot/db',
+    '@matchbot/queue',
     '@matchbot/jev',
+    '@matchbot/gating',
+    '@matchbot/matcher',
+    '@matchbot/channel-telegram',
+    '@matchbot/approval',
     '@matchbot/agent',
   ],
 };

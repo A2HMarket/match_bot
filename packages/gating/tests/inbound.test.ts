@@ -23,8 +23,16 @@ describe('decideInbound', () => {
     ],
     [
       'service supply enters',
-      { ...base, isSupply: 0.75, category: 'man_and_van' as const },
+      // 实测（pnpm eval, n=50）真实供给消息落在 0.96–0.98。
+      { ...base, isSupply: 0.96, category: 'man_and_van' as const },
       { action: 'enter_agent', category: 'man_and_van', kind: 'supply' },
+    ],
+    [
+      // 回归：同一轮评测里 is_supply 的金标负类最高到 0.77（俄语求职消息）。
+      // 阈值 0.8 必须把它挡在门外，而不是依赖后面 isServiceCategory 的品类兜底。
+      'highest observed non-supply score stays out',
+      { ...base, isSupply: 0.77, category: 'man_and_van' as const },
+      { action: 'drop', reason: 'not_demand' },
     ],
     [
       'both',

@@ -25,7 +25,7 @@
 - Create: `apps/worker/src/deps.ts`（装配 `AgentDeps` 与 pipeline 依赖）
 - Test: `apps/worker/tests/pipeline/inbound.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // apps/worker/tests/pipeline/inbound.test.ts
@@ -81,12 +81,12 @@ describe('processInbound', () => {
 
 （`repos.runStates.findById` 已在 interfaces.md §db 与 P2 中。）
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run apps/worker/tests/pipeline/inbound.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // apps/worker/src/pipeline/inbound.ts
@@ -143,12 +143,12 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run apps/worker/tests/pipeline/inbound.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit**（并行约定：提交由协调者串行完成，本 agent 未跑任何 git 命令）
 
 ```bash
 git add apps/worker plan/interfaces.md
@@ -163,7 +163,7 @@ git commit -m "feat(worker): inbound pipeline"
 - Create: `apps/worker/src/pipeline/resume.ts`、`apps/worker/src/cron.ts`
 - Test: `apps/worker/tests/pipeline/resume.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // apps/worker/tests/pipeline/resume.test.ts
@@ -186,12 +186,12 @@ describe('processResume', () => {
 
 （`repos.approvals.findById` 已在 interfaces.md 与 P2 中。）
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run apps/worker/tests/pipeline/resume.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // apps/worker/src/pipeline/resume.ts
@@ -237,12 +237,12 @@ export async function runCronJob(name: string, repos: Repositories, logger: Logg
 void QUEUE_NAMES;
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run apps/worker/tests/pipeline/resume.test.ts`
 Expected: 1 passed
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit**（并行约定：提交由协调者串行完成，本 agent 未跑任何 git 命令）
 
 ```bash
 git add apps/worker packages/db plan/interfaces.md
@@ -258,7 +258,7 @@ git commit -m "feat(worker): resume pipeline and cron jobs"
 - Create: `apps/worker/src/deps.ts`
 - Test: `apps/worker/tests/e2e/shadow.test.ts`
 
-- [ ] **Step 1: 装配**
+- [x] **Step 1: 装配**
 
 ```ts
 // apps/worker/src/deps.ts
@@ -302,7 +302,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) process.on(sig, () => { void P
 d.logger.info({ phase: d.env.DEFAULT_PHASE }, 'worker started');
 ```
 
-- [ ] **Step 2: 端到端 smoke（stub 模型，真实 Postgres/Redis）**
+- [x] **Step 2: 端到端 smoke（stub 模型，真实 Postgres/Redis）**
 
 ```ts
 // apps/worker/tests/e2e/shadow.test.ts
@@ -381,14 +381,14 @@ function stubProvider(calls: Array<{ tool: string; args: unknown } | { text: str
 
 `@matchbot/agent/tests/helpers/model-stub.js` 的导入路径需要在 `packages/agent/package.json` 的 `exports` 加 `"./tests/*"` 子路径，或把 helper 移到 `packages/agent/src/testing/model-stub.ts` 并从主入口导出（推荐后者，P8 Task 5 执行时一并做）。`stubProvider` 的 `Model` 接口形状以 PoC V1 观察为准。
 
-- [ ] **Step 3: 本地全链路冒烟**
+- [~] **Step 3: 本地全链路冒烟**（部分：进程启动 + cron + 队列链路实测；真实群消息与 Phase 1 审批卡未做，见完成记录）
 
 Run: `pnpm infra:up && pnpm dev:worker`（另一终端 `pnpm dev:bot`）
 手动：在已开启的测试群发"need a van Sunday E14 to SE1"。
 Expected（Phase 0）：`decision_traces` 出现 jev 与 gate 记录，`outbound_messages` 一行 `dry_run`，群里没有任何回复。
 把该群 `phase` 改 1 再发一条：运营群收到审批卡；点批准；群里出现回复；`run_states.status = consumed`。
 
-- [ ] **Step 4: 全量检查并提交**
+- [ ] **Step 4: 全量检查并提交**（并行约定：只跑了 `pnpm vitest run apps/worker` + worker typecheck + eslint/prettier；全量 `pnpm check` 与提交由协调者做）
 
 Run: `pnpm check`
 
@@ -403,8 +403,37 @@ git commit -m "feat(worker): wire main process, cron and shadow e2e"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 冒烟结果（Phase 0 / Phase 1） | |
-| 接口补充（runStates.findById、approvals.findById、run_states.chatId/phase、createWorker jobName） | |
+| 状态 | **完成（有 1 个需协调者决策的阻塞项，见下）** |
+| 执行者 | 子 agent（P11），与 P12 并行，未跑任何 git 命令 |
+| PR | 未提交；改动仅在 `apps/worker/` 与本文件 |
+| 冒烟结果（Phase 0 / Phase 1） | **Phase 0：通过。** `pnpm vitest run apps/worker` → 4 files / 21 tests passed。其中 `tests/e2e/shadow.test.ts` 用真实 Postgres + 真实仓储 + 真实 gating/agent 编排（Jev 与模型是 stub），断言群消息 → `outbound_messages` 恰好一行 `dry_run`、文案含免责声明、`pending` 行数为 0、`decision_traces` 只有 `jev` + `gate` 两类且含 `entered_agent` / `agent_completed` / 出站门。进程级：`tsx src/main.ts` 启动后写 `worker started`，三个 cron job 被 scheduler 立即触发并各自执行（`redacted messages` / `expired demands` / `expired run states`，n=0），SIGTERM 能优雅退出。队列链路：经 `enqueueInbound` 投一条黑名单消息，worker 真实消费并写出 `{kind:'rule', output:{outcome:'dropped_by_rule', reason:'blacklist'}}`。**Phase 1：未做**——需要真实群、真实模型调用和人工点按钮，且审批卡发送当前被下面的阻塞项挡住。 |
+| 接口补充（runStates.findById、approvals.findById、run_states.chatId/phase、createWorker jobName） | 四项**均已存在**，无需补：`repos.runStates.findById` / `repos.approvals.findById` 在 P2 已实现；`run_states` 已有 `chat_id`、`phase` 列且 P8 的 `settle()` 写入；`createWorker(name, redisUrl, handler(data, jobName), opts)` 第二个回调参数就是 `job.name`，cron 队列靠它分派。 |
+
+### 与计划的偏差（AGENTS.md §9.1）
+
+| # | 原计划 | 实际 | 为什么 |
+|---|---|---|---|
+| 1 | `processResume` 自己拼 `MatchContext` 并传给 `resumeRun({ deps, runState, approval, ctx })` | `resumeRun({ deps, runState, approval })`，**没有 `ctx` 参数**；`processResume` 不再拼上下文 | `packages/agent/src/run.ts` 的真实签名只有三个字段，内部用 `rebuildContext()` 从 `run_states.userId/chatId/phase` + `demands.findOpenByUser` 重建。与 `interfaces.md` 一致。计划里「用 `chatId: rs.chatId, phase: rs.phase` 替换空字符串」的提醒已由 agent 包自己落实 |
+| 2 | `scheduleCron` 用 `q.cron.add(name, {}, { repeat: { every }, jobId })` | `q.cron.upsertJobScheduler(name, { every }, { name, data: {} })` | **BullMQ 6 移除了 `Queue.add` 的 `repeat` 选项**：`node_modules/bullmq/dist/esm/types/job-options.d.ts` 明写 “`repeat` is no longer a valid option for `Queue.add`; use `Queue.upsertJobScheduler`”。按计划写会静默变成一次性 job。scheduler id 与 job name 都取 cron 名，worker 的 `job.name` 分派不变 |
+| 3 | `createTraceProcessor({ traces, phase: () => env.DEFAULT_PHASE })` | `createTraceProcessor({ traces, logger })` | P8 实际签名如此；phase 由 Runner 的 `traceMetadata` 注入（PoC V6 ②），不需要回调 |
+| 4 | e2e 断言 `decisionTrace.count({ kind: 'agent_run' }) > 0` | **删掉该断言**，改断言 `jev` + `gate`（含出站门 `gate: 'outbound'`）与 `entered_agent` / `agent_completed` | PoC V6 ⑥ 的结论在本仓库实测坐实：`@openai/agents-core/dist/config.mjs:81` 在 `NODE_ENV === 'test'` 时 `tracing.disabled === true`，vitest 下 SDK 根本不产生 span，processor 收不到回调。实测跑完 e2e 后库里 `agent_run` 行数为 0。`agent_run` 的覆盖由 `packages/agent/tests/tracing.test.ts` 直接喂假 span 完成 |
+| 5 | e2e 从 `@matchbot/agent/tests/helpers/model-stub.js` 导入 stub（计划说 P8 Task 5 会做） | 该文件**不存在**；改为在 `apps/worker/tests/e2e/model-stub.ts` 手写协议对象（`assistantMessage` / `functionCall` / `ModelResponse` 形状） | P8 没有落这个 helper，`packages/agent` 的测试直接用 `@openai/agents/testing` 的 `ScriptedModel`。但 AGENTS.md §3.2 只允许 `packages/agent` 直接 import `@openai/agents`，apps/worker 连测试里也不该碰，所以手写等价的纯数据对象。不改 `packages/agent`（并行约定：不碰别人的目录） |
+| 6 | 代码门只有黑名单一条 | 代码门补齐架构 §3 的四项：空文本 / 斜杠命令 / 黑名单 / 群未接入或 `isActive=false`，且**放在落库之前** | 架构 §3 的「代码门」格子写的就是这四项；放在 `messages.create` 之前可以不留存被规则挡下的文本（AGENTS.md §6）。这类 trace 的 `inputRef` 因此不是 message id，用 `${channel}:${chatId}:${messageId}` |
+| 7 | `processResume` 只写一条 trace 就结束 | 恢复后若**再次中断**，重新取 `run_states` 并再发一张审批卡 | PoC V2 ②：「批准一次 ≠ 跑完」，`settle()` 会新写一行 `pending`。不补这一步，第二次中断就永远没人批 |
+| 8 | `buildDeps` 里 `new Bot(env.TELEGRAM_BOT_TOKEN)` 造 `createOpsCardSender` | **未实现**；`cards` 改为可注入端口，默认是 `createUnwiredCards()`——被调用时写 error 级日志而不是静默丢卡 | 见下面的阻塞项 |
+
+### 阻塞项：worker 无法发送审批卡（需协调者决策）
+
+计划的 `deps.ts` 要在 `apps/worker` 里 `new Bot(...)`，但 AGENTS.md §3.2 与 `scripts/check-deps.mjs` 的 `EXTERNAL_OWNERS` 都只允许 `packages/channel-telegram` 和 `@matchbot/bot` 直接依赖 `grammy`；`apps/worker/package.json` 里也没有这个依赖（现在能 `import` 只是因为 grammy 是根 devDependency 被提升，属于 phantom dependency）。并行约定禁止本 agent 改 `package.json`、`AGENTS.md`、`check-deps.mjs`，所以停在这里报告。
+
+现状：`buildDeps({ cards })` 接受注入；不注入时用 `createUnwiredCards(logger)` 占位，Phase 0 不产生中断所以完全不受影响，Phase 1 一旦用到会打 error 日志（不会静默）。三个可选方案，任选其一后 `apps/worker/src/deps.ts` 只需改几行：
+
+1. 把 `grammy` 加进 `apps/worker` 的 dependencies，并在 `check-deps.mjs` 的 `EXTERNAL_OWNERS.grammy` 加 `@matchbot/worker`（与 `apps/bot` 的先例一致，AGENTS.md §3.2 同步改一句）；
+2. 在 `packages/channel-telegram` 加一个 `createOpsCardSenderFromToken({ token, opsChatId })`，让 Bot 在 channel 包里创建，worker 不碰 grammy（最贴合 §3.2 的原意）；
+3. 让 `apps/bot` 来发卡（worker 经队列把卡交给 bot），需要新的队列与载荷 schema。
+
+### 遗留
+
+- Task 3 Step 3 的「真实群消息 + Phase 1 点批准」冒烟未做：需要真人在测试群发消息、真实 deepseek/Jev 调用，且被上面的阻塞项挡住。
+- `MatchContext.recentReplies` 恒为 `[]`：`repos.outbound` 没有「按 target 列最近已发消息」的方法，补这个方法属于 `packages/db` 的改动，未擅自动。Phase 0/1 不影响（出站门只在 Phase 2 用 `recentReplies` 喂 Jev）。
+- 同一用户串行目前靠 `concurrency: 1` 全局串行（计划 Global Constraints 允许的起步做法），Phase 2 再按 userId 分组。
