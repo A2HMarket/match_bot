@@ -17,6 +17,9 @@ export const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_OPS_CHAT_ID: z.string().min(1),
   DEFAULT_PHASE: z.coerce.number().int().min(0).max(2).default(0),
+  // run_states.snapshot 落库加密口令（AGENTS.md §6）。Phase 0 无审批中断用不到，故 optional；
+  // 一旦进入 Phase 1（产生中断快照）就必须配置，否则 runInbound 在写快照时报错。
+  SNAPSHOT_KEY: z.string().min(16).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
