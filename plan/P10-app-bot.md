@@ -24,7 +24,7 @@
 - Create: `apps/bot/src/inbound.ts`
 - Test: `apps/bot/tests/inbound.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // apps/bot/tests/inbound.test.ts
@@ -56,7 +56,7 @@ describe('createInboundHandler', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run apps/bot/tests/inbound.test.ts`
 Expected: FAIL
@@ -94,12 +94,12 @@ export function createInboundHandler(p: { botId: number; repos: Repositories; qu
 
 `grammy/types` 的 import 在 apps 里允许（类型），`check-deps` 只查 package.json 依赖；apps/bot 的依赖表已含 channel-telegram，需再加 `grammy` 到 apps/bot 的 dependencies 并把 `EXTERNAL_OWNERS.grammy` 加上 `@matchbot/bot`（本包创建 `Bot` 实例）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run apps/bot/tests/inbound.test.ts`
 Expected: 3 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/bot scripts/check-deps.mjs
@@ -114,7 +114,7 @@ git commit -m "feat(bot): inbound middleware with group gating"
 - Create: `apps/bot/src/outbound-loop.ts`、`apps/bot/src/callbacks.ts`
 - Test: `apps/bot/tests/outbound-loop.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // apps/bot/tests/outbound-loop.test.ts
@@ -133,12 +133,12 @@ describe('drainOutbound', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run apps/bot/tests/outbound-loop.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**（outbound-loop.ts 已完成；callbacks.ts 依赖 @matchbot/approval，见完成记录备注）
 
 ```ts
 // apps/bot/src/outbound-loop.ts
@@ -187,12 +187,12 @@ export function registerApprovalCallbacks(p: { bot: Bot; repos: Repositories; qu
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run apps/bot/tests/outbound-loop.test.ts`
 Expected: 1 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/bot
@@ -206,7 +206,7 @@ git commit -m "feat(bot): outbound drain loop and approval callbacks"
 **Files:**
 - Modify: `apps/bot/src/main.ts`
 
-- [ ] **Step 1: 装配**
+- [x] **Step 1: 装配**（审批回调注册留 TODO，待 P9 依赖接入）
 
 ```ts
 // apps/bot/src/main.ts
@@ -241,13 +241,13 @@ await bot.start();
 
 删掉那行 `void createOpsCardSender`，改为不 import 它。
 
-- [ ] **Step 2: 本地冒烟**
+- [x] **Step 2: 本地冒烟**（自动化部分已完成；人工 Telegram 验证待做）
 
 Run: `pnpm infra:up && pnpm db:migrate && pnpm dev:bot`
 手动：在测试群发一条文本；用 `pnpm --filter @matchbot/db studio` 看 `groups` 出现一行 `isActive=false`；把它改 true 再发一条；`redis-cli llen bull:inbound_message:wait` 或 BullMQ UI 看到 job。
 Expected: 群自动登记；开启后消息入队。
 
-- [ ] **Step 3: 全量检查并提交**
+- [x] **Step 3: 全量检查并提交**
 
 Run: `pnpm check`
 
@@ -262,8 +262,8 @@ git commit -m "feat(bot): wire main process"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 冒烟结果 | |
-| 备注 | |
+| 状态 | 评审中（代码完成，待协调者合并 main；callbacks 接线待补依赖） |
+| 执行者 | kimi |
+| PR | `feat/P10-app-bot` 分支（未合并，按 §9.2 由协调者收尾） |
+| 冒烟结果 | `pnpm infra:up` + `db:migrate` 通过；`pnpm dev:bot` 启动成功：getMe 正常（botId 8919809920）、phase 0、出站轮询无报错。人工部分（测试群发消息→groups 登记→开启后入队）未做，需人工在 Telegram 上验证 |
+| 备注 | 1) 计划要求 callbacks.ts 依赖 `@matchbot/approval`，开工时 P9 未完成；执行期间 P9 由并行 agent 完成（代码已在工作树且接口与 interfaces.md 一致），但 apps/bot 未声明该依赖，按 §9.2 不自行改 package.json / 跑 pnpm install。已在 `main.ts` 留 TODO(P9)，补依赖后按 Task 2 计划代码加入 `callbacks.ts` 并注册即可。2) 与计划的偏差：`inbound.ts` 群标题取值加了 `?? msg.chatId`（grammy 类型中 title 在交叉类型下为 `string \| undefined`，`exactOptionalPropertyTypes` 不过）；`check-deps.mjs` 的 `EXTERNAL_OWNERS.grammy` 与 apps/bot 的 grammy 依赖在 wave-2 准备提交中已就绪，无需再改。3) 并行冲突提醒：P9 agent 曾把 `1d6181c feat(approval): handle approval callbacks` 提交到本分支顶端（其自身分支 feat/P9-approval 上是同内容的 `60f8390`），合并时需要协调者去重；看板（plan/README.md）未改动，状态更新留给协调者。4) `pnpm check` 全绿：typecheck + lint + format + 106 tests passed（含 approval 包测试）。 |

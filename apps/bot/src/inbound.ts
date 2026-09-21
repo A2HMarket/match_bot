@@ -21,7 +21,7 @@ export function createInboundHandler(p: {
       const group = await p.repos.groups.findByExternal('telegram', msg.chatId);
       if (!group) {
         const chat = update.message?.chat;
-        const title = chat && 'title' in chat ? chat.title : msg.chatId;
+        const title = chat && 'title' in chat ? (chat.title ?? msg.chatId) : msg.chatId;
         await p.repos.groups.upsert({ channel: 'telegram', externalId: msg.chatId, name: title });
         p.logger.info({ chatId: msg.chatId }, 'new group seen; inactive until ops enables');
         return;

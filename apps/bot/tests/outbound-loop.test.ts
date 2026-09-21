@@ -8,18 +8,18 @@ describe('drainOutbound', () => {
       { id: 'b', target: '-1', text: 'y' },
     ];
     const outbound = {
-      claimPending: vi.fn(async () => rows),
-      markSent: vi.fn(async () => {}),
-      markFailed: vi.fn(async () => {}),
+      claimPending: vi.fn(() => Promise.resolve(rows)),
+      markSent: vi.fn(() => Promise.resolve()),
+      markFailed: vi.fn(() => Promise.resolve()),
     };
     const sender = {
-      send: vi.fn(async (m: { id: string }) => {
-        if (m.id === 'b') throw new Error('kicked');
-      }),
+      send: vi.fn((m: { id: string }) =>
+        m.id === 'b' ? Promise.reject(new Error('kicked')) : Promise.resolve(),
+      ),
     };
     await drainOutbound({
       repos: { outbound } as never,
-      sender: sender as never,
+      sender,
       logger: { error: vi.fn() } as never,
     });
     expect(outbound.markSent).toHaveBeenCalledWith('a');

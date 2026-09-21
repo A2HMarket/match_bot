@@ -17,12 +17,12 @@ function deps(group: unknown) {
     botId: 1,
     repos: {
       groups: {
-        findByExternal: vi.fn(async () => group),
-        upsert: vi.fn(async () => ({ id: 'g', isActive: false })),
+        findByExternal: vi.fn(() => Promise.resolve(group)),
+        upsert: vi.fn(() => Promise.resolve({ id: 'g', isActive: false })),
       },
     },
     queues: {},
-    enqueueInbound: vi.fn(async () => {}),
+    enqueueInbound: vi.fn(() => Promise.resolve()),
     logger: { info: vi.fn(), warn: vi.fn() },
   } as never;
 }
@@ -51,8 +51,14 @@ describe('createInboundHandler', () => {
   it('private chats always enqueue', async () => {
     const d = deps(null);
     const priv = {
-      ...update,
-      message: { ...update.message, chat: { id: 42, type: 'private', first_name: 'A' } },
+      update_id: 2,
+      message: {
+        message_id: 6,
+        date: 1758800000,
+        chat: { id: 42, type: 'private', first_name: 'A' },
+        from: { id: 42, is_bot: false, first_name: 'A' },
+        text: 'hi',
+      },
     } as never;
     await createInboundHandler(d)(priv);
     expect((d as { enqueueInbound: ReturnType<typeof vi.fn> }).enqueueInbound).toHaveBeenCalled();
