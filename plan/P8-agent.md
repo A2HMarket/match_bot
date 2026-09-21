@@ -33,7 +33,7 @@
 **Interfaces:**
 - Produces: `configureModelProvider(env: Env): void`、`createTraceProcessor(p: { traces: Repositories['traces']; phase: () => Phase }): TracingProcessor`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/agent/tests/tracing.test.ts
@@ -53,12 +53,12 @@ describe('createTraceProcessor', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/agent/tests/tracing.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/agent/src/provider.ts
@@ -103,12 +103,12 @@ export function createTraceProcessor(p: { traces: Repositories['traces']; phase:
 
 `Span` 的 `startedAt/endedAt/traceId` 字段名以 PoC V6 打印的实际结构为准；不一致就改这里并回写本计划。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/agent/tests/tracing.test.ts`
 Expected: 1 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/agent
@@ -126,7 +126,7 @@ git commit -m "feat(agent): model provider and decision-trace tracing processor"
 **Interfaces:**
 - Produces: `createPgSession(p: { repos: Repositories; userId: string }): Session`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/agent/tests/session.test.ts
@@ -159,12 +159,12 @@ describe('createPgSession', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/agent/tests/session.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/agent/src/session.ts
@@ -185,12 +185,12 @@ export function createPgSession(p: { repos: Repositories; userId: string }): Ses
 
 若 SDK 的 `Session` 还要求 `SessionHistoryTransactionAwareSession.applyHistoryTransaction`，按 PoC V3 结论补充，用 `repos.sessionItems.append(userId, items, operationId)` 实现 `append_items`。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/agent/tests/session.test.ts`
 Expected: 1 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/agent
@@ -210,7 +210,7 @@ git commit -m "feat(agent): postgres-backed session"
 **Interfaces:**
 - Produces: `makeOutboundTool(p: { name; description; target: (ctx, args) => string; text: (ctx, args) => string; deps })`，四个工具由它生成
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/agent/tests/tools/outbound-gate.test.ts
@@ -254,12 +254,12 @@ describe('executeOutbound', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/agent/tests/tools/outbound-gate.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/agent/src/context.ts
@@ -342,12 +342,12 @@ async function toDraft(deps: AgentDeps, ctx: MatchContext, args: z.infer<typeof 
 
 `notify-user.ts`（target = `ctx.userId`，参数 `{ text }`）、`ask-clarification.ts`（target = `ctx.chatId`，参数 `{ question, missingFields: string[] }`，description 说明"追问缺失字段，一次只问一个"）、`push-lead.ts`（参数 `{ supplierId, demandSummary }`，target = 供应商的 `telegram` 字段；没有则返回 `'supplier has no telegram; ops will send manually'` 并写一条 `pending` 出站到 `env.TELEGRAM_OPS_CHAT_ID`）按同一模板实现。`decideForOutbound` 在 `needsApproval` 与 `execute` 各调一次，Phase 2 会产生两次 Jev 调用；用 `WeakMap<RunContext, OutboundDecision>` 缓存一次 run 内的决定。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/agent/tests/tools/outbound-gate.test.ts`
 Expected: 5 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/agent
@@ -362,7 +362,7 @@ git commit -m "feat(agent): outbound gate and four outbound tools"
 - Create: `packages/agent/src/tools/upsert-demand.ts`、`upsert-supply.ts`、`find-suppliers.ts`、`find-peer-supply.ts`、`close-demand.ts`、`do-nothing.ts`
 - Test: `packages/agent/tests/tools/upsert-demand.test.ts`、`tests/tools/find-suppliers.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/agent/tests/tools/upsert-demand.test.ts
@@ -403,12 +403,12 @@ describe('find_suppliers', () => {
 
 `tool().invoke` 的签名以 SDK 类型为准（PoC V1 时确认）；若不可直接调用，改为导出 `execute` 函数单独测。
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/agent/tests/tools`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/agent/src/tools/upsert-demand.ts
@@ -467,12 +467,12 @@ export function findSuppliersTool(deps: AgentDeps) {
 
 其余四个工具按同一风格：`upsert_supply`（参数 `supplyDraftSchema`，写 `repos.supplies.create`，`groupId` 来自 ctx）、`find_peer_supply`（`repos.supplies.findActive` + `scorePeerSupplies`，返回前 3）、`close_demand`（`repos.demands.setStatus(ctx.demandId, 'closed')`）、`do_nothing`（参数 `{ reason }`，返回 `'ok'`，写一条 `gate` trace 记录理由）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/agent/tests/tools`
 Expected: 全部通过
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/agent plan/interfaces.md
@@ -491,7 +491,7 @@ git commit -m "feat(agent): demand/supply/matching tools"
 **Interfaces:**
 - Produces: interfaces.md §agent 的全部签名
 
-- [ ] **Step 1: 写失败测试（stub 模型）**
+- [x] **Step 1: 写失败测试（stub 模型）**
 
 ```ts
 // packages/agent/tests/run.test.ts
@@ -519,12 +519,12 @@ describe('runInbound', () => {
 
 `tests/helpers/model-stub.ts` 在 PoC V1 后按 `@openai/agents-core` 的 `ModelResponse` 类型实现 `toolCallResponse` / `textResponse`；这是本任务第一步的实际工作。
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/agent/tests/run.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/agent/src/guardrails.ts
@@ -639,12 +639,12 @@ const SDK_VERSION = '0.18.0'; // 从 package.json 读，避免手写
 
 `runner.run` 的 `modelProvider` 选项名与 `RunState` 导出名以 PoC V2 为准。`snapshot` 加密：在 `repos.runStates.create` 前用 `packages/shared` 的 `encrypt(text, env.SNAPSHOT_KEY)`（P1 未含，此处追加到 shared 并在 `.env.example` 加 `SNAPSHOT_KEY`）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/agent`
 Expected: 全部通过
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿
@@ -660,9 +660,20 @@ git commit -m "feat(agent): assemble matchAgent with guardrails, runInbound and 
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 采用的 PoC 结论 | V1: · V2: · V3: · V6: |
-| 与 interfaces.md 的偏差 | |
-| AGENT_VERSION | |
+| 状态 | 完成（待协调者提交与评审） |
+| 执行者 | kimi |
+| PR | 未提交（并行约定 §9.2：git 由协调者串行完成；工作区改动限 `packages/agent/**`、`packages/shared/{crypto.ts,env.ts,index.ts}`、`.env.example`、`plan/interfaces.md`、本文件） |
+| 采用的 PoC 结论 | V1: 工具参数 nullable 而非 optional；stop_on_first_tool 不适用（见偏差 1）；V2: fromStringWithContext 恢复 + approve 后仍可能中断则再写 pending 行；V3: popItem 返回 undefined、剥离 providerData.reasoning_content、runner 不传 limit 故 getItems 自裁 40 条且不拆 function_call 对；V6: usage 取 turn span、phase 经 RunConfig.traceMetadata 注入（Runner 按 run 构造）、processor 自 try/catch、traceIncludeSensitiveData:false |
+| 与 interfaces.md 的偏差 | AgentDeps 增可选 `modelProvider`（测试注入 stub，已回写 interfaces.md）；createMatchAgent 增可选第二参 `{ phase }`（Runner 需按 run 配 traceMetadata）；resumeRun 不传 ctx（与 interfaces.md 一致），ctx 从 runState + 最新开放需求重建；快照落库前用 shared 新增 encrypt(SNAPSHOT_KEY) 加密，恢复时 decrypt |
+| AGENT_VERSION | 0.1.0 |
+
+偏差明细（原计划 → 实际）：
+
+1. **toolUseBehavior**：计划未提；V1 建议 stop_on_first_tool，但那针对单工具分类场景。matchAgent 需要 upsert_demand → find_suppliers → reply_in_group 链式调用，保留默认 run_llm_again；写工具幂等（upsert / replaceForDemand），出站有门控 + 频控兜底，另设 maxTurns = 8。
+2. **tracing**：计划按 generation span 记 usage；V6 实测 usage 在 turn span，改为 onSpanEnd 只处理 turn span，一行 trace = 一个模型 turn，output 只存计数字段不落原文。
+3. **测试模型桩**：计划让自写 ModelResponse 桩；SDK 自带 `@openai/agents/testing`（ScriptedModel/functionCall/assistantMessage），直接采用，覆盖到真实 runner 的中断/恢复路径（含加密快照 roundtrip 与 approve/reject 分支）。
+4. **make-outbound-tool 工厂**：四个出站工具共用 needsApproval/execute 骨架；SDK ToolOptions 的条件类型对泛型 schema 不可判定，工厂内对 args 做一次 zod parse 收窄。
+5. **频控上限**：limitPerDay = 3 常量留在 outbound-gate.ts（PRD §6.2），群级覆盖待 group_configs 落地。
+6. **决定缓存**：needsApproval 与 execute 间的出站决定按 (MatchContext, hash(target+text)) WeakMap 缓存，Phase 2 下同一草稿只调一次 Jev。
+
+验证：`pnpm check` 全绿（typecheck + eslint + check-deps + prettier + vitest 37 文件 153 测试，其中 packages/agent 8 文件 47 测试，含四个出站工具 × 四阶段用例）。

@@ -4,4 +4,9 @@
  * - 出站工具一律 needsApproval 走 gating + jev
  * - tracing：禁用默认导出，注册写 decision_traces 的 processor
  */
-export const AGENT_VERSION = '0.0.0';
+export { AGENT_VERSION, createMatchAgent } from './agent.js';
+export { configureModelProvider } from './provider.js';
+export { createTraceProcessor } from './tracing.js';
+export { createPgSession } from './session.js';
+export { runInbound, resumeRun, type RunOutcome } from './run.js';
+export type { AgentDeps, MatchContext } from './context.js';
