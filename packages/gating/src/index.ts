@@ -2,3 +2,4 @@
 export { DEFAULT_THRESHOLDS, type Thresholds } from './thresholds.js';
 export { resolvePhase } from './phase.js';
 export { isBlacklisted } from './blacklist.js';
+export { decideInbound, type InboundSignals, type InboundDecision } from './inbound.js';
