@@ -26,7 +26,7 @@
 - Modify: `packages/matcher/src/index.ts`
 - Test: `packages/matcher/tests/score-suppliers.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/matcher/tests/score-suppliers.test.ts
@@ -61,12 +61,12 @@ describe('scoreSuppliers', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/matcher/tests/score-suppliers.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/matcher/src/types.ts
@@ -125,12 +125,12 @@ export function scoreSuppliers(p: { demand: DemandDraft; suppliers: Supplier[]; 
 
 `index.ts` re-export `types.js`、`score-suppliers.js`。
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/matcher/tests/score-suppliers.test.ts`
 Expected: 4 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/matcher
@@ -146,7 +146,7 @@ git commit -m "feat(matcher): deterministic supplier scoring"
 - Modify: `packages/matcher/src/index.ts`
 - Test: `packages/matcher/tests/score-peer-supplies.test.ts`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```ts
 // packages/matcher/tests/score-peer-supplies.test.ts
@@ -170,12 +170,12 @@ describe('scorePeerSupplies', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run packages/matcher/tests/score-peer-supplies.test.ts`
 Expected: FAIL
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 ```ts
 // packages/matcher/src/score-peer-supplies.ts
@@ -204,12 +204,12 @@ export function scorePeerSupplies(p: { demand: DemandDraft; supplies: Supply[]; 
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run packages/matcher/tests/score-peer-supplies.test.ts`
 Expected: 2 passed
 
-- [ ] **Step 5: 全量检查并提交**
+- [x] **Step 5: 全量检查并提交**
 
 Run: `pnpm check`
 Expected: 全绿
@@ -225,8 +225,8 @@ git commit -m "feat(matcher): peer supply scoring"
 
 | 项 | 内容 |
 |---|---|
-| 状态 | |
-| 执行者 | |
-| PR | |
-| 与 interfaces.md 的偏差 | |
-| 备注 | |
+| 状态 | 完成 |
+| 执行者 | claude |
+| PR | `feat/P6-matcher`（本地合并） |
+| 与 interfaces.md 的偏差 | 无，实现与计划代码一致 |
+| 备注 | `pnpm check` 全绿：typecheck、lint、依赖方向检查、6/6 matcher 测试通过（全仓 37/37） |
