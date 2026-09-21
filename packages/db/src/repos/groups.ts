@@ -8,7 +8,12 @@ export function groupsRepo(prisma: PrismaClient) {
     upsert(p: { channel: Channel; externalId: string; name: string }): Promise<Group> {
       return prisma.group.upsert({
         where: { channel_externalId: { channel: p.channel, externalId: p.externalId } },
-        create: { channel: p.channel, externalId: p.externalId, name: p.name, categoriesEnabled: [] },
+        create: {
+          channel: p.channel,
+          externalId: p.externalId,
+          name: p.name,
+          categoriesEnabled: [],
+        },
         update: { name: p.name },
       });
     },

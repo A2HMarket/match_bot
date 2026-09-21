@@ -3,9 +3,24 @@ import type { Message, PrismaClient } from '../generated/client.js';
 
 export function messagesRepo(prisma: PrismaClient) {
   return {
-    create(p: { groupId: string | null; userId: string; externalId: string; text: string; lang?: string; receivedAt: Date }): Promise<Message> {
+    create(p: {
+      groupId: string | null;
+      userId: string;
+      externalId: string;
+      text: string;
+      lang?: string;
+      receivedAt: Date;
+    }): Promise<Message> {
       return prisma.message.create({
-        data: { groupId: p.groupId, userId: p.userId, externalId: p.externalId, text: p.text, textHash: hashText(p.text), lang: p.lang ?? null, receivedAt: p.receivedAt },
+        data: {
+          groupId: p.groupId,
+          userId: p.userId,
+          externalId: p.externalId,
+          text: p.text,
+          textHash: hashText(p.text),
+          lang: p.lang ?? null,
+          receivedAt: p.receivedAt,
+        },
       });
     },
     recentByUser(userId: string, sinceHours: number): Promise<Message[]> {

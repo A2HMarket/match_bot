@@ -5,7 +5,15 @@ export function leadsRepo(prisma: PrismaClient) {
     create(p: { matchId: string; sentVia: Channel; sentAt: Date }): Promise<Lead> {
       return prisma.lead.create({ data: p });
     },
-    update(id: string, patch: { supplierResponse?: string; isConverted?: boolean; isPaid?: boolean; followedUpAt?: Date }): Promise<Lead> {
+    update(
+      id: string,
+      patch: {
+        supplierResponse?: string;
+        isConverted?: boolean;
+        isPaid?: boolean;
+        followedUpAt?: Date;
+      },
+    ): Promise<Lead> {
       return prisma.lead.update({ where: { id }, data: patch });
     },
   };
