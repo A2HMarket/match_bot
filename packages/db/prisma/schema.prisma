@@ -248,6 +248,8 @@ model SessionItem {
 model RunState {
   id            String         @id @default(cuid())
   userId        String         @map("user_id")
+  chatId        String         @map("chat_id") // 审批通过后回原群用
+  phase         Int // 快照产生时的阶段，恢复时校验
   snapshot      String
   agentVersion  String         @map("agent_version")
   sdkVersion    String         @map("sdk_version")
