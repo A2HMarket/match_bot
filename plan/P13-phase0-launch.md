@@ -15,7 +15,13 @@
 
 ## B. 数据就绪
 
-- [x] `suppliers` 录入 Brief §3 的 30 家 B 池 —— **已录入 30 家**（man_and_van / eot_cleaning / furniture_service 各 10）。数据**不是抓来的**：Brief §3 的表格本身就有全部字段，用 `scripts/seed/extract-brief.ts` 直接抽出（含 30 个官网超链接），再经 `seed.ts` 写库。`lastVerifiedAt` 取 Brief 版本日期 2026-09-21 而非 now。实测 matcher 在 E14/SW6/N1 三个品类都能取到候选并正常打分
+- [x] `suppliers` 录入 Brief §3 的 30 家 B 池 —— **30 家已入库**（三品类各 10）。数据源是 Brief §3 表格本身（`scripts/seed/extract-brief.ts` 解析 docx，含 45 个超链接），不是抓来的。随后用 `scripts/seed/enrich-suppliers.ts` 访问各家**官网**核实补全（robots.txt 已核，顺序请求 1.5s 间隔）：
+  - 电话 30/30，其中 **19 家在官网页面上得到交叉验证**
+  - 邮箱 14 家（新增，为此加了 `Supplier.email` 列与迁移 `20260922145834_add_supplier_email`）
+  - WhatsApp 9 家（其中 5 家改为官网 `wa.me` 上的真实号码——此前是拿电话凑的）
+  - 官网 29/30（Brief 里 17 家原本填的是 Google 搜索链接，用浏览器同源检索补到 16 家真实站）
+  - 评价数 11 家、评分 2 家
+  - ⚠ **6 家标记「归属存疑」未采信**：搜到的站上找不到 Brief 记录的电话，可能不是同一家；另有 1 家（London Furniture Assembly）只匹配到 `.ca` 域名（疑似加拿大 London），未填。**这 7 家需人工核**
 - [ ] A 池转化：≥ 3 家 `isWillingToReceiveLeads = true` —— 需 BD 沟通。seed 脚本已强制校验「A 池必须有 telegram 或 whatsapp」，缺失即整体中止
 - [ ] `groups` 表：首批 8 个群登记 —— 机制同上；seed 的 `isActive` **默认 false**，需管理员同意后手动开（PRD §6.2）。当前 0 行
 - [ ] `@adslondon` 不进 Bot，走管理员 BD（Brief §4 特殊处理）

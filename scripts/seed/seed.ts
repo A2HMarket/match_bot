@@ -33,6 +33,13 @@ const supplierSchema = z.object({
   isWillingToReceiveLeads: z.boolean().default(false),
   // 核实日期。matcher 按 60 天判 stale 降权，留空等于永远算过期，所以录入时必须给。
   lastVerifiedAt: z.iso.date().nullish(),
+  email: z.string().email().nullish(),
+  rating: z.number().min(0).max(5).nullish(),
+  reviewCount: z.number().int().nonnegative().nullish(),
+  // 以下是核查过程的辅助标记，不入库，供人工复核用
+  websiteDiscovered: z.boolean().optional(),
+  phoneVerified: z.boolean().optional(),
+  needsHumanCheck: z.string().optional(),
 });
 
 const groupSchema = z.object({
@@ -80,8 +87,9 @@ try {
     const existing = await prisma.supplier.findFirst({
       where: { category: s.category, name: s.name },
     });
+    const { websiteDiscovered: _w, phoneVerified: _p, needsHumanCheck: _h, ...cols } = s;
     const data = {
-      ...s,
+      ...cols,
       lastVerifiedAt: s.lastVerifiedAt ? new Date(`${s.lastVerifiedAt}T00:00:00Z`) : null,
     };
     if (existing) await prisma.supplier.update({ where: { id: existing.id }, data });
