@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    # db 与 queue 的集成测试、以及 apps/worker 的 e2e smoke 都打真实服务
+    # （AGENTS.md §7）。版本与 docker-compose.yml 保持一致。
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: matchbot
+          POSTGRES_PASSWORD: matchbot
+          POSTGRES_DB: matchbot
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U matchbot"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://matchbot:matchbot@localhost:5432/matchbot
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate prisma client
+        run: pnpm db:generate
+
+      - name: Apply migrations
+        # deploy 而不是 dev：CI 不生成新迁移，只应用已提交的（AGENTS.md §8 第 2 条）
+        run: pnpm --filter @matchbot/db exec prisma migrate deploy
+
+      - name: pnpm check
+        # typecheck + lint + format + test。不注入任何密钥：测试用 stub 模型与
+        # 录制的 Jev fixture，任何需要真实 key 才能跑的测试都是设计错误。
+        run: pnpm check
+
+      - name: Offline eval (fixture, no network)
+        run: pnpm eval --skip-metrics
