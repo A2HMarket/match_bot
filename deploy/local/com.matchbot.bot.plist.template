@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.matchbot.bot</string>
+
+  <!-- launchd 不会读 .env，也不继承登录 shell 的 PATH。用 zsh -lc 先切目录再 source，
+       最后 exec 替换进程，保证 launchd 盯的是 node 本身而不是中间的 shell。 -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>cd __REPO__ &amp;&amp; set -a &amp;&amp; . ./.env &amp;&amp; set +a &amp;&amp; exec __NODE__ apps/bot/dist/main.js</string>
+  </array>
+
+  <key>WorkingDirectory</key><string>__REPO__</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <!-- 崩溃后至少间隔 10s 再拉起，避免 .env 缺失之类的问题导致疯狂重启刷满日志 -->
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>__REPO__/logs/bot.log</string>
+  <key>StandardErrorPath</key><string>__REPO__/logs/bot.err.log</string>
+  <key>ProcessType</key><string>Background</string>
+</dict>
+</plist>

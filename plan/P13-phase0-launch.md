@@ -9,7 +9,7 @@
 - [x] P1–P12 看板状态全部 `完成`，`main` 上 `pnpm check` 全绿 —— 2026-09-22，45 文件 / 196 用例
 - [x] `apps/worker/tests/e2e/shadow.test.ts` 在 CI 通过 —— 新增 `.github/workflows/ci.yml`（Postgres 17 + Redis 7 service container，`migrate deploy` → `pnpm check` → 离线 eval）。本地已验证 `--frozen-lockfile` 同步、`migrate deploy` 可用、`pnpm check` 与 `pnpm eval` 无需任何密钥即可跑。**首次真实运行结果待首个 PR 确认**
 - [ ] `.env` 生产值就位：`DEFAULT_PHASE=0` ✅、Jev 与 DeepSeek key ✅、**`TELEGRAM_OPS_CHAT_ID` 仍借用测试群 `-5372233317`（伦敦吃喝玩乐），上线前必须换专用运营群**
-- [ ] 部署：bot 与 worker 两个进程常驻，崩溃自动重启，日志落盘 —— **未做，需先定部署目标**（VPS + systemd / docker compose / 托管平台）。另见下方「Redis 实例隐患」
+- [x] 部署：bot 与 worker 两个进程常驻，崩溃自动重启，日志落盘 —— 本机 macOS launchd，见 `deploy/local/`。**实测**：`install.sh` 后两服务 state=running；`kill -9` bot 后 15s 内自动拉起（pid 81824 → 81880），`logs/bot.log` 里两条 `bot started` 为证。局限见 `deploy/local/README.md`（node 路径钉死、单长轮询、合盖睡眠、日志不轮转）
 - [ ] `session-log` 类上传全部关闭：Agents SDK tracing 已替换 ✅（PoC V6 用 fetch + socket 双探针证明只联 api.deepseek.com，对照组能抓到默认 exporter 打 api.openai.com）；**Jev ZDR ❌ 未落实**，见下方专条
 - [x] cron 三个 job 在 Redis 里可见 —— 2026-09-22 实测 `getJobSchedulers()` 返回 `redact_messages`(6h)、`expire_demands`(24h)、`expire_run_states`(1h)，Redis 中有对应 `bull:cron:repeat:*` key
 
