@@ -15,7 +15,7 @@
 
 ## B. 数据就绪
 
-- [ ] `suppliers` 录入 Brief §3 的 30 家 B 池 —— **机制已就绪**：`scripts/seed/seed.ts` + `data.example.json`，zod 校验、幂等 upsert、`--dry-run` 预览，已实测写入/重跑/清理。**当前 0 行，等真实业务数据**
+- [x] `suppliers` 录入 Brief §3 的 30 家 B 池 —— **已录入 30 家**（man_and_van / eot_cleaning / furniture_service 各 10）。数据**不是抓来的**：Brief §3 的表格本身就有全部字段，用 `scripts/seed/extract-brief.ts` 直接抽出（含 30 个官网超链接），再经 `seed.ts` 写库。`lastVerifiedAt` 取 Brief 版本日期 2026-09-21 而非 now。实测 matcher 在 E14/SW6/N1 三个品类都能取到候选并正常打分
 - [ ] A 池转化：≥ 3 家 `isWillingToReceiveLeads = true` —— 需 BD 沟通。seed 脚本已强制校验「A 池必须有 telegram 或 whatsapp」，缺失即整体中止
 - [ ] `groups` 表：首批 8 个群登记 —— 机制同上；seed 的 `isActive` **默认 false**，需管理员同意后手动开（PRD §6.2）。当前 0 行
 - [ ] `@adslondon` 不进 Bot，走管理员 BD（Brief §4 特殊处理）

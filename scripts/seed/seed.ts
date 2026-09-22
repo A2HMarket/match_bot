@@ -31,6 +31,8 @@ const supplierSchema = z.object({
   sourceUrl: z.string().nullish(),
   pool: z.enum(['A', 'B']).default('B'),
   isWillingToReceiveLeads: z.boolean().default(false),
+  // 核实日期。matcher 按 60 天判 stale 降权，留空等于永远算过期，所以录入时必须给。
+  lastVerifiedAt: z.iso.date().nullish(),
 });
 
 const groupSchema = z.object({
@@ -78,8 +80,12 @@ try {
     const existing = await prisma.supplier.findFirst({
       where: { category: s.category, name: s.name },
     });
-    if (existing) await prisma.supplier.update({ where: { id: existing.id }, data: s });
-    else await prisma.supplier.create({ data: s });
+    const data = {
+      ...s,
+      lastVerifiedAt: s.lastVerifiedAt ? new Date(`${s.lastVerifiedAt}T00:00:00Z`) : null,
+    };
+    if (existing) await prisma.supplier.update({ where: { id: existing.id }, data });
+    else await prisma.supplier.create({ data });
   }
   for (const g of data.groups) {
     await prisma.group.upsert({
