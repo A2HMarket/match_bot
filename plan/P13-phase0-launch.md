@@ -66,10 +66,12 @@ AGENTS.md §6 要求「Jev 请求带 Zero Data Retention」。`packages/jev/src/
 - [ ] Day 6 用 Shadow 数据校准阈值（`packages/gating/src/thresholds.ts`），附评测对比
 - [ ] 抽检 ≥ 100 条 `dry_run` 拟发内容，标注"可以发 / 不该发 / 需改"，记录比例
 - [ ] 确认无一条 `outbound_messages.status = sent`
+- 2026-09-23 链路自检：向队列注入一条模拟群消息，worker 7.7s 内走完 代码门 → Jev（isDemand 0.95）→ agent 4 轮（upsert_demand / find_suppliers / find_peer_supply / reply_in_group）→ 出站门 `dry_run`，拟发 3 家候选。测试数据已清除。**Telegram → bot 入队这一段仍待真实群消息验证**
 
 ## E. Phase 1 放行前置
 
 - [ ] 运营群建好，审批卡收发验证过（P11 Task 3 冒烟）
+  - 2026-09-23：`apps/bot` 已注册审批按钮回调（此前是 `TODO(P9)`，卡能发出但按钮无人处理）。只认运营群来源；处理后去掉按钮并盖戳「✅ 已批准 · @谁」，重复点击提示已失效。另补 `bot.catch`，单条 update 出错不再停掉整个轮询。**真机点按钮未验证**：需一个 Phase 1 群产生真实中断
 - [ ] 至少 1 个群管理员书面同意 Bot 回复
 - [ ] Intent precision ≥ 0.9，沉默正确率 ≥ 0.95（PRD §9）
 - [ ] 抽检"可以发"比例 ≥ 70%

@@ -29,5 +29,7 @@ export function createInboundHandler(p: {
       if (!group.isActive) return;
     }
     await enqueue(p.queues, msg);
+    // 只记定位信息，不记正文（AGENTS.md §6）
+    p.logger.info({ chatId: msg.chatId, messageId: msg.messageId }, 'inbound enqueued');
   };
 }

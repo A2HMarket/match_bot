@@ -2,7 +2,8 @@ import { createTelegramSender } from '@matchbot/channel-telegram';
 import { createRepositories, disconnectPrisma, getPrisma } from '@matchbot/db';
 import { closeQueues, createQueues } from '@matchbot/queue';
 import { createLogger, loadEnv } from '@matchbot/shared';
-import { Bot } from 'grammy';
+import { Bot, GrammyError, HttpError } from 'grammy';
+import { createApprovalCallbackHandler } from './approval-callback.js';
 import { createInboundHandler } from './inbound.js';
 import { startOutboundLoop } from './outbound-loop.js';
 
@@ -15,7 +16,37 @@ const me = await bot.api.getMe();
 
 const inbound = createInboundHandler({ botId: me.id, repos, queues, logger: log });
 bot.on('message:text', (ctx) => inbound(ctx.update));
-// TODO(P9): approval 包完成后在此 registerApprovalCallbacks({ bot, repos, queues, opsChatId: env.TELEGRAM_OPS_CHAT_ID })
+
+const onApproval = createApprovalCallbackHandler({
+  repos,
+  queues,
+  opsChatId: env.TELEGRAM_OPS_CHAT_ID,
+  logger: log,
+});
+bot.on('callback_query:data', async (ctx) => {
+  const q = ctx.callbackQuery;
+  const r = await onApproval({
+    data: q.data,
+    chatId: q.message?.chat.id,
+    reviewer: q.from.username ? `@${q.from.username}` : `tg:${q.from.id}`,
+  });
+  // 必须 answer，否则运营那边按钮会一直转圈
+  await ctx.answerCallbackQuery({ text: r.toast });
+  // 处理过的卡去掉按钮并盖戳，防止重复点击，也让群里其他运营看到结论
+  if (r.stamp && q.message && 'text' in q.message && q.message.text) {
+    await ctx.editMessageText(`${q.message.text}\n\n${r.stamp}`, {
+      reply_markup: { inline_keyboard: [] },
+    });
+  }
+});
+
+// 不装 catch 时 grammY 遇到任一 update 抛错就会停止轮询；这里只记日志，继续收后面的消息
+bot.catch((err) => {
+  const e = err.error;
+  const kind =
+    e instanceof GrammyError ? 'telegram' : e instanceof HttpError ? 'network' : 'handler';
+  log.error({ updateId: err.ctx.update.update_id, kind, err: e }, 'update failed');
+});
 const stopLoop = startOutboundLoop({
   repos,
   sender: createTelegramSender({ bot, logger: log }),
