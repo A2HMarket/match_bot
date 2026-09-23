@@ -10,6 +10,8 @@ export function outboundRepo(prisma: PrismaClient) {
           target: draft.target,
           text: draft.text,
           toolCallId: draft.toolCallId ?? null,
+          replyToMessageId: draft.replyToMessageId ?? null,
+          mentionUserId: draft.mentionUserId ?? null,
           status,
         },
       });

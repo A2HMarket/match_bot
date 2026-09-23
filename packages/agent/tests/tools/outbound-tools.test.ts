@@ -11,7 +11,8 @@ const NO_TG = { id: 'b', name: 'NoTelegram Ltd', roughPrice: null, telegram: nul
 
 function deps(goodVerdict = true) {
   return {
-    env: { TELEGRAM_OPS_CHAT_ID: '-100ops' },
+    // 四阶段用例验证「有人值守」语义；无人值守（drop）见下方专门用例
+    env: { TELEGRAM_OPS_CHAT_ID: '-100ops', OUTBOUND_UNSURE_ACTION: 'review' },
     repos: {
       outbound: {
         create: vi.fn((d: unknown, status: string) =>
@@ -47,6 +48,7 @@ function makeCtx(phase: 0 | 1 | 2): MatchContext {
     phase,
     recentReplies: [],
     sourceMessageId: 'm1',
+    source: { messageId: '77', userId: '42' },
     demand: { category: 'man_and_van', confidence: 0.9 },
   };
 }
@@ -63,7 +65,7 @@ const cases = [
     name: 'notify_user',
     make: notifyUserTool,
     args: { text: 'Found a van for you' },
-    target: 'u1',
+    target: '42', // 渠道侧 user id，不是库内 userId（u1）
   },
   {
     name: 'ask_clarification',
@@ -143,5 +145,63 @@ describe('push_lead without supplier telegram', () => {
       'dry_run',
     );
     expect(out).toContain('ops will send manually');
+  });
+});
+
+describe('group replies address the asker', () => {
+  it.each([
+    [
+      'ask_clarification',
+      askClarificationTool,
+      { question: '什么时候搬？', missingFields: ['whenAt'] },
+    ],
+    ['reply_in_group', replyInGroupTool, { text: 'Two options', supplierIds: ['a'] }],
+  ] as const)(
+    '%s replies to the source message and @mentions its author',
+    async (_n, make, args) => {
+      const d = deps();
+      await make(d as never).invoke(rc(makeCtx(0)), JSON.stringify(args));
+      expect(d.repos.outbound.create).toHaveBeenCalledWith(
+        expect.objectContaining({ target: '-1', replyToMessageId: '77', mentionUserId: '42' }),
+        'dry_run',
+      );
+    },
+  );
+
+  it('does not @mention in a private chat', async () => {
+    const d = deps();
+    const ctx = { ...makeCtx(0), chatId: '42', groupId: null };
+    await askClarificationTool(d as never).invoke(
+      rc(ctx),
+      JSON.stringify({ question: 'When?', missingFields: ['whenAt'] }),
+    );
+    const [row] = d.repos.outbound.create.mock.calls[0] as unknown as [Record<string, unknown>];
+    expect(row).toMatchObject({ replyToMessageId: '77' });
+    expect(row).not.toHaveProperty('mentionUserId');
+  });
+});
+
+describe('notify_user without a channel user id', () => {
+  it('refuses instead of sending to the internal id', async () => {
+    const d = deps();
+    const { source: _s, ...ctx } = makeCtx(0);
+    const out = await notifyUserTool(d as never).invoke(rc(ctx), JSON.stringify({ text: 'hi' }));
+    expect(out).toContain('channel id is unknown');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('unattended phase 2 (OUTBOUND_UNSURE_ACTION = drop)', () => {
+  it('a weak verdict neither interrupts nor writes anything', async () => {
+    const d = {
+      ...deps(false),
+      env: { TELEGRAM_OPS_CHAT_ID: '-100ops', OUTBOUND_UNSURE_ACTION: 'drop' },
+    };
+    const t = replyInGroupTool(d as never);
+    const args = { text: 'Two options', supplierIds: ['a'] };
+    expect(await t.needsApproval(rc(makeCtx(2)), args as never, 'c1')).toBe(false);
+    const out = await t.invoke(rc(makeCtx(2)), JSON.stringify(args));
+    expect(out).toContain('not sent');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
   });
 });

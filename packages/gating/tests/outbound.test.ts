@@ -30,3 +30,24 @@ describe('decideOutbound', () => {
     expect(decideOutbound({ ...p, phase: p.phase as 0 | 1 | 2, t })).toBe(expected);
   });
 });
+
+describe('decideOutbound with onUnsure = drop (无人值守)', () => {
+  const unattended = { t, onUnsure: 'drop' as const };
+  it.each([
+    ['jev unavailable', { verdict: null, rateOk: true }],
+    ['rate exceeded', { verdict: good, rateOk: false }],
+    ['language doubtful', { verdict: { ...good, languageOk: 0.5 }, rateOk: true }],
+    [
+      'worth replying in the middle band',
+      { verdict: { ...good, worthReplying: 1.8 }, rateOk: true },
+    ],
+  ])('phase 2 does not send when unsure: %s', (_n, p) => {
+    expect(decideOutbound({ ...p, phase: 2, ...unattended })).toBe('drop');
+  });
+  it('still sends confident drafts', () => {
+    expect(decideOutbound({ phase: 2, verdict: good, rateOk: true, ...unattended })).toBe('auto');
+  });
+  it('does not change phase 1: a human-review phase is still reviewed', () => {
+    expect(decideOutbound({ phase: 1, verdict: good, rateOk: true, ...unattended })).toBe('review');
+  });
+});

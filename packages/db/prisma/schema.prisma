@@ -287,6 +287,8 @@ model OutboundMessage {
   text       String
   status     OutboundStatus @default(pending)
   toolCallId String?        @map("tool_call_id")
+  replyToMessageId String? @map("reply_to_message_id") // 群内回帖对应的原消息
+  mentionUserId    String? @map("mention_user_id")     // 发送时 @ 的用户；只存 id
   error      String?
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
   sentAt     DateTime?      @map("sent_at") @db.Timestamptz

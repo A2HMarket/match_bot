@@ -8,6 +8,7 @@ import {
 
 function deps() {
   return {
+    env: { OUTBOUND_UNSURE_ACTION: 'review' },
     repos: {
       outbound: {
         create: vi.fn((d: unknown, status: string) =>

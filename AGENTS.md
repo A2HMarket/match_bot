@@ -66,7 +66,7 @@ packages/eval         回放与指标
 2. **每一次模型调用、每一次门的决定都必须写 `decision_traces`**。没有 trace 的判断视为不存在。trace 里记 `latency_ms`、`cost_micro`、`phase`。
 3. **所有出站动作都是 `tool()`，所有出站工具都有 `needsApproval`**，且实现为 `packages/gating` 的阶段判断加 `packages/jev` 的出站评估加频控。任何直接调用 `bot.api.sendMessage` 绕过出站表的代码都是违规；出站只允许写 `outbound_messages`，由 `apps/bot` 消费。
 4. **Phase 0 不发任何消息**。出站工具在 Phase 0 必须把状态停在 `dry_run`。这条在 `packages/gating` 里实现一次，工具里不得各自判断。
-5. **Jev 不可用时的降级方向固定**：入站按"不进 agent"，出站按"送审"。永远不因为 Jev 挂了而自动发消息。
+5. **Jev 不可用时的降级方向固定**：入站按"不进 agent"，出站按"不自动发"——有人值守时送审，无人值守（`OUTBOUND_UNSURE_ACTION=drop`，当前默认）时直接不发。永远不因为 Jev 挂了而自动发消息。
 6. **`RunState` 快照消费必须原子**：`run_states.status` 由 `pending` 到 `consumed` 用条件更新（`UPDATE … WHERE status = 'pending'`），更新行数为 0 即放弃恢复。快照只从服务端存储反序列化，永远不接受客户端传来的快照。
 7. **Session 粒度是用户**，不是群，不是消息。群上下文与用户画像通过 instructions 注入，不塞进 session。
 8. **`process.env` 只在 `packages/shared` 的 `loadEnv()` 里读一次**，其他地方通过传入的 `Env` 对象取值。

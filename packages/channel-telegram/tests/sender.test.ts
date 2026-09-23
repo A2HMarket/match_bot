@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createTelegramSender, TelegramSendError } from '../src/sender.js';
+import { createTelegramSender, TelegramSendError, withMention } from '../src/sender.js';
 
 const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } as never;
 const msg = {
@@ -9,6 +9,8 @@ const msg = {
   text: 'hi',
   status: 'pending',
   toolCallId: null,
+  replyToMessageId: null,
+  mentionUserId: null,
   error: null,
   createdAt: new Date(),
   sentAt: null,
@@ -29,5 +31,54 @@ describe('createTelegramSender', () => {
     await expect(
       createTelegramSender({ bot: { api: { sendMessage } } as never, logger }).send(msg),
     ).rejects.toBeInstanceOf(TelegramSendError);
+  });
+});
+
+describe('group replies', () => {
+  const reply = { ...(msg as object), replyToMessageId: '77', mentionUserId: '42' } as never;
+  const member = (user: object) => vi.fn(() => Promise.resolve({ status: 'member', user }));
+
+  it('replies to the source message and @mentions an author who has a username', async () => {
+    const sendMessage = vi.fn(() => Promise.resolve({ message_id: 1 }));
+    const getChatMember = member({ id: 42, is_bot: false, first_name: 'Ann', username: 'ann_l' });
+    await createTelegramSender({
+      bot: { api: { sendMessage, getChatMember } } as never,
+      logger,
+    }).send(reply);
+    expect(getChatMember).toHaveBeenCalledWith(-100, 42);
+    expect(sendMessage).toHaveBeenCalledWith(
+      -100,
+      '@ann_l hi',
+      expect.objectContaining({
+        reply_parameters: { message_id: 77, allow_sending_without_reply: true },
+      }),
+    );
+  });
+
+  it('falls back to a plain reply when the author cannot be looked up', async () => {
+    const sendMessage = vi.fn(() => Promise.resolve({ message_id: 1 }));
+    const getChatMember = vi.fn(() => Promise.reject(new Error('400: user not found')));
+    await createTelegramSender({
+      bot: { api: { sendMessage, getChatMember } } as never,
+      logger,
+    }).send(reply);
+    const [, text, opts] = sendMessage.mock.calls[0] as unknown as [number, string, object];
+    expect(text).toBe('hi');
+    expect(opts).toHaveProperty('reply_parameters');
+    expect(opts).not.toHaveProperty('entities');
+  });
+});
+
+describe('withMention', () => {
+  it('uses a text_mention entity when the author has no username', () => {
+    const r = withMention('请问什么时候搬？', { id: 42, first_name: '小王' });
+    expect(r.text).toBe('小王 请问什么时候搬？');
+    const [e] = r.entities ?? [];
+    expect(e).toMatchObject({ type: 'text_mention', offset: 0, length: 2 });
+    expect(e?.type === 'text_mention' ? e.user.id : null).toBe(42);
+  });
+  it('measures the entity in UTF-16 units so emoji names do not shift the mention', () => {
+    const r = withMention('hi', { id: 1, first_name: '🙂Li' });
+    expect(r.entities?.[0]?.length).toBe(4);
   });
 });

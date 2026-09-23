@@ -24,7 +24,7 @@ PHASES / Phase
 isServiceCategory(c: DemandCategory): boolean
 demandDraftSchema / DemandDraft   // { category, whenText?, whenAt?(ISO), fromPostcode?, toPostcode?, quantity?, budgetPence?, lang?, confidence }
 supplyDraftSchema / SupplyDraft   // { category, availability?, area?, expiresAt(ISO) }
-outboundDraftSchema / OutboundDraft // { channel, target, text, toolCallId? }
+outboundDraftSchema / OutboundDraft // { channel, target, text, toolCallId?, replyToMessageId?, mentionUserId? }（后两者为渠道侧 id，2026-09-23 加）
 TRACE_KINDS / TraceKind           // 'rule' | 'jev' | 'agent_run' | 'gate'
 decisionTraceInputSchema / DecisionTraceInput // { kind, inputRef, output: unknown, phase, latencyMs, costMicro? }
 INBOUND_QUESTION_IDS = ['is_demand','is_supply','category','urgency','has_location','is_sensitive','is_move_event'] as const
@@ -163,7 +163,7 @@ type InboundDecision =
   | { action: 'drop'; reason: 'sensitive' | 'not_demand' }
   | { action: 'tag_move_event' }           // 非服务品类（含 other）且 isMoveEvent 高，仅打标签用于观测
   | { action: 'enter_agent'; category: DemandCategory; kind: 'demand' | 'supply' | 'both' }
-decideOutbound(p: { phase: Phase; verdict: OutboundVerdict | null; rateOk: boolean; t: Thresholds }): OutboundDecision
+decideOutbound(p: { phase: Phase; verdict: OutboundVerdict | null; rateOk: boolean; t: Thresholds; onUnsure?: 'review' | 'drop' }): OutboundDecision  // Phase 2 拿不准时的去向，缺省 review；worker 取 env.OUTBOUND_UNSURE_ACTION（默认 drop）
 type OutboundDecision = 'dry_run' | 'review' | 'auto' | 'drop'
 createRateLimiter(outbound: Repositories['outbound']): { check(p: { target: string; limitPerDay: number; now: Date }): Promise<boolean> }
 isBlacklisted(text: string): boolean     // 换汇 / 虚拟币 / 代付 关键词表
@@ -194,7 +194,7 @@ parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' |
 AGENT_VERSION: string                          // 已有，改 instructions/工具描述时递增
 createMatchAgent(deps: AgentDeps): { agent: Agent<MatchContext>; runner: Runner }
 interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; modelProvider?: ModelProvider }
-interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; demandId?: string; demand?: DemandDraft; recentReplies: string[] }
+interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; demandId?: string; demand?: DemandDraft; recentReplies: string[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标
 runInbound(p: { deps: AgentDeps; ctx: MatchContext; input: string }): Promise<RunOutcome>
 resumeRun(p: { deps: AgentDeps; runState: RunState; approval: Approval }): Promise<RunOutcome>
 type RunOutcome =

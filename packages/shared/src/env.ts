@@ -20,6 +20,9 @@ export const envSchema = z.object({
   // run_states.snapshot 落库加密口令（AGENTS.md §6）。Phase 0 无审批中断用不到，故 optional；
   // 一旦进入 Phase 1（产生中断快照）就必须配置，否则 runInbound 在写快照时报错。
   SNAPSHOT_KEY: z.string().min(16).optional(),
+  // Phase 2 里出站门拿不准（分数居中 / Jev 不可用 / 触发频控）时怎么办。
+  // drop = 不发，无人值守时用；review = 送运营群审批，有人值守时用。
+  OUTBOUND_UNSURE_ACTION: z.enum(['drop', 'review']).default('drop'),
 });
 
 export type Env = z.infer<typeof envSchema>;

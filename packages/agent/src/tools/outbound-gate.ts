@@ -12,7 +12,9 @@ export interface OutboundDraftInput {
   /** 附加在工具返回值末尾的说明（如 push_lead 的人工转达提示）。 */
   resultNote?: string;
   /** 是否附免责。只有向用户推荐商家的草稿（reply_in_group）需要，追问与线索不需要。 */
-  disclaimer?: boolean;
+  disclaimer?: boolean; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
+  replyToMessageId?: string;
+  mentionUserId?: string;
 }
 
 /**
@@ -80,7 +82,13 @@ export async function decideForOutbound(
       now: new Date(),
     });
   }
-  const decision = decideOutbound({ phase: ctx.phase, verdict, rateOk, t: deps.thresholds });
+  const decision = decideOutbound({
+    phase: ctx.phase,
+    verdict,
+    rateOk,
+    t: deps.thresholds,
+    onUnsure: deps.env.OUTBOUND_UNSURE_ACTION,
+  });
   await deps.repos.traces.create({
     kind: 'gate',
     inputRef: d.inputRef,
@@ -114,6 +122,8 @@ export async function executeOutbound(
       target: d.target,
       text: d.disclaimer ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text)}` : d.text,
       ...(d.toolCallId ? { toolCallId: d.toolCallId } : {}),
+      ...(d.replyToMessageId ? { replyToMessageId: d.replyToMessageId } : {}),
+      ...(d.mentionUserId ? { mentionUserId: d.mentionUserId } : {}),
     },
     status,
   );

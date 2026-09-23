@@ -12,6 +12,11 @@ export interface MatchContext {
   groupId: string | null;
   phase: Phase;
   sourceMessageId: string;
+  /**
+   * 触发这次 run 的那条消息在渠道侧的 id 与作者 id（sourceMessageId / userId 是库内 id）。
+   * 群内回帖用它回复原消息并 @ 作者；私聊回复发给这个作者。可选：旧快照里没有。
+   */
+  source?: { messageId: string; userId: string };
   demandId?: string;
   demand?: DemandDraft;
   recentReplies: string[];

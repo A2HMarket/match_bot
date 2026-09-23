@@ -32,5 +32,9 @@ export const outboundDraftSchema = z.object({
   target: z.string().min(1),
   text: z.string().min(1).max(4000),
   toolCallId: z.string().optional(),
+  /** 群内回帖时回复的那条原消息（渠道侧 message id）。 */
+  replyToMessageId: z.string().optional(),
+  /** 发送时要 @ 的用户（渠道侧 user id）。只存 id，名字由发送端现查，不落库（AGENTS.md §6）。 */
+  mentionUserId: z.string().optional(),
 });
 export type OutboundDraft = z.infer<typeof outboundDraftSchema>;

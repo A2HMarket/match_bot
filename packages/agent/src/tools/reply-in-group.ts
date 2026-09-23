@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AgentDeps } from '../context.js';
+import { groupReplyAddressing } from './addressing.js';
 import { makeOutboundTool } from './make-outbound-tool.js';
 
 export const replyInGroupParams = z.object({
@@ -35,6 +36,7 @@ export function replyInGroupTool(deps: AgentDeps) {
         supplierSummaries: suppliers.map((s) => `${s.name} ${s.roughPrice ?? ''}`.trim()),
         inputRef: ctx.sourceMessageId,
         disclaimer: true,
+        ...groupReplyAddressing(ctx),
       };
     },
   });

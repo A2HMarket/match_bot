@@ -141,6 +141,7 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     groupId: group?.id ?? null,
     phase,
     sourceMessageId: stored.id,
+    source: { messageId: msg.messageId, userId: msg.userId },
     recentReplies: [],
     ...(open ? { demandId: open.id, demand: toDemandDraft(open) } : {}),
   };
