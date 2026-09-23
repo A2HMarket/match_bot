@@ -1,6 +1,10 @@
 import { DEFAULT_THRESHOLDS } from '@matchbot/gating';
 import { describe, expect, it, vi } from 'vitest';
-import { decideForOutbound, executeOutbound } from '../../src/tools/outbound-gate.js';
+import {
+  decideForOutbound,
+  disclaimerFor,
+  executeOutbound,
+} from '../../src/tools/outbound-gate.js';
 
 function deps() {
   return {
@@ -70,7 +74,12 @@ describe('decideForOutbound', () => {
 describe('executeOutbound', () => {
   it('writes dry_run row in phase 0 and pending row otherwise, with disclaimer appended', async () => {
     const d = deps();
-    await executeOutbound(d as never, ctx(0), { ...draft, toolCallId: 'c1' }, 'dry_run');
+    await executeOutbound(
+      d as never,
+      ctx(0),
+      { ...draft, toolCallId: 'c1', disclaimer: true },
+      'dry_run',
+    );
     await executeOutbound(d as never, ctx(2), { ...draft, toolCallId: 'c2' }, 'auto');
     const create = d.repos.outbound.create;
     const first = create.mock.calls[0] as unknown[];
@@ -80,10 +89,48 @@ describe('executeOutbound', () => {
     expect(first[1]).toBe('dry_run');
     expect(create).toHaveBeenNthCalledWith(2, expect.anything(), 'pending');
   });
+  it('adds no disclaimer to drafts that recommend nobody (clarifying questions)', async () => {
+    const d = deps();
+    await executeOutbound(
+      d as never,
+      ctx(0),
+      { ...draft, text: '请问您大概什么时候搬？', supplierSummaries: [] },
+      'dry_run',
+    );
+    const [row] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(row.text).toBe('请问您大概什么时候搬？');
+  });
+  it('localises the disclaimer to a Chinese reply', async () => {
+    const d = deps();
+    await executeOutbound(
+      d as never,
+      ctx(0),
+      { ...draft, text: '这几个 van 可以参考', disclaimer: true },
+      'dry_run',
+    );
+    const [row] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(row.text).toBe('这几个 van 可以参考\n\n请直接联系商家确认报价与档期，我们不参与交易。');
+  });
   it('drop writes nothing', async () => {
     const d = deps();
     const r = await executeOutbound(d as never, ctx(2), draft, 'drop');
     expect(r).toContain('not sent');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('disclaimerFor', () => {
+  it('prefers the language recorded on the demand', () => {
+    expect(disclaimerFor('uk', 'text')).toContain('ми не беремо участі');
+    expect(disclaimerFor('pt', 'text')).toContain('não fazemos parte');
+  });
+  it('detects Chinese from the text when the demand has no language', () => {
+    expect(disclaimerFor(undefined, '周六有人有 van 吗')).toContain('我们不参与交易');
+  });
+  it('falls back to English rather than guessing Russian vs Ukrainian from Cyrillic', () => {
+    expect(disclaimerFor(undefined, 'Потрібен фургон')).toContain('not part of the transaction');
+  });
+  it('falls back to English for a language it has no text for', () => {
+    expect(disclaimerFor('fr', 'bonjour')).toContain('not part of the transaction');
   });
 });

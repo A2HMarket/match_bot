@@ -20,7 +20,7 @@ const DATABASE_URL =
 // Jev 与模型都是 stub，所以这里的 key 只是占位，不会被用来联网。
 const env = envSchema.parse({
   DATABASE_URL,
-  REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  REDIS_URL: process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/15', // 与线上 0 号库隔离
   DEEPSEEK_API_KEY: 'test',
   JEV_API_KEY: 'test',
   TELEGRAM_BOT_TOKEN: 'test',

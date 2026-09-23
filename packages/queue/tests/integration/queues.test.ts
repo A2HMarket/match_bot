@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeQueues, createQueues, enqueueInbound, type Queues } from '../../src/queues.js';
 
-const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
+// 固定用 15 号库：本机部署的 bot/worker 用 0 号库，测试里的 obliterate 会清空整条队列，
+// 共用一个库时跑一次 pnpm check 就会吞掉线上还没处理的群消息。
+const redisUrl = process.env.TEST_REDIS_URL ?? 'redis://localhost:6379/15';
 let q: Queues;
 beforeAll(() => {
   q = createQueues(redisUrl);

@@ -11,10 +11,31 @@ export interface OutboundDraftInput {
   toolCallId?: string;
   /** 附加在工具返回值末尾的说明（如 push_lead 的人工转达提示）。 */
   resultNote?: string;
+  /** 是否附免责。只有向用户推荐商家的草稿（reply_in_group）需要，追问与线索不需要。 */
+  disclaimer?: boolean;
 }
 
-/** PRD §3.3：平台不经手交易，每条出站都带免责。 */
-const DISCLAIMER = '\n\nContact them directly for a quote — we are not part of the transaction.';
+/**
+ * PRD F7 / §6.3：推荐商家的群内回复末尾固定一句免责，中文取 PRD 原文。
+ * 此前是所有出站都附一句英文，连「请问您什么时候搬？」这种追问后面也挂着
+ * 「直接联系他们报价」——没有「他们」，而且中文对话后面跟英文。
+ */
+const DISCLAIMERS: Record<string, string> = {
+  zh: '请直接联系商家确认报价与档期，我们不参与交易。',
+  en: 'Please contact the suppliers directly to confirm price and availability — we are not part of the transaction.',
+  ru: 'Цену и время уточняйте напрямую у исполнителя — мы не участвуем в сделке.',
+  uk: 'Ціну та час уточнюйте безпосередньо у виконавця — ми не беремо участі в угоді.',
+  pt: 'Confirme preço e disponibilidade diretamente com o fornecedor — não fazemos parte da transação.',
+};
+
+/**
+ * 语言优先用需求上记录的 lang；没有就只凭汉字判中文。西里尔字母不猜俄/乌——
+ * 给乌克兰用户回俄语比回英语糟得多，猜不准就落到英语。
+ */
+export function disclaimerFor(lang: string | undefined, text: string): string {
+  const key = lang && DISCLAIMERS[lang] ? lang : /\p{Script=Han}/u.test(text) ? 'zh' : 'en';
+  return DISCLAIMERS[key]!;
+}
 
 /** PRD §6.2「一个群一天三次就是广告机器人」。群级覆盖留待 group_configs 落地后接入。 */
 const OUTBOUND_LIMIT_PER_DAY = 3;
@@ -91,7 +112,7 @@ export async function executeOutbound(
     {
       channel: 'telegram',
       target: d.target,
-      text: d.text + DISCLAIMER,
+      text: d.disclaimer ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text)}` : d.text,
       ...(d.toolCallId ? { toolCallId: d.toolCallId } : {}),
     },
     status,

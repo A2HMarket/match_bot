@@ -12,7 +12,12 @@ const params = z.object({
     .max(200)
     .nullable()
     .describe('When the service is needed, as the user said it'),
-  whenAt: z.string().nullable().describe('ISO 8601 datetime, only if the time is known precisely'),
+  whenAt: z
+    .string()
+    .nullable()
+    .describe(
+      'UTC ISO 8601 datetime such as 2026-09-27T09:00:00Z. Resolve relative days ("next Saturday", "下周六") against today\'s date; use 09:00 if no time was given. Null only if the day itself is unclear.',
+    ),
   fromPostcode: z
     .string()
     .max(20)
