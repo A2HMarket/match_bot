@@ -1,5 +1,5 @@
 /**
- * 访问 30 家供应商的官网，核实并补全联系方式、服务区域与评价。
+ * 访问 30 家供应商的官网，核实电话、补全邮箱与 WhatsApp；评分/评价数只报候选。
  *
  *   pnpm exec tsx scripts/seed/enrich-suppliers.ts scripts/seed/data.json
  *
@@ -9,6 +9,9 @@
  *
  * 合并原则：Brief §3 是人工整理过的，**不被自动结果覆盖**；官网只用于补空缺，
  * 以及修正那些本来就是猜的字段（whatsapp 之前是拿电话凑的）。
+ *
+ * 流水线：extract-brief.ts → enrich-suppliers.ts（自动、可精确比对的字段）
+ *        → apply-verification.ts（人工核实表，优先级最高）→ seed.ts
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -94,16 +97,28 @@ function extract(html: string) {
   ]
     .map((m) => m.replace(/\D/g, ''))
     .map((d) => (d.startsWith('44') ? '0' + d.slice(2) : d));
-  const postcodes = [...new Set(plain.match(/\b([EWNS][CEWN]?\d{1,2})\b(?=[\s,.)]|$)/g) ?? [])];
-  const ratingM = plain.match(/(\d\.\d)\s*(?:\/\s*5|out of 5|star)/i);
-  const countM = plain.match(/([\d,]{2,9})\s*(?:\+\s*)?(?:reviews?|ratings?|customers?)/i);
+  // 只认**点名了平台**的评价（"4.9 Google rating · 253 reviews"）。不点名的
+  // "Over 600 Reviews Five Stars" 是自我宣称；"13,972 happy customers" 根本不是评价；
+  // 早先的宽松正则甚至把电话尾号 8571 当成了评价数。
+  const PLATFORM = '(?:Google|Trustpilot|Checkatrade|Trustindex|Yell)';
+  const ratingM = plain.match(
+    new RegExp(
+      `${PLATFORM}[^.¶]{0,20}?(\\d\\.\\d)|(\\d\\.\\d)\\s*(?:★|stars?)?\\s*(?:on\\s+)?${PLATFORM}`,
+      'i',
+    ),
+  );
+  const countM = plain.match(
+    new RegExp(
+      `(\\d[\\d,]{0,6})\\+?\\s*${PLATFORM}\\s+reviews|${PLATFORM}[^.¶]{0,40}?(\\d[\\d,]{0,6})\\+?\\s+reviews`,
+      'i',
+    ),
+  );
   return {
     phones,
     email: emails[0] ?? null,
     whatsapp: wa[0] ?? null,
-    postcodes,
-    rating: ratingM ? Number(ratingM[1]) : null,
-    reviewCount: countM ? Number(countM[1]!.replace(/,/g, '')) : null,
+    rating: ratingM ? Number(ratingM[1] ?? ratingM[2]) : null,
+    reviewCount: countM ? Number((countM[1] ?? countM[2])!.replace(/,/g, '')) : null,
   };
 }
 
@@ -155,18 +170,12 @@ for (const [i, s] of file.suppliers.entries()) {
     s.whatsapp = e.whatsapp;
     got.push('whatsapp✎');
   }
-  if (e.postcodes.length >= 3 && s.serviceArea.join() === 'LONDON') {
-    s.serviceArea = [...e.postcodes.slice(0, 12), 'LONDON'];
-    got.push(`area+${e.postcodes.length}`);
-  }
-  if (e.rating && e.rating >= 1 && e.rating <= 5) {
-    s.rating = e.rating;
-    got.push(`rating ${e.rating}`);
-  }
-  if (e.reviewCount && e.reviewCount >= 3) {
-    s.reviewCount = e.reviewCount;
-    got.push(`reviews ${e.reviewCount}`);
-  }
+  // 页面上出现的邮编（地址、博客、案例）不等于覆盖范围，不据此改 serviceArea；
+  // 写明了服务片区的商家在 verified.json 里人工收窄。
+  // 评分/评价数只作为**候选**进报告，不写数据：同一套正则在 30 家上仍有误报（抓到
+  // 页面上某条案例的数字），这类需要判断的字段由 verified.json 人工定。
+  if (e.rating) got.push(`rating? ${e.rating}`);
+  if (e.reviewCount) got.push(`reviews? ${e.reviewCount}`);
   report.push(`${String(i + 1).padStart(2)}. ${s.name}: ${got.join(' ') || '无新增'}`);
 }
 

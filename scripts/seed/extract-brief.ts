@@ -91,16 +91,13 @@ const CATEGORY: Record<string, (typeof DEMAND_CATEGORIES)[number]> = {
   'Furniture / Removal': 'furniture_service',
 };
 
-/** 从「特点」「价格」列里挖 outward code；挖不到但提到全伦敦就记 LONDON */
-function serviceArea(...cells: string[]): string[] {
-  const text = cells.join(' ');
-  const codes = [...text.matchAll(/\b([EWNS][ECWN]?\d{1,2})\b/g)].map((m) => m[1]!);
-  const londonWide = /Greater London|London-wide|全 ?London|全伦敦|全部 ?London|32 boroughs/i.test(
-    text,
-  );
-  const out = [...new Set(codes)];
-  if (londonWide || out.length === 0) out.push('LONDON');
-  return out;
+/**
+ * Brief「特点」列里的 outward code 是**商家所在地**（"E14；07:00-00:00"），不是服务范围。
+ * 当成服务范围会让 matcher 的 coversArea 把 E14 以外的需求全部排除，所以它进
+ * basePostcode；服务范围默认全伦敦，只有官网写明了片区才收窄（见 verified.json）。
+ */
+function basePostcode(feature: string): string | null {
+  return feature.match(/\b([EWNS][ECWN]?\d{1,2})\b/)?.[1] ?? null;
 }
 
 function priceType(price: string): 'hourly' | 'fixed' | 'quote' | null {
@@ -156,7 +153,8 @@ const suppliers = rows.slice(1).map((r) => {
     telegram: null,
     website,
     sourceUrl: website,
-    serviceArea: serviceArea(feature, price),
+    serviceArea: ['LONDON'],
+    basePostcode: basePostcode(feature),
     priceType: priceType(price),
     roughPrice: price || null,
     isSameDay: /same-?day|24\/7|365/i.test(feature),

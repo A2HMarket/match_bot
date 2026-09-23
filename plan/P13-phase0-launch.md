@@ -22,6 +22,14 @@
   - 官网 29/30（Brief 里 17 家原本填的是 Google 搜索链接，用浏览器同源检索补到 16 家真实站）
   - 评价数 11 家、评分 2 家
   - ⚠ **6 家标记「归属存疑」未采信**：搜到的站上找不到 Brief 记录的电话，可能不是同一家；另有 1 家（London Furniture Assembly）只匹配到 `.ca` 域名（疑似加拿大 London），未填。**这 7 家需人工核**
+  - **2026-09-23 B 池精校**（`scripts/seed/apply-verification.ts` + gitignore 的 `verified.json`，每条改动附来源页与原文）：
+    - **修了一个匹配 bug**：Brief 里的邮编是**所在地**（「E14；07:00-00:00」），此前被当成服务范围，matcher 的 `coversArea` 会把 E14 以外的需求全部排除。现进 `basePostcode`（11 家），服务范围默认全伦敦。实测搬家品类 N1/SE1 需求的候选从 7 家恢复到 10 家
+    - 每家抓首页 + 联系/区域/评价子页（共 125 页）而非单页，另用浏览器核 JS 渲染站。**电话核实 19 → 28/30**
+    - 用 Brief **电话反查**代替名字搜索，7 家存疑里解决 5 家：The Man Van London 真站是 themanvan.co.uk；Flat Pack Assembly London 是 EM FlatPack（emflatpack.co.uk）；Busy Bee / Kensington Handyman / A1 原站是对的，号码在子页。D&C 此前匹配到的 ddccleaningservices.co.uk 实属 **Daily Domestic Cleaners (DDC) Ltd**，已撤回
+    - 评分/评价数只收**点名平台**或结构化数据的：9 家有评分、10 家有评价数。撤掉的包括「8571 条评价」（其实是电话尾号）、「13,972」（自我宣称）等。enrich 脚本不再自动写这两个字段，只报候选
+    - Kensington Handyman 按官网收窄到 W4/W6/W8/W11/W12；Good Old Clean 的 Brief 电话在官网不存在，改用官网号；Skycleaners 此前存的是页面上的个人 gmail，改为公司邮箱；Wizard Fix 的 Brief 链接已 404
+    - 同日/周末按官网正面陈述重判（排除差评里的 "same day"、"Call 24/7" 电话线等误报）
+    - **仍需人工 2 家**：D&C Cleaning Services（Brief 电话在公开网页无记录）、London Furniture Assembly（只有 Nextdoor 登记）。二者 `lastVerifiedAt` 保留 Brief 日期，60 天后自然降权
 - [ ] A 池转化：≥ 3 家 `isWillingToReceiveLeads = true` —— 需 BD 沟通。seed 脚本已强制校验「A 池必须有 telegram 或 whatsapp」，缺失即整体中止
 - [ ] `groups` 表：首批 8 个群登记 —— 机制同上；seed 的 `isActive` **默认 false**，需管理员同意后手动开（PRD §6.2）。当前 0 行
 - [ ] `@adslondon` 不进 Bot，走管理员 BD（Brief §4 特殊处理）
