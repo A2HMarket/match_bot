@@ -124,7 +124,7 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     return;
   }
 
-  const decision = decideInbound(verdict, d.thresholds);
+  const decision = decideInbound(verdict, d.thresholds, { addressedToBot: msg.addressedToBot });
   if (decision.action === 'drop') {
     await trace('gate', stored.id, {
       outcome: 'dropped_by_jev',
@@ -145,9 +145,12 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     return;
   }
 
-  const open = (await d.repos.demands.findOpenByUser(user.id)).find(
-    (x) => x.category === decision.category,
-  );
+  // 接话时 Jev 判的品类未必可靠（「谢谢」没有品类），取该用户最近一条未结需求
+  const openDemands = await d.repos.demands.findOpenByUser(user.id);
+  const open =
+    decision.kind === 'followup'
+      ? openDemands[0]
+      : openDemands.find((x) => x.category === decision.category);
   const ctx: MatchContext = {
     userId: user.id,
     chatId: msg.chatId,
@@ -156,6 +159,8 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     sourceMessageId: stored.id,
     source: { messageId: msg.messageId, userId: msg.userId },
     ...(group ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
+    ...(msg.addressedToBot ? { addressedToBot: true } : {}),
+    ...(msg.replyToBotText ? { replyToBotText: msg.replyToBotText } : {}),
     recentReplies: [],
     ...(open ? { demandId: open.id, demand: toDemandDraft(open) } : {}),
   };

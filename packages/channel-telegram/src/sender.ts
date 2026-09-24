@@ -1,7 +1,9 @@
 import type { OutboundMessage } from '@matchbot/db';
 import type { Logger } from '@matchbot/shared';
 import type { Bot } from 'grammy';
-import type { MessageEntity, User } from 'grammy/types';
+import type { MessageEntity, ReactionTypeEmoji, User } from 'grammy/types';
+
+type ReactionEmoji = ReactionTypeEmoji['emoji'];
 
 export class TelegramSendError extends Error {
   constructor(
@@ -58,6 +60,14 @@ export function createTelegramSender(p: { bot: Bot; logger: Logger }) {
     async send(m: OutboundMessage): Promise<void> {
       const chatId = Number(m.target);
       try {
+        if (m.kind === 'reaction') {
+          if (!m.replyToMessageId) throw new Error('reaction without a target message');
+          await p.bot.api.setMessageReaction(chatId, Number(m.replyToMessageId), [
+            { type: 'emoji', emoji: m.text as ReactionEmoji },
+          ]);
+          p.logger.info({ outboundMessageId: m.id, target: m.target }, 'reacted');
+          return;
+        }
         const user = m.mentionUserId ? await lookupUser(chatId, m.mentionUserId) : null;
         const body = user ? withMention(m.text, user) : { text: m.text };
         await p.bot.api.sendMessage(chatId, body.text, {

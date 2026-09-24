@@ -27,6 +27,7 @@
 | P12 | eval | [P12-eval.md](./P12-eval.md) | P8 | 3 | claude | 完成 | 直接提交 main | 2026-09-22 |
 | P13 | Phase 0 上线清单 | [P13-phase0-launch.md](./P13-phase0-launch.md) | P11, P12 | 3 | claude | 进行中 | 工程项已完成；数据/合规/Shadow 待人工 | 2026-09-22 |
 | P14 | 库外需求 web search 兜底 | [P14-web-search.md](./P14-web-search.md) | P8, P11 | 4 | claude | 完成 | 方案 B，真实群验证通过 | 2026-09-24 |
+| P15 | 人感：会接话、像群友、有分寸 | [P15-human-feel.md](./P15-human-feel.md) | P14 | 4 | claude | 完成 | 1+2+3 已做；4、5 待定 | 2026-09-25 |
 
 ## 波次与并行
 

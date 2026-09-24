@@ -9,7 +9,7 @@ export const replyInGroupParams = z.object({
     .min(1)
     .max(1500)
     .describe(
-      'Reply text in the same language as the demand. Mention 2-3 suppliers with rough price and contact. Do not add a disclaimer; one is appended automatically.',
+      'Reply in the same language as the demand, like a helpful group member: 1-3 short sentences naming 2-3 suppliers inline with rough price and contact. No numbered list, no headings, no URLs. Do not add a disclaimer; one is appended automatically.',
     ),
   supplierIds: z
     .array(z.string())

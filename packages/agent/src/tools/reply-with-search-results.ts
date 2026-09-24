@@ -4,18 +4,26 @@ import type { AgentDeps } from '../context.js';
 import { groupReplyAddressing } from './addressing.js';
 import { makeOutboundTool } from './make-outbound-tool.js';
 
-/** 商家名单由代码按编号生成，模型只写开场白：搜索结果里的电话、链接一个字都不经模型之手。 */
-export function renderCandidates(cs: SearchCandidate[]): string {
+/**
+ * 商家名单由代码按编号生成，模型只写开场白：搜索结果里的电话、链接一个字都不经模型之手。
+ * 一行说完，像群友顺口推荐，而不是编号列表加网址块（后者一看就是广告号）。
+ * Instagram 写成 instagram.com/xxx 而不是 @xxx：Telegram 会把 @xxx 渲染成某个同名
+ * Telegram 用户的链接，点进去可能是毫不相干的人。
+ */
+export function renderCandidates(cs: SearchCandidate[], zh: boolean): string {
   return cs
-    .map((c, i) => {
+    .map((c) => {
       const bits = [
-        c.contact.phone ? `📞 ${c.contact.phone}` : null,
+        c.contact.phone ? `☎ ${c.contact.phone}` : null,
         c.contact.whatsapp ? `WhatsApp ${c.contact.whatsapp}` : null,
-        c.contact.instagram ? `Instagram @${c.contact.instagram}` : null,
-      ].filter(Boolean);
-      return `${i + 1}. ${c.name}\n   ${bits.join(' · ')}\n   ${c.url}`;
+        c.contact.instagram ? `instagram.com/${c.contact.instagram}` : null,
+      ]
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(zh ? '，' : ', ');
+      return zh ? `${c.name}（${bits}）` : `${c.name} (${bits})`;
     })
-    .join('\n');
+    .join(zh ? '、' : '; ');
 }
 
 export function replyWithSearchResultsTool(deps: AgentDeps) {
@@ -29,7 +37,7 @@ export function replyWithSearchResultsTool(deps: AgentDeps) {
         .min(1)
         .max(300)
         .describe(
-          "One short sentence in the user's language. Do not name businesses or give contacts; they are appended automatically.",
+          'One short, casual sentence in the user\'s language, like a group member would say, ending with a colon, e.g. "伦敦这两家可以看看：". Do not name businesses or give contacts; they are appended automatically.',
         ),
       refs: z.array(z.string()).min(1).max(3).describe('refs from web_search, e.g. ["w1","w3"]'),
     }),
@@ -42,10 +50,12 @@ export function replyWithSearchResultsTool(deps: AgentDeps) {
         });
       }
       const cs = picked as SearchCandidate[];
+      const intro = args.intro.trim();
+      const zh = ctx.demand?.lang ? ctx.demand.lang === 'zh' : /\p{Script=Han}/u.test(intro);
       return Promise.resolve({
         kind: 'recommendation' as const,
         target: ctx.chatId,
-        text: `${args.intro.trim()}\n\n${renderCandidates(cs)}`,
+        text: `${intro}\n${renderCandidates(cs, zh)}`,
         supplierSummaries: cs.map((c) => c.name),
         inputRef: ctx.sourceMessageId,
         disclaimer: 'web' as const,

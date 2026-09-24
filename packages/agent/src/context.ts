@@ -20,6 +20,9 @@ export interface MatchContext {
   source?: { messageId: string; userId: string };
   /** 该群每天可推荐的条数（groups.rateLimitPerDay）；私聊或旧快照缺省用 3。 */
   rateLimitPerDay?: number;
+  /** 用户在对 bot 说话（回复 bot / @bot），以及被回复的那条 bot 消息原文。 */
+  addressedToBot?: boolean;
+  replyToBotText?: string;
   demandId?: string;
   demand?: DemandDraft;
   recentReplies: string[];

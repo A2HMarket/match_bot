@@ -85,3 +85,19 @@ describe('decideInbound', () => {
     expect(decideInbound(v, T)).toEqual(expected);
   });
 });
+
+describe('decideInbound — replies to the bot', () => {
+  it('lets a follow-up in even though it is not a demand', () => {
+    expect(decideInbound({ ...base, isDemand: 0.02 }, T, { addressedToBot: true })).toEqual({
+      action: 'enter_agent',
+      category: 'other',
+      kind: 'followup',
+    });
+  });
+  it('still drops a sensitive follow-up', () => {
+    expect(decideInbound({ ...base, isSensitive: 0.9 }, T, { addressedToBot: true })).toEqual({
+      action: 'drop',
+      reason: 'sensitive',
+    });
+  });
+});

@@ -9,6 +9,7 @@ const msg = {
   text: 'hi',
   status: 'pending',
   toolCallId: null,
+  kind: 'recommendation',
   replyToMessageId: null,
   mentionUserId: null,
   error: null,
@@ -80,5 +81,27 @@ describe('withMention', () => {
   it('measures the entity in UTF-16 units so emoji names do not shift the mention', () => {
     const r = withMention('hi', { id: 1, first_name: '🙂Li' });
     expect(r.entities?.[0]?.length).toBe(4);
+  });
+});
+
+describe('reactions', () => {
+  it('sets an emoji reaction on the target message instead of sending text', async () => {
+    const sendMessage = vi.fn();
+    const setMessageReaction = vi.fn(() => Promise.resolve(true));
+    await createTelegramSender({
+      bot: { api: { sendMessage, setMessageReaction } } as never,
+      logger,
+    }).send({ ...(msg as object), kind: 'reaction', text: '👍', replyToMessageId: '77' } as never);
+    expect(setMessageReaction).toHaveBeenCalledWith(-100, 77, [{ type: 'emoji', emoji: '👍' }]);
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+  it('fails loudly when a reaction has no target message', async () => {
+    await expect(
+      createTelegramSender({ bot: { api: {} } as never, logger }).send({
+        ...(msg as object),
+        kind: 'reaction',
+        text: '👍',
+      } as never),
+    ).rejects.toBeInstanceOf(TelegramSendError);
   });
 });

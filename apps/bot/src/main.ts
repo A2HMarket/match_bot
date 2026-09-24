@@ -14,7 +14,13 @@ const queues = createQueues(env.REDIS_URL);
 const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 const me = await bot.api.getMe();
 
-const inbound = createInboundHandler({ botId: me.id, repos, queues, logger: log });
+const inbound = createInboundHandler({
+  botId: me.id,
+  botUsername: me.username,
+  repos,
+  queues,
+  logger: log,
+});
 bot.on('message:text', (ctx) => inbound(ctx.update));
 
 const onApproval = createApprovalCallbackHandler({

@@ -140,7 +140,9 @@ describe('executeOutbound', () => {
       'dry_run',
     );
     const [row] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
-    expect(row.text).toBe('这几个 van 可以参考\n\n请直接联系商家确认报价与档期，我们不参与交易。');
+    expect(row.text).toBe(
+      '这几个 van 可以参考\n\n价格和档期直接找商家确认就好，我只是帮忙牵个线，不经手交易。',
+    );
   });
   it('drop writes nothing', async () => {
     const d = deps();
@@ -152,16 +154,27 @@ describe('executeOutbound', () => {
 
 describe('disclaimerFor', () => {
   it('prefers the language recorded on the demand', () => {
-    expect(disclaimerFor('uk', 'text')).toContain('ми не беремо участі');
-    expect(disclaimerFor('pt', 'text')).toContain('não fazemos parte');
+    expect(disclaimerFor('uk', 'text')).toContain('в угоді не беру участі');
+    expect(disclaimerFor('pt', 'text')).toContain('não faço parte da transação');
   });
   it('detects Chinese from the text when the demand has no language', () => {
-    expect(disclaimerFor(undefined, '周六有人有 van 吗')).toContain('我们不参与交易');
+    expect(disclaimerFor(undefined, '周六有人有 van 吗')).toContain('不经手交易');
   });
   it('falls back to English rather than guessing Russian vs Ukrainian from Cyrillic', () => {
     expect(disclaimerFor(undefined, 'Потрібен фургон')).toContain('not part of the transaction');
   });
   it('falls back to English for a language it has no text for', () => {
     expect(disclaimerFor('fr', 'bonjour')).toContain('not part of the transaction');
+  });
+});
+
+describe('disclaimer voice', () => {
+  it('speaks as one group member, not as a company', () => {
+    for (const lang of ['zh', 'en'] as const) {
+      for (const kind of ['catalogue', 'web'] as const) {
+        const d = disclaimerFor(lang, '', kind);
+        expect(d).not.toMatch(/我们|\bwe\b/i);
+      }
+    }
   });
 });

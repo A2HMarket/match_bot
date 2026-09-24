@@ -6,7 +6,13 @@ export const OUTBOUND_CHANNELS = ['telegram', 'whatsapp'] as const;
 export type OutboundChannel = (typeof OUTBOUND_CHANNELS)[number];
 
 /** 出站用途。频控只数 recommendation；与 Prisma enum OutboundKind 一一对应。 */
-export const OUTBOUND_KINDS = ['recommendation', 'clarification', 'notification', 'lead'] as const;
+export const OUTBOUND_KINDS = [
+  'recommendation',
+  'clarification',
+  'notification',
+  'lead',
+  'reaction',
+] as const;
 export type OutboundKind = (typeof OUTBOUND_KINDS)[number];
 
 /** agent 工具与仓储之间传递的需求草稿。postcode 为归一化后的 outward 或 full。 */

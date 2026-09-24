@@ -28,21 +28,23 @@ export interface OutboundDraftInput {
  * 此前是所有出站都附一句英文，连「请问您什么时候搬？」这种追问后面也挂着
  * 「直接联系他们报价」——没有「他们」，而且中文对话后面跟英文。
  */
+// 免责保留 PRD F7 的意思（直接找商家确认、我们不经手交易），但用群友的口吻、第一人称单数说：
+// 原来那句「请直接联系商家确认报价与档期，我们不参与交易。」像公司公告，一看就是广告号。
 const DISCLAIMERS: Record<'catalogue' | 'web', Record<string, string>> = {
   catalogue: {
-    zh: '请直接联系商家确认报价与档期，我们不参与交易。',
-    en: 'Please contact the suppliers directly to confirm price and availability — we are not part of the transaction.',
-    ru: 'Цену и время уточняйте напрямую у исполнителя — мы не участвуем в сделке.',
-    uk: 'Ціну та час уточнюйте безпосередньо у виконавця — ми не беремо участі в угоді.',
-    pt: 'Confirme preço e disponibilidade diretamente com o fornecedor — não fazemos parte da transação.',
+    zh: '价格和档期直接找商家确认就好，我只是帮忙牵个线，不经手交易。',
+    en: "Check price and availability with them directly — I just point the way and I'm not part of the transaction.",
+    ru: 'Цену и время уточняйте у них напрямую — я только подсказываю и в сделке не участвую.',
+    uk: 'Ціну й час уточнюйте в них напряму — я лише підказую й в угоді не беру участі.',
+    pt: 'Confirme preço e horário direto com eles — eu só indico, não faço parte da transação.',
   },
-  // P14：搜索结果没有人工把关（PoC 里大量是按区域做的 SEO 中介页），必须明说未核实
+  // P14：搜索结果没有人工把关，必须说清楚没核实过
   web: {
-    zh: '以上来自公开网络搜索，我们没有核实过这些商家，请自行判断并直接联系确认。',
-    en: 'These come from a public web search — we have not checked these businesses, so please judge for yourself and contact them directly.',
-    ru: 'Это результаты открытого веб-поиска — мы не проверяли эти компании, решайте сами и связывайтесь с ними напрямую.',
-    uk: 'Це результати відкритого пошуку в інтернеті — ми не перевіряли ці компанії, вирішуйте самі та звертайтеся до них напряму.',
-    pt: 'Isto vem de uma busca pública na internet — não verificamos estas empresas, avalie por conta própria e contacte-as diretamente.',
+    zh: '这些是网上搜到的，我没核实过，建议先私信问问。',
+    en: "Found these online and haven't checked them myself, so maybe message them first.",
+    ru: 'Нашёл это в интернете и сам не проверял — лучше сначала напишите им.',
+    uk: 'Знайшов це в інтернеті й сам не перевіряв — краще спершу напишіть їм.',
+    pt: 'Achei isso na internet e não conferi — vale mandar mensagem antes.',
   },
 };
 
@@ -85,6 +87,20 @@ export async function decideForOutbound(
 
   let verdict = null;
   let rateOk = true;
+  // 表情反应不带内容、不能写错话，也不打扰人：Phase 0 照旧只记录，Phase 1 起直接发，
+  // 不送审、不调 Jev（AGENTS.md §3.3 第 3 条的明确例外）。
+  if (d.kind === 'reaction') {
+    const decision: OutboundDecision = ctx.phase === 0 ? 'dry_run' : 'auto';
+    await deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: d.inputRef,
+      output: { gate: 'outbound', kind: 'reaction', decision },
+      phase: ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+    return decision;
+  }
   if (ctx.phase === 2) {
     const v = ctx.demand
       ? await deps.evaluateOutbound(deps.jev, {

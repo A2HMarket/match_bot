@@ -246,3 +246,37 @@ describe('processInbound — redelivery and agent failures', () => {
     expect(runInbound).toHaveBeenCalled();
   });
 });
+
+describe('processInbound — follow-ups addressed to the bot', () => {
+  it('lets "thanks" in when it replies to the bot, with the bot text and latest open demand', async () => {
+    const thanks = { ...verdict, category: 'other' as const, isDemand: 0.02, isLocalRequest: 0.05 };
+    const { deps, runInbound, demands } = makeDeps({
+      evaluateInbound: vi.fn(() => Promise.resolve(thanks)),
+    });
+    demands.findOpenByUser.mockResolvedValueOnce([
+      { id: 'd-latest', category: 'man_and_van', confidence: 0.9 },
+      { id: 'd-old', category: 'eot_cleaning', confidence: 0.9 },
+    ] as never);
+    await processInbound(deps as never, {
+      ...msg,
+      text: '谢谢！',
+      addressedToBot: true,
+      replyToBotText: 'The London Man And Van …',
+    });
+    const arg = firstArg<RunInboundArg>(runInbound);
+    expect(arg.ctx).toMatchObject({
+      addressedToBot: true,
+      replyToBotText: 'The London Man And Van …',
+      demandId: 'd-latest',
+    });
+  });
+
+  it('drops the same "thanks" when it is not addressed to the bot', async () => {
+    const thanks = { ...verdict, category: 'other' as const, isDemand: 0.02, isLocalRequest: 0.05 };
+    const { deps, runInbound } = makeDeps({
+      evaluateInbound: vi.fn(() => Promise.resolve(thanks)),
+    });
+    await processInbound(deps as never, { ...msg, text: '谢谢！' });
+    expect(runInbound).not.toHaveBeenCalled();
+  });
+});

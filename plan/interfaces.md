@@ -15,7 +15,7 @@ hashText(text: string): string                                      // P1：sha2
 
 ```ts
 // 已有
-inboundMessageSchema / InboundMessage      // { channel, chatId, messageId, userId, text, lang?, replyToMessageId?, receivedAt }
+inboundMessageSchema / InboundMessage      // { channel, chatId, messageId, userId, text, lang?, replyToMessageId?, addressedToBot?, replyToBotText?, receivedAt }（后两者 P15：回复 bot / @bot / 私聊为 addressed；replyToBotText 是被回复的 bot 消息原文）
 DEMAND_CATEGORIES / DemandCategory / SERVICE_CATEGORIES
 DEMAND_STATUSES / DemandStatus / canTransition / transition / IllegalTransitionError
 PHASES / Phase
@@ -24,7 +24,7 @@ PHASES / Phase
 isServiceCategory(c: DemandCategory): boolean
 demandDraftSchema / DemandDraft   // { category, whenText?, whenAt?(ISO), fromPostcode?, toPostcode?, quantity?, budgetPence?, lang?, confidence }
 supplyDraftSchema / SupplyDraft   // { category, availability?, area?, expiresAt(ISO) }
-outboundDraftSchema / OutboundDraft // { channel, target, text, toolCallId?, kind?, replyToMessageId?, mentionUserId? }（kind ∈ OUTBOUND_KINDS，缺省 recommendation；后两者为渠道侧 id，2026-09-23 加）
+outboundDraftSchema / OutboundDraft // { channel, target, text, toolCallId?, kind?, replyToMessageId?, mentionUserId? }（kind ∈ OUTBOUND_KINDS（含 reaction：text 为 emoji，replyToMessageId 为被加表情的消息），缺省 recommendation；后两者为渠道侧 id，2026-09-23 加）
 TRACE_KINDS / TraceKind           // 'rule' | 'jev' | 'agent_run' | 'gate'
 decisionTraceInputSchema / DecisionTraceInput // { kind, inputRef, output: unknown, phase, latencyMs, costMicro? }
 INBOUND_QUESTION_IDS = ['is_demand','is_supply','category','urgency','has_location','is_sensitive','is_move_event'] as const
@@ -161,7 +161,7 @@ interface Thresholds {
   T_WORTH_REPLYING_DROP: number;  // 1.0
 }
 resolvePhase(p: { group: Group | null; defaultPhase: Phase }): Phase
-decideInbound(v: InboundVerdict, t: Thresholds): InboundDecision
+decideInbound(v: InboundVerdict, t: Thresholds, opts?: { addressedToBot?: boolean }): InboundDecision   // addressed 且不敏感 → enter_agent kind='followup'
 type InboundDecision =
   | { action: 'drop'; reason: 'sensitive' | 'not_demand' }
   | { action: 'tag_move_event' }           // 非服务品类（含 other）且 isMoveEvent 高，仅打标签用于观测
@@ -206,7 +206,7 @@ parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' |
 AGENT_VERSION: string                          // 已有，改 instructions/工具描述时递增
 createMatchAgent(deps: AgentDeps): { agent: Agent<MatchContext>; runner: Runner }
 interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; webSearch?: WebSearch; modelProvider?: ModelProvider }   // webSearch 缺省则库外工具不注册
-interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number; demandId?: string; demand?: DemandDraft; recentReplies: string[]; supplierSearchEmpty?: boolean; outboundBlocked?: boolean; searchResults?: SearchCandidate[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标；outboundBlocked：出站门拒过一次后本轮不再出站
+interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number; demandId?: string; demand?: DemandDraft; recentReplies: string[]; addressedToBot?: boolean; replyToBotText?: string; supplierSearchEmpty?: boolean; outboundBlocked?: boolean; searchResults?: SearchCandidate[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标；outboundBlocked：出站门拒过一次后本轮不再出站
 runInbound(p: { deps: AgentDeps; ctx: MatchContext; input: string }): Promise<RunOutcome>
 resumeRun(p: { deps: AgentDeps; runState: RunState; approval: Approval }): Promise<RunOutcome>
 type RunOutcome =

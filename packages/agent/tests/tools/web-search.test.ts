@@ -138,9 +138,11 @@ describe('reply_with_search_results', () => {
     expect(status).toBe('dry_run');
     expect(row.kind).toBe('recommendation');
     expect(row).toMatchObject({ mentionUserId: '42', replyToMessageId: '77' });
-    expect(row.text).toContain("1. Polly Chan's Bakehouse\n   WhatsApp 07700900123");
-    expect(row.text).toContain('Instagram @chinatown.bakery');
-    expect(row.text).toContain('我们没有核实过这些商家');
+    expect(row.text).toBe(
+      "可以看看这两家：\nPolly Chan's Bakehouse（WhatsApp 07700900123）、Chinatown Bakery（instagram.com/chinatown.bakery）\n\n这些是网上搜到的，我没核实过，建议先私信问问。",
+    );
+    // Instagram 不能写成 @handle：Telegram 会把它渲染成同名 Telegram 用户的链接
+    expect(row.text).not.toMatch(/@chinatown/);
   });
 
   it('rejects refs that web_search did not return', async () => {
@@ -153,11 +155,16 @@ describe('reply_with_search_results', () => {
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
   });
 
-  it('renders every contact type it knows', () => {
-    expect(
-      renderCandidates([{ ...CAKE, contact: { phone: '02079460000', whatsapp: '07700900123' } }]),
-    ).toBe(
-      "1. Polly Chan's Bakehouse\n   📞 02079460000 · WhatsApp 07700900123\n   https://www.pollychan.co.uk/",
+  it('renders at most two contacts per business, inline, in the reply language', () => {
+    const all = {
+      ...CAKE,
+      contact: { phone: '02079460000', whatsapp: '07700900123', instagram: 'polly' },
+    };
+    expect(renderCandidates([all], true)).toBe(
+      "Polly Chan's Bakehouse（☎ 02079460000，WhatsApp 07700900123）",
+    );
+    expect(renderCandidates([all, IG], false)).toBe(
+      "Polly Chan's Bakehouse (☎ 02079460000, WhatsApp 07700900123); Chinatown Bakery (instagram.com/chinatown.bakery)",
     );
   });
 });

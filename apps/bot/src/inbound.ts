@@ -7,6 +7,7 @@ import type { Update } from 'grammy/types';
 /** Update -> InboundMessage -> 入队。群未登记时先登记为 inactive 等运营开启（PRD §6.2），私聊直接入队。 */
 export function createInboundHandler(p: {
   botId: number;
+  botUsername?: string | undefined;
   repos: Repositories;
   queues: Queues;
   logger: Logger;
@@ -14,7 +15,7 @@ export function createInboundHandler(p: {
 }) {
   const enqueue = p.enqueueInbound ?? defaultEnqueue;
   return async (update: Update): Promise<void> => {
-    const msg = toInboundMessage(update, { botId: p.botId });
+    const msg = toInboundMessage(update, { botId: p.botId, botUsername: p.botUsername });
     if (!msg) return;
     const isPrivate = update.message?.chat.type === 'private';
     if (!isPrivate) {
