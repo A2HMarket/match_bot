@@ -120,6 +120,47 @@ describe('createWebSearch', () => {
     expect(calls.some((u) => u.includes('gq-magazine') || u.includes('/blog/'))).toBe(false);
   });
 
+  it('accepts a JS-rendered shop site whose London evidence is only in the domain or snippet', async () => {
+    const thin =
+      '<html><body><div id="root"></div><a href="https://www.instagram.com/tiantianmarket/">ig</a></body></html>';
+    const { f } = stubFetch(
+      [
+        { url: 'https://www.tiantian.london/', title: 'Asian supermarket | Tian Tian Market' },
+        {
+          url: 'https://oseyo.example/',
+          title: 'Oseyo',
+          content: 'Korean supermarket in Battersea, London',
+        },
+        { url: 'https://thin.example/', title: 'Some shop', content: 'Great shop in Leeds' },
+      ],
+      {
+        'https://www.tiantian.london/': thin,
+        'https://oseyo.example/': thin,
+        'https://thin.example/': thin,
+      },
+    );
+    const out = await createWebSearch({ apiKey: 'k', logger, fetchImpl: f as never }).find({
+      need: 'Chinese supermarket',
+    });
+    expect(out.map((c) => c.url)).toEqual([
+      'https://www.tiantian.london/',
+      'https://oseyo.example/',
+    ]);
+    expect(out[0]?.contact).toEqual({ instagram: 'tiantianmarket' });
+  });
+
+  it('skips a shopping-centre retailer page, whose contacts belong to the centre', async () => {
+    const { f, calls } = stubFetch(
+      [{ url: 'https://mall.example/retailers/oseyo', title: 'Oseyo | Mall', content: 'London' }],
+      {},
+    );
+    const out = await createWebSearch({ apiKey: 'k', logger, fetchImpl: f as never }).find({
+      need: 'Korean supermarket',
+    });
+    expect(out).toEqual([]);
+    expect(calls.some((u) => u.includes('/retailers/'))).toBe(false);
+  });
+
   it('retries once when the search comes back empty', async () => {
     let n = 0;
     const f = vi.fn((url: string | URL) => {

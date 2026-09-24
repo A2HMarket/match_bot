@@ -31,11 +31,16 @@ const MAX_CANDIDATES = 5;
  * 名单来自 P14 PoC 里实际出现的干扰项。
  */
 const NOT_A_BUSINESS_SITE =
-  /(^|\.)(checkatrade|trustatrader|yell|yelp|tripadvisor|bark|mybuilder|ratedpeople|trustpilot|google|facebook|reddit|nextdoor|thomsonlocal|freeindex|cylex-uk|cylex|scoot|hotfrog|timeout|gumtree|airtasker|taskrabbit|treatwell|fresha|booksy|nhs|wikipedia|amazon|youtube|tiktok|linkedin|twitter|x|quora|mumsnet|londonist|secretldn|thatsup|thefork|opentable|deliveroo|ubereats|justeat|zoopla|rightmove|hamuch|housekeep|drivingschoolstop|comparethestorage|wheree|goroadie|brentcross|westfield|gov|gq-magazine|vogue|esquire|harpersbazaar|cntraveller|standard|thetimes|theguardian|telegraph|independent|bbc|dailymail|mylondon|visitlondon|designmynight|hotdinners|squaremeal|eater|culturetrip|lonelyplanet|medium|substack|blogspot|wordpress)\.[a-z.]+$/i;
+  /(^|\.)(checkatrade|trustatrader|yell|yelp|tripadvisor|bark|mybuilder|ratedpeople|trustpilot|google|facebook|reddit|nextdoor|thomsonlocal|freeindex|cylex-uk|cylex|scoot|hotfrog|timeout|gumtree|airtasker|taskrabbit|treatwell|fresha|booksy|nhs|wikipedia|amazon|youtube|tiktok|linkedin|twitter|x|quora|mumsnet|londonist|secretldn|thatsup|thefork|opentable|deliveroo|ubereats|justeat|zoopla|rightmove|hamuch|housekeep|drivingschoolstop|comparethestorage|wheree|goroadie|brentcross|westfield|batterseapowerstation|coaldropsyard|gov|gq-magazine|vogue|esquire|harpersbazaar|cntraveller|standard|thetimes|theguardian|telegraph|independent|bbc|dailymail|mylondon|visitlondon|designmynight|hotdinners|squaremeal|eater|culturetrip|lonelyplanet|medium|substack|blogspot|wordpress)\.[a-z.]+$/i;
 
-/** 文章 / 资讯 / 博客页：页面上有电话也不代表它是一家商家（实测 GQ 杂志的一篇文章通过了核验）。 */
+/**
+ * 文章 / 资讯 / 博客页，以及商场的入驻商户页：页面上的联系方式不属于某一家商家
+ * （实测 GQ 杂志文章通过了核验；Battersea Power Station 的 /retailers/oseyo 页上是商场自己的 Instagram）。
+ */
 const EDITORIAL_PATH =
-  /\/(article|articles|news|blog|blogs|story|stories|magazine|lifestyle|features?|guides?|listings?|best-[a-z-]+)(\/|-|$)/i;
+  /\/(article|articles|news|blog|blogs|story|stories|magazine|lifestyle|features?|guides?|listings?|retailers?|store-directory|best-[a-z-]+)(\/|-|$)/i;
+
+const LONDON_HINT = /\blondon\b|伦敦|倫敦|\b(E|EC|N|NW|SE|SW|W|WC)\d{1,2}[A-Z]?\s?\d[A-Z]{2}\b/i;
 
 /** 不用抓页面就能判定「不是一家商家的站」的结果。Instagram 主页另行处理，不在此列。 */
 function rejectWithoutFetching(r: TavilyResult): boolean {
@@ -130,7 +135,13 @@ export function createWebSearch(p: {
     const html = await page(r.url);
     if (!html) return null;
     const c = extractContacts(html);
-    if (!c.mentionsLondon) return null;
+    // 伦敦证据取多处：很多小店官网是 JS 渲染，抓到的 HTML 几乎没有正文（实测 tiantian.london
+    // 页面文本里一个 London 都没有）。域名、搜索标题与摘要也算。
+    const inLondon =
+      c.mentionsLondon ||
+      LONDON_HINT.test(new URL(r.url).hostname) ||
+      LONDON_HINT.test(`${r.title} ${r.content}`);
+    if (!inLondon) return null;
     const contact = {
       ...(c.phones[0] ? { phone: c.phones[0] } : {}),
       ...(c.whatsapp ? { whatsapp: c.whatsapp } : {}),
