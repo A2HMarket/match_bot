@@ -81,6 +81,18 @@ export function inboundQuestions(): Record<InboundQuestionId, JevQuestion> {
       instructions:
         'Does the message imply the author is about to move home (looking for a room, leaving a tenancy, bought large furniture)?',
     },
+    // P14：库外需求走 web search。is_demand 的措辞写死了三个品类且已按 PoC V4 校准，
+    // 不能改；「在找本地商家/店铺/地方」单独一题，阈值见 P14 §4 的校准记录。
+    is_local_request: {
+      type: 'noul',
+      instructions:
+        'The author is a member of a London community group. Is the author asking the group to recommend, or point them to, a local business, service provider, shop, clinic, restaurant or place in or around London, for their own use? Asking where to buy or find something counts.',
+      criteria: {
+        true: 'The author wants a provider, shop, place or contact for themselves, e.g. a locksmith, plumber, dentist, hairdresser, bakery, Asian supermarket, repair shop or a man and van. Counts even if no location is given.',
+        false:
+          'The author offers their own service or advertises a business; is looking for a room, flat or tenant; is looking for or offering a job; is buying, selling or giving away second-hand items; asks about rules, documents, visas or transport; exchanges currency; or is just chatting.',
+      },
+    },
   };
 }
 
@@ -94,6 +106,7 @@ export interface InboundVerdict {
   hasLocation: number;
   isSensitive: number;
   isMoveEvent: number;
+  isLocalRequest: number;
 }
 
 function noul(a: { type: string; noul?: number }): number {
@@ -139,5 +152,6 @@ export async function evaluateInbound(
     hasLocation: noul(a.has_location),
     isSensitive: noul(a.is_sensitive),
     isMoveEvent: noul(a.is_move_event),
+    isLocalRequest: noul(a.is_local_request),
   };
 }

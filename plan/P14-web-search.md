@@ -1,6 +1,6 @@
 # P14 库外需求：web search 兜底
 
-> 状态：**PoC 完成，待决定是否实施**。本文件先记方案与 PoC 结论；实施任务在决定后补。
+> 状态：**已实施（方案 B）**，待真实群验证。2026-09-24 用户选 B：华人店铺也覆盖，接受 Instagram / WhatsApp 作联系方式。
 
 **动机（2026-09-24 产品决定）**：只靠 30 家商家与三个品类，大多数群内求助 bot 都接不住。决定：库里有合适数据就用库；没有就用 web search 回答。
 **Spec:** PRD §3.3（不经手交易、免责）、§6.2（频控）；AGENTS.md §3.3、§6
@@ -57,9 +57,48 @@
 | Bing Search API | — | 2025-08-11 已下线 |
 | SearXNG 自建 | 无上限 | 靠抓各搜索引擎结果页，易被限流、违反其条款，不作生产依赖 |
 
+## 4. Jev 新题 `is_local_request` 的校准
+
+`is_demand` 的措辞写死了三个品类且已按 PoC V4 校准，不能改；「在找本地商家/店铺/地方」单独一题，只在 `category=other` 上用（门控：`other` 且 ≥ `T_IS_LOCAL_REQUEST_ENTER` → 以 `other` 进 agent；租房/招聘/二手不受影响）。
+
+- 校准集 80 条：原 50 条按新口径重标（s25「哪里看俄语解说的足球」、s46「哪里有巴西奶酪面包」由「非需求」改为正例）+ 20 条库外求助 + 10 条易混反例（换汇、二手、办事咨询、找房、求职），五语种。脚本 `scripts/poc/p14-search/calibrate.mts`，花费 $0.004。
+- 只看 `category=other` 的 31 条：正类最低 **0.88**，负类最高 **0.59**（「怎么在 Tower Hamlets 注册 GP」），其余负类 ≤ 0.15。阈值取 **0.8**。
+- 加题后原有题目无漂移：原 50 条 `is_demand` 判定与之前完全一致，category 唯一分歧仍是已知的 s39。
+- 评测集并入 79 条（去掉口径有争议的 N04「我是水电工承接维修」），fixture 重录。离线回放：**precision 1.00 / recall 1.00**，tp 49 / fp 0 / fn 0 / tn 30。
+- ⚠ 重录时「注册 GP」得 0.72（校准时 0.59），同一条两次调用差 0.13，离阈值只剩 0.08。Shadow 期重点看「办事咨询」类是否被误放进来。
+
+## 5. 实施
+
+| 层 | 改动 |
+|---|---|
+| domain / db | `DemandDraft.need`（在找什么，简短英文）+ 迁移 `add_demand_need`；`INBOUND_QUESTION_IDS` 加 `is_local_request` |
+| jev | 入站问题集加 `is_local_request`，`InboundVerdict.isLocalRequest` |
+| gating | `T_IS_LOCAL_REQUEST_ENTER = 0.8`；`decideInbound` 在 `other` 上放行本地求助 |
+| **websearch（新包）** | Tavily（空结果重试一次）→ 不联网先剔除目录/点评/平台/媒体站、文章路径、榜单标题 → 按域名去重 → 并发抓自有页核验（英国电话 / WhatsApp / Instagram 之一 + 提到伦敦）；Instagram 主页凭搜索摘要提到伦敦收录。`buildSearchQuery` 代码层拒绝号码、@、URL、超长输入 |
+| agent | `web_search`（前置：品类 other 或 find_suppliers 为空；每轮只搜一次）；`reply_with_search_results`（模型只写开场白，商家名单与联系方式由代码按编号生成，附「未核实」免责）；AGENT_VERSION 0.3.0 |
+| worker | 配了 `SEARCH_API_KEY` 才启用 |
+
+### 实施中发现并修掉的问题
+
+1. **agent 在「刷」出站门**：一条真实群消息的回复被出站门连拒 5 次，模型每次改写重投，第 6 版才过——门变成了被优化的目标。现在出站门拒一次后，本轮所有出站工具直接拒绝（`ctx.outboundBlocked`），不再问 Jev。
+2. **重投会重复发帖**：上面那轮随后耗尽 8 轮上限抛错，BullMQ 整条重跑；第 6 版已发出，只因 `messages` 唯一约束碰巧挡住才没发第二遍。现在 agent 出错不再抛给队列（留 `agent_failed` 痕迹），并在落库前按渠道消息 id 查重（`duplicate_delivery`）。私聊 `group_id` 为空，原唯一约束对私聊无效，查重按 userId 做。
+3. 同域名去重早于过滤时，同一家店排在前面的博客页会把首页一起挤掉——改为先剔除再去重。
+4. 杂志文章（GQ）页面上有电话、提到伦敦，混进了候选——加媒体域名与文章路径规则。
+5. 店名撇号截断（Polly's → Polly）。
+
+### 端到端（模拟私聊，Phase 0 dry_run）
+
+| 请求 | 结果 |
+|---|---|
+| 中式奶油水果生日蛋糕，东伦敦 | Polly Chan's Bakehouse（Instagram）、East Asian Cakes（WhatsApp + Instagram）、Okaeri Bakery（Instagram）——PoC 里因官网无电话被筛掉的真店，方案 B 找回来了 |
+| Stratford 开锁 | 3 家，其一是外区公司的区域推广页（PoC 结论 3 的典型） |
+| Soho / Chinatown 华人理发 | agent 如实说没找到华人店，给了一家日式沙龙 |
+| 换汇 | 代码门黑名单拦下，未调 Jev |
+
 ## 完成记录
 
 | 项 | 内容 |
 |---|---|
 | PoC | 2026-09-24 完成，结论见 §2 |
-| 实施 | 待决定 |
+| 实施 | 2026-09-24 完成，见 §4–§5。`pnpm check` 50 文件 / 270 用例 |
+| 真实群验证 | 待做 |

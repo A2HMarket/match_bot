@@ -36,7 +36,7 @@ export function replyInGroupTool(deps: AgentDeps) {
         text: args.text,
         supplierSummaries: suppliers.map((s) => `${s.name} ${s.roughPrice ?? ''}`.trim()),
         inputRef: ctx.sourceMessageId,
-        disclaimer: true,
+        disclaimer: 'catalogue',
         ...groupReplyAddressing(ctx),
       };
     },

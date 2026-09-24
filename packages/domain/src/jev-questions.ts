@@ -7,6 +7,7 @@ export const INBOUND_QUESTION_IDS = [
   'has_location',
   'is_sensitive',
   'is_move_event',
+  'is_local_request',
 ] as const;
 export type InboundQuestionId = (typeof INBOUND_QUESTION_IDS)[number];
 

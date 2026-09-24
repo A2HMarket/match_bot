@@ -47,6 +47,7 @@ interface Repositories {
     upsert(p: { channel: Channel; externalId: string; name: string }): Promise<Group>;
   };
   messages: {
+    findExisting(p: { groupId: string | null; userId: string; externalId: string }): Promise<Message | null>;   // 队列重投去重；私聊按 userId 查（NULL 不触发 unique）
     create(p: { groupId: string | null; userId: string; externalId: string; text: string; lang?: string; receivedAt: Date }): Promise<Message>;
     recentByUser(userId: string, sinceHours: number): Promise<Message[]>;
     redactOlderThan(days: number): Promise<number>;             // 置空 text，返回条数
@@ -137,6 +138,7 @@ interface InboundVerdict {
   isDemand: number; isSupply: number; category: DemandCategory; categoryConfidence: number;
   urgency: number;   // score 0–4 的概率加权均值
   hasLocation: number; isSensitive: number; isMoveEvent: number;
+  isLocalRequest: number;   // P14：在找本地商家/店铺/地方，只在 category=other 上使用
 }
 outboundQuestions(): Record<OutboundQuestionId, JevQuestion>
 evaluateOutbound(client: JevClient, p: { draft: string; demand: DemandDraft; supplierSummaries: string[]; recentReplies: string[]; inputRef: string; phase: Phase }): Promise<OutboundVerdict | { ok: false; reason: string }>
@@ -152,6 +154,7 @@ interface Thresholds {
   T_IS_SUPPLY_ENTER: number;      // 0.7
   T_IS_SENSITIVE_DROP: number;    // 0.5
   T_IS_MOVE_EVENT_TAG: number;    // 0.6
+  T_IS_LOCAL_REQUEST_ENTER: number; // 0.8（P14 校准）
   T_WORTH_REPLYING_AUTO: number;  // 2.2（score 0–3）
   T_LANGUAGE_OK_AUTO: number;     // 0.8
   T_MENTIONS_UNVERIFIED_DROP: number; // 0.5
@@ -177,6 +180,15 @@ scorePeerSupplies(p: { demand: DemandDraft; supplies: Supply[]; now: Date }): Sc
 interface ScoredCandidate { id: string; kind: 'supplier' | 'supply'; score: number; reasons: string[] }   // score 0–1
 ```
 
+## @matchbot/websearch（P14）
+
+```ts
+createWebSearch(p: { apiKey: string; logger: Logger; fetchImpl?: typeof fetch; pageTimeoutMs?: number }): WebSearch
+interface WebSearch { find(p: { need: string; area?: string }): Promise<SearchCandidate[]> }   // 最多 5 条，已核验
+interface SearchCandidate { ref: string; name: string; url: string; contact: { phone?: string; whatsapp?: string; instagram?: string }; evidence: 'contact_on_own_site' | 'instagram_profile' }
+buildSearchQuery(p: { need: string; area?: string }): string   // 拒绝像个人信息的输入，抛 UnsafeQueryError（Tavily 会留存查询）
+```
+
 ## @matchbot/channel-telegram
 
 ```ts
@@ -193,8 +205,8 @@ parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' |
 ```ts
 AGENT_VERSION: string                          // 已有，改 instructions/工具描述时递增
 createMatchAgent(deps: AgentDeps): { agent: Agent<MatchContext>; runner: Runner }
-interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; modelProvider?: ModelProvider }
-interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number; demandId?: string; demand?: DemandDraft; recentReplies: string[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标
+interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; webSearch?: WebSearch; modelProvider?: ModelProvider }   // webSearch 缺省则库外工具不注册
+interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number; demandId?: string; demand?: DemandDraft; recentReplies: string[]; supplierSearchEmpty?: boolean; outboundBlocked?: boolean; searchResults?: SearchCandidate[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标；outboundBlocked：出站门拒过一次后本轮不再出站
 runInbound(p: { deps: AgentDeps; ctx: MatchContext; input: string }): Promise<RunOutcome>
 resumeRun(p: { deps: AgentDeps; runState: RunState; approval: Approval }): Promise<RunOutcome>
 type RunOutcome =

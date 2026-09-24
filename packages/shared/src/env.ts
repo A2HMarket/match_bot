@@ -22,6 +22,8 @@ export const envSchema = z.object({
   SNAPSHOT_KEY: z.string().min(16).optional(),
   // Phase 2 里出站门拿不准（分数居中 / Jev 不可用 / 触发频控）时怎么办。
   // drop = 不发，无人值守时用；review = 送运营群审批，有人值守时用。
+  // P14 库外需求兜底搜索（Tavily）。不配则不启用，库外需求一律不回。
+  SEARCH_API_KEY: z.string().min(1).optional(),
   OUTBOUND_UNSURE_ACTION: z.enum(['drop', 'review']).default('drop'),
 });
 

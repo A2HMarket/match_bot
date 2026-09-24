@@ -14,6 +14,7 @@ const rc = { context: { userId: 'u', sourceMessageId: 'm1' } } as never;
 
 const baseArgs = {
   category: 'man_and_van',
+  need: null,
   whenText: null,
   whenAt: null,
   fromPostcode: null,

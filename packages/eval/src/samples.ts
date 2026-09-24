@@ -21,6 +21,12 @@ export const labeledSampleSchema = z.object({
   is_demand: z.boolean(),
   is_supply: z.boolean(),
   category: z.enum(DEMAND_CATEGORIES),
+  /**
+   * P14：在找本地商家/店铺/地方（库外需求，走 web search）。缺省 false。
+   * 原 50 条里只有 s25（俄语解说的足球）、s46（巴西奶酪面包）为真——它们在三品类口径下
+   * 是「非需求」，在 P14 口径下正是该搜的。id 以 L、N 开头的是 P14 校准样本。
+   */
+  is_local_request: z.boolean().default(false),
 });
 export type LabeledSample = z.infer<typeof labeledSampleSchema>;
 

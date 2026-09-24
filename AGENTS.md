@@ -51,7 +51,7 @@ packages/eval         回放与指标
 
 ### 3.2 依赖方向（`scripts/check-deps.mjs` 强制，`pnpm lint` 会跑）
 
-- `shared ← domain ← db ← { queue, jev, gating, matcher, channel-telegram } ← { approval, agent } ← eval ← apps`
+- `shared ← domain ← db ← { queue, jev, gating, matcher, channel-telegram } ← { approval, agent } ← eval ← apps`；`websearch` 只依赖 `shared`，由 `agent` 使用（P14）
 - `packages/*` 永远不依赖 `apps/*`。
 - `domain` 不依赖任何有 IO 的包，也不依赖 `db`。
 - `gating` 和 `matcher` **禁止**依赖 `jev` 或 `@openai/agents`：它们必须是确定性的，可以被 Jev 的结果驱动，但自己不调模型。

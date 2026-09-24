@@ -7,6 +7,13 @@ import type { AgentDeps, MatchContext } from '../context.js';
 // PoC V1：strict JSON Schema 下 optional 字段不稳，工具参数一律 nullable，落库前转回 domain 的 optional。
 const params = z.object({
   category: z.enum(DEMAND_CATEGORIES),
+  need: z
+    .string()
+    .max(80)
+    .nullable()
+    .describe(
+      'What the user is looking for, in a few English words, e.g. "Chinese birthday cake" or "locksmith". Never include names, phone numbers, addresses or other personal details.',
+    ),
   whenText: z
     .string()
     .max(200)
@@ -38,6 +45,7 @@ const params = z.object({
 function toDraft(args: z.output<typeof params>): DemandDraft {
   return demandDraftSchema.parse({
     category: args.category,
+    need: args.need ?? undefined,
     whenText: args.whenText ?? undefined,
     whenAt: args.whenAt ?? undefined,
     fromPostcode: args.fromPostcode ? normalizePostcode(args.fromPostcode)?.full : undefined,

@@ -108,7 +108,7 @@ describe('executeOutbound', () => {
     await executeOutbound(
       d as never,
       ctx(0),
-      { ...draft, toolCallId: 'c1', disclaimer: true },
+      { ...draft, toolCallId: 'c1', disclaimer: 'catalogue' as const },
       'dry_run',
     );
     await executeOutbound(d as never, ctx(2), { ...draft, toolCallId: 'c2' }, 'auto');
@@ -136,7 +136,7 @@ describe('executeOutbound', () => {
     await executeOutbound(
       d as never,
       ctx(0),
-      { ...draft, text: '这几个 van 可以参考', disclaimer: true },
+      { ...draft, text: '这几个 van 可以参考', disclaimer: 'catalogue' as const },
       'dry_run',
     );
     const [row] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];

@@ -20,6 +20,7 @@ export function findSuppliersTool(deps: AgentDeps) {
         suppliers: candidates,
         now: new Date(),
       }).slice(0, 3);
+      ctx.supplierSearchEmpty = scored.length === 0;
       if (scored.length === 0) return 'no suppliers found for this demand';
       await deps.repos.matches.replaceForDemand(
         ctx.demandId,

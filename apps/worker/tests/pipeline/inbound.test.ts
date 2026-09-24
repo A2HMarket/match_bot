@@ -21,6 +21,7 @@ const verdict = {
   hasLocation: 0.9,
   isSensitive: 0.01,
   isMoveEvent: 0.1,
+  isLocalRequest: 0.2,
 };
 
 function makeDeps(over: Record<string, unknown> = {}) {
@@ -30,6 +31,7 @@ function makeDeps(over: Record<string, unknown> = {}) {
     findByExternal: vi.fn(() => Promise.resolve({ id: 'g1', name: 'G', phase: 0, isActive: true })),
   };
   const messages = {
+    findExisting: vi.fn(() => Promise.resolve(null)),
     create: vi.fn(() => Promise.resolve({ id: 'm1' })),
     recentByUser: vi.fn(() => Promise.resolve([])),
   };
@@ -210,5 +212,37 @@ describe('processInbound', () => {
     await processInbound(t.deps as never, { ...msg, chatId: '42' });
     expect(t.repos.groups.findByExternal).not.toHaveBeenCalled();
     expect(firstArg<RunInboundArg>(t.runInbound).ctx).toMatchObject({ groupId: null, phase: 1 });
+  });
+});
+
+describe('processInbound — redelivery and agent failures', () => {
+  it('does not reprocess a message that was already stored (queue redelivery)', async () => {
+    const { deps, repos, traces, runInbound, evaluateInbound } = makeDeps();
+    repos.messages.findExisting.mockResolvedValueOnce({ id: 'm-old' } as never);
+    await processInbound(deps as never, msg);
+    expect(repos.messages.create).not.toHaveBeenCalled();
+    expect(evaluateInbound).not.toHaveBeenCalled();
+    expect(runInbound).not.toHaveBeenCalled();
+    expect(traceWith(traces, 'dropped_by_rule')).toMatchObject({
+      output: { reason: 'duplicate_delivery' },
+    });
+  });
+
+  it('contains an agent crash instead of throwing it back to the queue', async () => {
+    const boom = Object.assign(new Error('Max turns (8) exceeded'), {
+      name: 'MaxTurnsExceededError',
+    });
+    const { deps, traces } = makeDeps({ runInbound: vi.fn(() => Promise.reject(boom)) });
+    await expect(processInbound(deps as never, msg)).resolves.toBeUndefined();
+    expect(traceWith(traces, 'agent_failed')).toMatchObject({
+      output: { error: 'MaxTurnsExceededError' },
+    });
+  });
+
+  it('lets an out-of-catalogue local request into the agent as category other', async () => {
+    const local = { ...verdict, category: 'other' as const, isDemand: 0.2, isLocalRequest: 0.95 };
+    const { deps, runInbound } = makeDeps({ evaluateInbound: vi.fn(() => Promise.resolve(local)) });
+    await processInbound(deps as never, { ...msg, text: '哪里能订中式生日蛋糕' });
+    expect(runInbound).toHaveBeenCalled();
   });
 });

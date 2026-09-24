@@ -10,6 +10,7 @@ import { DEFAULT_THRESHOLDS } from '@matchbot/gating';
 import { createJevClient, evaluateInbound, evaluateOutbound } from '@matchbot/jev';
 import { createOpsCardSenderFromToken } from '@matchbot/channel-telegram';
 import { createLogger, loadEnv, type Env, type Logger } from '@matchbot/shared';
+import { createWebSearch } from '@matchbot/websearch';
 import type { PipelineDeps } from './pipeline/inbound.js';
 import type { ResumeDeps } from './pipeline/resume.js';
 
@@ -70,5 +71,8 @@ export function buildDeps(p: { env?: Env; cards?: ApprovalCards } = {}): WorkerD
     resumeRun,
     publishApproval,
     cards,
+    ...(env.SEARCH_API_KEY
+      ? { webSearch: createWebSearch({ apiKey: env.SEARCH_API_KEY, logger }) }
+      : {}),
   };
 }

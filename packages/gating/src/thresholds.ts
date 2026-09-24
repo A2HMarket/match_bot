@@ -4,6 +4,7 @@ export interface Thresholds {
   T_IS_SUPPLY_ENTER: number;
   T_IS_SENSITIVE_DROP: number;
   T_IS_MOVE_EVENT_TAG: number;
+  T_IS_LOCAL_REQUEST_ENTER: number;
   T_WORTH_REPLYING_AUTO: number;
   T_LANGUAGE_OK_AUTO: number;
   T_MENTIONS_UNVERIFIED_DROP: number;
@@ -19,6 +20,9 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   T_IS_SUPPLY_ENTER: 0.8,
   T_IS_SENSITIVE_DROP: 0.5,
   T_IS_MOVE_EVENT_TAG: 0.6,
+  // P14 校准（n=80，jev-1.13-20260917，只看 category=other 的 31 条）：正类最低 0.88，
+  // 负类最高 0.59（「怎么注册 GP」，办事咨询而非找商家），其余负类 ≤ 0.15。0.8 两边都有余量。
+  T_IS_LOCAL_REQUEST_ENTER: 0.8,
   T_WORTH_REPLYING_AUTO: 2.2,
   T_LANGUAGE_OK_AUTO: 0.8,
   T_MENTIONS_UNVERIFIED_DROP: 0.5,

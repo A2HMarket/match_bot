@@ -26,6 +26,7 @@ export function makeOutboundTool<A>(
     parameters: cfg.parameters,
     needsApproval: async (rc, args, callId) => {
       const ctx = rc.context as MatchContext;
+      if (ctx.outboundBlocked) return false;
       const d = await cfg.toDraft(ctx, toArgs(args));
       if ('error' in d) return false;
       const decision = await decideForOutbound(deps, ctx, {
@@ -37,6 +38,9 @@ export function makeOutboundTool<A>(
     execute: async (args, rc, details) => {
       if (!rc) return 'internal error: missing run context';
       const ctx = (rc as RunContext<MatchContext>).context;
+      if (ctx.outboundBlocked) {
+        return 'not sent: this run was already declined by the outbound gate. Stop; do not retry.';
+      }
       const d = await cfg.toDraft(ctx, toArgs(args));
       if ('error' in d) return d.error;
       const draft: OutboundDraftInput = {

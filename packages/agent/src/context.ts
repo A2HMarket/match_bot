@@ -3,6 +3,7 @@ import type { DemandDraft, Phase } from '@matchbot/domain';
 import type { Thresholds } from '@matchbot/gating';
 import type { evaluateOutbound, JevClient } from '@matchbot/jev';
 import type { Env, Logger } from '@matchbot/shared';
+import type { SearchCandidate, WebSearch } from '@matchbot/websearch';
 import type { ModelProvider } from '@openai/agents';
 
 /** 一次 run 的上下文。Session 粒度是用户；群上下文与开放需求经这里 + instructions 注入。 */
@@ -22,6 +23,15 @@ export interface MatchContext {
   demandId?: string;
   demand?: DemandDraft;
   recentReplies: string[];
+  /** find_suppliers 本次 run 是否查过且为空；web_search 的前置条件之一（P14）。 */
+  supplierSearchEmpty?: boolean;
+  /**
+   * 出站门本轮已拒过一次。之后所有出站工具直接拒绝：出站门决定的是「该不该回」，
+   * 不能让模型改写重投、直到分数过关（2026-09-24 实测连投 6 版才过）。
+   */
+  outboundBlocked?: boolean;
+  /** 本次 run 的 web search 候选；reply_with_search_results 只认这里的编号。 */
+  searchResults?: SearchCandidate[];
 }
 
 export interface AgentDeps {
@@ -32,6 +42,8 @@ export interface AgentDeps {
   logger: Logger;
   /** 注入便于测试（单测不连 Jev）。 */
   evaluateOutbound: typeof evaluateOutbound;
+  /** P14 库外兜底搜索；未配 SEARCH_API_KEY 时为空，相关工具不注册。 */
+  webSearch?: WebSearch;
   /** 测试注入 stub 模型；生产走 configureModelProvider 设的默认 provider。 */
   modelProvider?: ModelProvider;
 }

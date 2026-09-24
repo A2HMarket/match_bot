@@ -11,6 +11,8 @@ const ALLOWED = {
   '@matchbot/gating': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
   '@matchbot/matcher': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
   '@matchbot/channel-telegram': ['@matchbot/shared', '@matchbot/domain', '@matchbot/db'],
+  // P14：只做搜索与页面核验，不碰库、不碰模型
+  '@matchbot/websearch': ['@matchbot/shared'],
   '@matchbot/approval': [
     '@matchbot/shared',
     '@matchbot/domain',
@@ -25,6 +27,7 @@ const ALLOWED = {
     '@matchbot/jev',
     '@matchbot/gating',
     '@matchbot/matcher',
+    '@matchbot/websearch',
   ],
   // §3.2 的链条是 `… ← { approval, agent } ← eval`，即 eval 可依赖它之前的一切。
   // 原先只列了 5 个，漏掉 gating / queue / matcher / channel-telegram / approval，

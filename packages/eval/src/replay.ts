@@ -29,7 +29,7 @@ export interface SampleVerdict {
 export interface ReplayRow {
   id: string;
   lang: string;
-  /** 期望进 agent（标注的 is_demand 或 is_supply）。 */
+  /** 期望进 agent（标注的 is_demand、is_supply 或 is_local_request 任一为真）。 */
   expected: boolean;
   predicted: boolean;
   action: string;
@@ -68,6 +68,11 @@ export interface SignalSummary {
   /** 按金标分组的 is_demand / is_supply 分离度，与阈值无关。 */
   isDemand: { positive: SignalStats; negative: SignalStats };
   isSupply: { positive: SignalStats; negative: SignalStats };
+  /**
+   * P14：只在金标 category=other 的样本上统计——门控也只在 other 上用这道题，
+   * 三品类的需求本来就不靠它（它们在这题上分数偏低，混进来会误导阈值）。
+   */
+  isLocalRequest: { positive: SignalStats; negative: SignalStats };
 }
 export interface SignalStats {
   n: number;
@@ -125,7 +130,7 @@ export function scoreInbound<TThresholds>(p: {
     const decision = p.decide(verdict, p.thresholds);
     actions[decision.action] = (actions[decision.action] ?? 0) + 1;
     const predicted = decision.action === 'enter_agent';
-    const expected = sample.is_demand || sample.is_supply;
+    const expected = sample.is_demand || sample.is_supply || sample.is_local_request;
     if (predicted && expected) tp++;
     else if (predicted && !expected) fp++;
     else if (!predicted && expected) fn++;
@@ -208,8 +213,11 @@ export function summarizeSignals(verdicts: readonly SampleVerdict[]): SignalSumm
         (v) => v.sample.is_demand,
         (v) => v.verdict.isDemand,
       ),
+      // 库外本地求助（「找水管工」「找钢琴调音师」）确实是在请人做付费服务，只是不在三品类里：
+      // 实测 is_demand 0.56–0.70。它们既非 is_demand 的干净正例也非干净反例，且门控走的是
+      // is_local_request 通道，混进反例会把这条空带「拉窄」成假警报。
       negative: pick(
-        (v) => !v.sample.is_demand,
+        (v) => !v.sample.is_demand && !v.sample.is_local_request,
         (v) => v.verdict.isDemand,
       ),
     },
@@ -221,6 +229,16 @@ export function summarizeSignals(verdicts: readonly SampleVerdict[]): SignalSumm
       negative: pick(
         (v) => !v.sample.is_supply,
         (v) => v.verdict.isSupply,
+      ),
+    },
+    isLocalRequest: {
+      positive: pick(
+        (v) => v.sample.category === 'other' && v.sample.is_local_request,
+        (v) => v.verdict.isLocalRequest,
+      ),
+      negative: pick(
+        (v) => v.sample.category === 'other' && !v.sample.is_local_request,
+        (v) => v.verdict.isLocalRequest,
       ),
     },
   };

@@ -8,6 +8,7 @@ const base = {
   category: 'other' as const,
   isSensitive: 0,
   isMoveEvent: 0,
+  isLocalRequest: 0,
 };
 describe('decideInbound', () => {
   it.each([
@@ -48,6 +49,32 @@ describe('decideInbound', () => {
       'housing without move event drops',
       { ...base, isDemand: 0.9, category: 'housing' as const, isMoveEvent: 0.1 },
       { action: 'drop', reason: 'not_demand' },
+    ],
+    [
+      'out-of-catalogue local request enters as other (P14)',
+      { ...base, isLocalRequest: 0.88 },
+      { action: 'enter_agent', category: 'other', kind: 'demand' },
+    ],
+    [
+      // 校准集里负类最高分：「怎么注册 GP」是办事咨询，不是找商家
+      'highest observed non-request stays out',
+      { ...base, isLocalRequest: 0.59 },
+      { action: 'drop', reason: 'not_demand' },
+    ],
+    [
+      'housing is not rescued by the local-request question',
+      { ...base, category: 'housing' as const, isLocalRequest: 0.97 },
+      { action: 'drop', reason: 'not_demand' },
+    ],
+    [
+      'second-hand is not rescued by the local-request question',
+      { ...base, category: 'second_hand' as const, isLocalRequest: 0.97 },
+      { action: 'drop', reason: 'not_demand' },
+    ],
+    [
+      'sensitive still wins over a local request',
+      { ...base, isLocalRequest: 0.97, isSensitive: 0.9 },
+      { action: 'drop', reason: 'sensitive' },
     ],
     [
       'low confidence drops',

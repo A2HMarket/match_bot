@@ -34,6 +34,7 @@ function toDemandDraft(d: Demand): DemandDraft {
   return {
     category: d.category,
     confidence: d.confidence,
+    ...(d.need ? { need: d.need } : {}),
     ...(d.whenText ? { whenText: d.whenText } : {}),
     ...(d.whenAt ? { whenAt: d.whenAt.toISOString() } : {}),
     ...(d.fromPostcode ? { fromPostcode: d.fromPostcode } : {}),
@@ -80,6 +81,18 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     externalId: msg.userId,
     ...(msg.lang ? { lang: msg.lang } : {}),
   });
+  // 队列重投（BullMQ 按 attempts 重试）时整条流程会重跑。agent 可能已经发过消息，
+  // 再跑一遍就是重复发帖——宁可丢这一轮，也不重复（2026-09-24 实测：第 6 版草稿已发出，
+  // 随后 MaxTurns 抛错触发重试，只因 unique 约束碰巧挡住才没发第二遍）。
+  const already = await d.repos.messages.findExisting({
+    groupId: group?.id ?? null,
+    userId: user.id,
+    externalId: msg.messageId,
+  });
+  if (already) {
+    await trace('rule', already.id, { outcome: 'dropped_by_rule', reason: 'duplicate_delivery' });
+    return;
+  }
   const stored = await d.repos.messages.create({
     groupId: group?.id ?? null,
     userId: user.id,
@@ -148,7 +161,20 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
   };
   await trace('gate', stored.id, { outcome: 'entered_agent', decision, verdict });
 
-  const r = await d.runInbound({ deps: d, ctx, input: msg.text });
+  let r: Awaited<ReturnType<typeof d.runInbound>>;
+  try {
+    r = await d.runInbound({ deps: d, ctx, input: msg.text });
+  } catch (e) {
+    // 不抛给队列：agent 跑到一半可能已写出站，整轮重跑会重复发帖。留痕后结束本条。
+    const err = e instanceof Error ? e : new Error(String(e));
+    d.logger.error({ inputRef: stored.id, err: err.name }, 'agent run failed');
+    await trace('gate', stored.id, {
+      outcome: 'agent_failed',
+      error: err.name,
+      message: err.message.slice(0, 200),
+    });
+    return;
+  }
   if (r.kind === 'interrupted') {
     const runState = await d.repos.runStates.findById(r.runStateId);
     if (runState) {

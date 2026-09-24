@@ -3,6 +3,21 @@ import type { Message, PrismaClient } from '../generated/client.js';
 
 export function messagesRepo(prisma: PrismaClient) {
   return {
+    /**
+     * 同一条渠道消息是否已落过库。私聊 groupId 为空，Postgres 的 unique 不把两个 NULL
+     * 视为重复，所以私聊按 userId 查——队列重投时靠它识别，而不是靠 unique 碰运气。
+     */
+    findExisting(p: {
+      groupId: string | null;
+      userId: string;
+      externalId: string;
+    }): Promise<Message | null> {
+      return prisma.message.findFirst({
+        where: p.groupId
+          ? { groupId: p.groupId, externalId: p.externalId }
+          : { groupId: null, userId: p.userId, externalId: p.externalId },
+      });
+    },
     create(p: {
       groupId: string | null;
       userId: string;

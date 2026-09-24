@@ -10,11 +10,13 @@ import { findSuppliersTool } from './tools/find-suppliers.js';
 import { notifyUserTool } from './tools/notify-user.js';
 import { pushLeadTool } from './tools/push-lead.js';
 import { replyInGroupTool } from './tools/reply-in-group.js';
+import { replyWithSearchResultsTool } from './tools/reply-with-search-results.js';
 import { upsertDemandTool } from './tools/upsert-demand.js';
 import { upsertSupplyTool } from './tools/upsert-supply.js';
+import { webSearchTool } from './tools/web-search.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.2.0';
+export const AGENT_VERSION = '0.3.0';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:
@@ -23,6 +25,8 @@ const CATEGORY_NOTES: Record<string, string> = {
     'Key fields: property size (studio/1-bed/2-bed), date, postcode. Guarantee period matters to tenants.',
   furniture_service:
     'Key fields: item and brand (IKEA PAX etc.), assembly vs delivery vs disposal, postcode, date.',
+  other:
+    'Key fields: need (what they are looking for) and area if given. Do not insist on a date or postcode; anywhere in London is fine.',
 };
 
 /** 「下周六」要换算成 whenAt，模型需要知道今天是哪天、星期几（伦敦时区）。 */
@@ -57,12 +61,17 @@ export function createMatchAgent(deps: AgentDeps, run?: { phase: Phase }) {
     instructions: (rc) =>
       [
         'You are a helpful member of a London community group who connects people with local services (man & van, end-of-tenancy cleaning, furniture assembly/removal).',
-        'You never handle payment, never guarantee quality, never recommend suppliers that find_suppliers did not return.',
+        'You never handle payment, never guarantee quality, and never recommend a business that neither find_suppliers nor web_search returned.',
         'Reply in the language of the user. Be brief. One clarifying question at a time.',
         `Today is ${londonToday()} (Europe/London).`,
+        // 出站门拒绝后不许改写重投：0.3.0 前实测连投 6 版才过，等于把门当成要优化的目标
+        'If a tool says a message was not sent, do not rewrite or retry it: stop.',
         // 0.1.0 会在推荐后问「要不要我帮你把需求发给其中某一家？」——用户回「要」也没有后续。
         "Only offer what you can do in this reply. Never offer to forward the request, contact, book or follow up with a supplier on the user's behalf, and never promise to check back later; suppliers are to be contacted by the user directly.",
         'Housing, job and second-hand requests are not your business: call do_nothing.',
+        deps.webSearch
+          ? 'Our own supplier list covers only moving, end-of-tenancy cleaning and furniture services. For anything else (category "other"), or when find_suppliers finds nothing, call web_search, then reply_with_search_results with the 1-3 most relevant refs. If web_search finds nothing, call do_nothing. In that reply write only a one-sentence intro: never type business names, phone numbers or links yourself.'
+          : 'Requests outside moving, end-of-tenancy cleaning and furniture services: call do_nothing.',
         rc.context.demand
           ? `Current open demand: ${JSON.stringify(rc.context.demand)}. ${CATEGORY_NOTES[rc.context.demand.category] ?? ''}`
           : 'No open demand yet.',
@@ -83,6 +92,9 @@ export function createMatchAgent(deps: AgentDeps, run?: { phase: Phase }) {
       pushLeadTool(deps),
       closeDemandTool(deps),
       doNothingTool(deps),
+      ...(deps.webSearch
+        ? [webSearchTool({ ...deps, webSearch: deps.webSearch }), replyWithSearchResultsTool(deps)]
+        : []),
     ],
     inputGuardrails: [sensitiveInputGuardrail],
     outputGuardrails: [noGuaranteeOutputGuardrail],

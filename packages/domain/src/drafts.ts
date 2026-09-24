@@ -12,6 +12,8 @@ export type OutboundKind = (typeof OUTBOUND_KINDS)[number];
 /** agent 工具与仓储之间传递的需求草稿。postcode 为归一化后的 outward 或 full。 */
 export const demandDraftSchema = z.object({
   category: z.enum(DEMAND_CATEGORIES),
+  /** 在找什么，简短英文，如 "Chinese birthday cake"。P14 web search 只用它 + 区域拼查询。 */
+  need: z.string().max(80).optional(),
   whenText: z.string().max(200).optional(),
   whenAt: z.iso.datetime().optional(),
   fromPostcode: z.string().max(8).optional(),

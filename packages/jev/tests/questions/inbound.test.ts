@@ -40,6 +40,7 @@ describe('evaluateInbound', () => {
             has_location: { type: 'noul', noul: 0.95 },
             is_sensitive: { type: 'noul', noul: 0.01 },
             is_move_event: { type: 'noul', noul: 0.2 },
+            is_local_request: { type: 'noul', noul: 0.3 },
           },
         }),
       ) as never,

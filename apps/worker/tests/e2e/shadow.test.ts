@@ -83,6 +83,7 @@ function jevStub(over: Record<string, unknown> = {}) {
           has_location: { type: 'noul', noul: 0.9 },
           is_sensitive: { type: 'noul', noul: 0.01 },
           is_move_event: { type: 'noul', noul: 0.1 },
+          is_local_request: { type: 'noul', noul: 0.3 },
           ...over,
         },
       };
@@ -139,6 +140,7 @@ describe('shadow e2e (Phase 0)', () => {
       [
         functionCall('upsert_demand', 'c1', {
           category: 'man_and_van',
+          need: null,
           whenText: 'Sunday',
           whenAt: null,
           fromPostcode: 'E14',

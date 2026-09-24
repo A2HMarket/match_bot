@@ -5,6 +5,7 @@ import type { Demand, Prisma, PrismaClient } from '../generated/client.js';
 // create 用 ?? null 显式置空，update 只写补丁里出现的键（undefined 表示不动该字段）。
 function draftToCreateData(d: DemandDraft) {
   return {
+    need: d.need ?? null,
     whenText: d.whenText ?? null,
     whenAt: d.whenAt ? new Date(d.whenAt) : null,
     fromPostcode: d.fromPostcode ?? null,
@@ -18,6 +19,7 @@ function draftToCreateData(d: DemandDraft) {
 
 function draftToUpdateData(d: Partial<DemandDraft>): Prisma.DemandUpdateInput {
   const data: Prisma.DemandUpdateInput = {};
+  if (d.need !== undefined) data.need = d.need;
   if (d.whenText !== undefined) data.whenText = d.whenText;
   if (d.whenAt !== undefined) data.whenAt = new Date(d.whenAt);
   if (d.fromPostcode !== undefined) data.fromPostcode = d.fromPostcode;

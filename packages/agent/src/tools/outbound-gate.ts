@@ -14,8 +14,11 @@ export interface OutboundDraftInput {
   toolCallId?: string;
   /** 附加在工具返回值末尾的说明（如 push_lead 的人工转达提示）。 */
   resultNote?: string;
-  /** 是否附免责。只有向用户推荐商家的草稿（reply_in_group）需要，追问与线索不需要。 */
-  disclaimer?: boolean; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
+  /**
+   * 附哪种免责。推荐库内商家用 catalogue，推荐 web search 结果用 web（明说未核实）；
+   * 追问与线索不附。
+   */
+  disclaimer?: 'catalogue' | 'web'; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
   replyToMessageId?: string;
   mentionUserId?: string;
 }
@@ -25,21 +28,36 @@ export interface OutboundDraftInput {
  * 此前是所有出站都附一句英文，连「请问您什么时候搬？」这种追问后面也挂着
  * 「直接联系他们报价」——没有「他们」，而且中文对话后面跟英文。
  */
-const DISCLAIMERS: Record<string, string> = {
-  zh: '请直接联系商家确认报价与档期，我们不参与交易。',
-  en: 'Please contact the suppliers directly to confirm price and availability — we are not part of the transaction.',
-  ru: 'Цену и время уточняйте напрямую у исполнителя — мы не участвуем в сделке.',
-  uk: 'Ціну та час уточнюйте безпосередньо у виконавця — ми не беремо участі в угоді.',
-  pt: 'Confirme preço e disponibilidade diretamente com o fornecedor — não fazemos parte da transação.',
+const DISCLAIMERS: Record<'catalogue' | 'web', Record<string, string>> = {
+  catalogue: {
+    zh: '请直接联系商家确认报价与档期，我们不参与交易。',
+    en: 'Please contact the suppliers directly to confirm price and availability — we are not part of the transaction.',
+    ru: 'Цену и время уточняйте напрямую у исполнителя — мы не участвуем в сделке.',
+    uk: 'Ціну та час уточнюйте безпосередньо у виконавця — ми не беремо участі в угоді.',
+    pt: 'Confirme preço e disponibilidade diretamente com o fornecedor — não fazemos parte da transação.',
+  },
+  // P14：搜索结果没有人工把关（PoC 里大量是按区域做的 SEO 中介页），必须明说未核实
+  web: {
+    zh: '以上来自公开网络搜索，我们没有核实过这些商家，请自行判断并直接联系确认。',
+    en: 'These come from a public web search — we have not checked these businesses, so please judge for yourself and contact them directly.',
+    ru: 'Это результаты открытого веб-поиска — мы не проверяли эти компании, решайте сами и связывайтесь с ними напрямую.',
+    uk: 'Це результати відкритого пошуку в інтернеті — ми не перевіряли ці компанії, вирішуйте самі та звертайтеся до них напряму.',
+    pt: 'Isto vem de uma busca pública na internet — não verificamos estas empresas, avalie por conta própria e contacte-as diretamente.',
+  },
 };
 
 /**
  * 语言优先用需求上记录的 lang；没有就只凭汉字判中文。西里尔字母不猜俄/乌——
  * 给乌克兰用户回俄语比回英语糟得多，猜不准就落到英语。
  */
-export function disclaimerFor(lang: string | undefined, text: string): string {
-  const key = lang && DISCLAIMERS[lang] ? lang : /\p{Script=Han}/u.test(text) ? 'zh' : 'en';
-  return DISCLAIMERS[key]!;
+export function disclaimerFor(
+  lang: string | undefined,
+  text: string,
+  kind: 'catalogue' | 'web' = 'catalogue',
+): string {
+  const set = DISCLAIMERS[kind];
+  const key = lang && set[lang] ? lang : /\p{Script=Han}/u.test(text) ? 'zh' : 'en';
+  return set[key]!;
 }
 
 /** PRD §6.2「一个群一天三次就是广告机器人」。群级额度取 groups.rateLimitPerDay，这里只是缺省。 */
@@ -120,14 +138,19 @@ export async function executeOutbound(
   d: OutboundDraftInput,
   decision: OutboundDecision,
 ): Promise<string> {
-  if (decision === 'drop') return 'not sent: the outbound gate dropped this draft';
+  if (decision === 'drop') {
+    ctx.outboundBlocked = true;
+    return 'not sent: the outbound gate decided this should not be posted. Do not rewrite or retry; stop here.';
+  }
   const status = decision === 'dry_run' ? 'dry_run' : 'pending';
   const row = await deps.repos.outbound.create(
     {
       channel: 'telegram',
       kind: d.kind,
       target: d.target,
-      text: d.disclaimer ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text)}` : d.text,
+      text: d.disclaimer
+        ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text, d.disclaimer)}`
+        : d.text,
       ...(d.toolCallId ? { toolCallId: d.toolCallId } : {}),
       ...(d.replyToMessageId ? { replyToMessageId: d.replyToMessageId } : {}),
       ...(d.mentionUserId ? { mentionUserId: d.mentionUserId } : {}),
