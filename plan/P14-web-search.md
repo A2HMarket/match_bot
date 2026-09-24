@@ -1,6 +1,6 @@
 # P14 库外需求：web search 兜底
 
-> 状态：**已实施（方案 B）**，待真实群验证。2026-09-24 用户选 B：华人店铺也覆盖，接受 Instagram / WhatsApp 作联系方式。
+> 状态：**完成（方案 B）**，2026-09-24 真实群验证通过。2026-09-24 用户选 B：华人店铺也覆盖，接受 Instagram / WhatsApp 作联系方式。
 
 **动机（2026-09-24 产品决定）**：只靠 30 家商家与三个品类，大多数群内求助 bot 都接不住。决定：库里有合适数据就用库；没有就用 web search 回答。
 **Spec:** PRD §3.3（不经手交易、免责）、§6.2（频控）；AGENTS.md §3.3、§6
@@ -102,4 +102,4 @@
 |---|---|
 | PoC | 2026-09-24 完成，结论见 §2 |
 | 实施 | 2026-09-24 完成，见 §4–§5。`pnpm check` 50 文件 / 272 用例 |
-| 真实群验证 | 待做 |
+| 真实群验证 | 2026-09-24 通过。「london happy life」（Phase 2）发「Battersea 附近华人超市」：Jev is_local_request 0.98 → web_search 核验出 HIYOU、Tian Tian Market（均为 Instagram）→ 出站门 worth 2.45 / language 0.97 / unverified 0.03 → auto，约 15 秒到群，@ 了提问人。注意：agent 第二次搜索自行去掉了区域（查询为「Chinese supermarket」），开场白「Battersea 附近没查到」大体属实但并非按 Battersea 重搜得出 |

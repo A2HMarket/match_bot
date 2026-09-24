@@ -26,7 +26,7 @@
 | P11 | apps/worker | [P11-app-worker.md](./P11-app-worker.md) | P8, P9, P10 | 3 | claude | 完成 | 直接提交 main | 2026-09-22 |
 | P12 | eval | [P12-eval.md](./P12-eval.md) | P8 | 3 | claude | 完成 | 直接提交 main | 2026-09-22 |
 | P13 | Phase 0 上线清单 | [P13-phase0-launch.md](./P13-phase0-launch.md) | P11, P12 | 3 | claude | 进行中 | 工程项已完成；数据/合规/Shadow 待人工 | 2026-09-22 |
-| P14 | 库外需求 web search 兜底 | [P14-web-search.md](./P14-web-search.md) | P8, P11 | 4 | claude | 评审中 | 方案 B 已实施，待真实群验证 | 2026-09-24 |
+| P14 | 库外需求 web search 兜底 | [P14-web-search.md](./P14-web-search.md) | P8, P11 | 4 | claude | 完成 | 方案 B，真实群验证通过 | 2026-09-24 |
 
 ## 波次与并行
 
