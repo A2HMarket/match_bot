@@ -31,6 +31,7 @@ export function replyInGroupTool(deps: AgentDeps) {
           error: 'unknown supplier id; call find_suppliers again and only use ids it returned',
         };
       return {
+        kind: 'recommendation',
         target: ctx.chatId,
         text: args.text,
         supplierSummaries: suppliers.map((s) => `${s.name} ${s.roughPrice ?? ''}`.trim()),

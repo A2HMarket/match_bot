@@ -36,7 +36,13 @@ const ctx = (phase: 0 | 1 | 2) =>
     sourceMessageId: 'm1',
     demand: { category: 'man_and_van', confidence: 0.9 },
   }) as never;
-const draft = { target: '-1', text: '3 options', supplierSummaries: ['Van Co'], inputRef: 'r1' };
+const draft = {
+  kind: 'recommendation' as const,
+  target: '-1',
+  text: '3 options',
+  supplierSummaries: ['Van Co'],
+  inputRef: 'r1',
+};
 
 describe('decideForOutbound', () => {
   it('phase 0 -> dry_run without calling jev, still writes a gate trace', async () => {
@@ -62,6 +68,30 @@ describe('decideForOutbound', () => {
     const d = deps();
     d.repos.outbound.countSentToTargetSince.mockResolvedValueOnce(3);
     expect(await decideForOutbound(d as never, ctx(2), draft)).toBe('review');
+  });
+  it('phase 2 rate limit does not apply to clarifying questions', async () => {
+    const d = deps();
+    d.repos.outbound.countSentToTargetSince.mockResolvedValue(99);
+    const q = { ...draft, kind: 'clarification' as const, supplierSummaries: [] };
+    expect(await decideForOutbound(d as never, ctx(2), q)).toBe('auto');
+    expect(d.repos.outbound.countSentToTargetSince).not.toHaveBeenCalled();
+  });
+  it('phase 2 uses the group limit rather than the default 3', async () => {
+    const d = deps();
+    d.repos.outbound.countSentToTargetSince.mockResolvedValue(4);
+    const generous = { ...(ctx(2) as object), rateLimitPerDay: 10 } as never;
+    expect(await decideForOutbound(d as never, generous, draft)).toBe('auto');
+    const strict = { ...(ctx(2) as object), rateLimitPerDay: 1 } as never;
+    d.repos.outbound.countSentToTargetSince.mockResolvedValue(1);
+    expect(await decideForOutbound(d as never, strict, { ...draft, text: 'other' })).toBe('review');
+  });
+  it('records the kind on the outbound row', async () => {
+    const d = deps();
+    await executeOutbound(d as never, ctx(0), { ...draft, kind: 'clarification' }, 'dry_run');
+    expect(d.repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'clarification' }),
+      'dry_run',
+    );
   });
   it('caches the decision within a run (needsApproval + execute 只调一次 Jev)', async () => {
     const d = deps();

@@ -97,6 +97,25 @@ describe('outbound', () => {
       expect(await r.outbound.claimPending(10)).toEqual([]);
     });
   });
+  it('countSentToTargetSince filters by kind; rows default to recommendation', async () => {
+    await withTestDb(async (tx) => {
+      const r = createRepositories(tx);
+      const rec = await r.outbound.create(
+        { channel: 'telegram', target: '-2', text: 'r' },
+        'pending',
+      );
+      const ask = await r.outbound.create(
+        { channel: 'telegram', target: '-2', text: 'q', kind: 'clarification' },
+        'pending',
+      );
+      expect(rec.kind).toBe('recommendation');
+      await r.outbound.markSent(rec.id);
+      await r.outbound.markSent(ask.id);
+      const since = new Date(Date.now() - 60e3);
+      expect(await r.outbound.countSentToTargetSince('-2', since)).toBe(2);
+      expect(await r.outbound.countSentToTargetSince('-2', since, 'recommendation')).toBe(1);
+    });
+  });
 });
 
 describe('traces', () => {

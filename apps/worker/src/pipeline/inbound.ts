@@ -142,6 +142,7 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     phase,
     sourceMessageId: stored.id,
     source: { messageId: msg.messageId, userId: msg.userId },
+    ...(group ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
     recentReplies: [],
     ...(open ? { demandId: open.id, demand: toDemandDraft(open) } : {}),
   };

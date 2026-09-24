@@ -5,6 +5,10 @@ import { DEMAND_CATEGORIES } from './demand.js';
 export const OUTBOUND_CHANNELS = ['telegram', 'whatsapp'] as const;
 export type OutboundChannel = (typeof OUTBOUND_CHANNELS)[number];
 
+/** 出站用途。频控只数 recommendation；与 Prisma enum OutboundKind 一一对应。 */
+export const OUTBOUND_KINDS = ['recommendation', 'clarification', 'notification', 'lead'] as const;
+export type OutboundKind = (typeof OUTBOUND_KINDS)[number];
+
 /** agent 工具与仓储之间传递的需求草稿。postcode 为归一化后的 outward 或 full。 */
 export const demandDraftSchema = z.object({
   category: z.enum(DEMAND_CATEGORIES),
@@ -32,6 +36,8 @@ export const outboundDraftSchema = z.object({
   target: z.string().min(1),
   text: z.string().min(1).max(4000),
   toolCallId: z.string().optional(),
+  /** 缺省按 recommendation 计，宁可多算进频控也不漏算。 */
+  kind: z.enum(OUTBOUND_KINDS).optional(),
   /** 群内回帖时回复的那条原消息（渠道侧 message id）。 */
   replyToMessageId: z.string().optional(),
   /** 发送时要 @ 的用户（渠道侧 user id）。只存 id，名字由发送端现查，不落库（AGENTS.md §6）。 */

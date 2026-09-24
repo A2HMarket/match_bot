@@ -21,6 +21,7 @@ export function pushLeadTool(deps: AgentDeps) {
         return { error: 'unknown supplier id; call find_suppliers and only use ids it returned' };
       if (!supplier.telegram)
         return {
+          kind: 'lead',
           target: deps.env.TELEGRAM_OPS_CHAT_ID,
           text: `MANUAL LEAD for ${supplier.name} (no telegram on file): ${args.demandSummary}`,
           supplierSummaries: [supplier.name],
@@ -28,6 +29,7 @@ export function pushLeadTool(deps: AgentDeps) {
           resultNote: 'supplier has no telegram; ops will send manually',
         };
       return {
+        kind: 'lead',
         target: supplier.telegram,
         text: `New lead from a London community group (${ctx.demand?.category ?? 'service'}): ${args.demandSummary}`,
         supplierSummaries: [supplier.name],

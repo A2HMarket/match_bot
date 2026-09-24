@@ -17,6 +17,8 @@ export interface MatchContext {
    * 群内回帖用它回复原消息并 @ 作者；私聊回复发给这个作者。可选：旧快照里没有。
    */
   source?: { messageId: string; userId: string };
+  /** 该群每天可推荐的条数（groups.rateLimitPerDay）；私聊或旧快照缺省用 3。 */
+  rateLimitPerDay?: number;
   demandId?: string;
   demand?: DemandDraft;
   recentReplies: string[];

@@ -24,7 +24,7 @@ PHASES / Phase
 isServiceCategory(c: DemandCategory): boolean
 demandDraftSchema / DemandDraft   // { category, whenText?, whenAt?(ISO), fromPostcode?, toPostcode?, quantity?, budgetPence?, lang?, confidence }
 supplyDraftSchema / SupplyDraft   // { category, availability?, area?, expiresAt(ISO) }
-outboundDraftSchema / OutboundDraft // { channel, target, text, toolCallId?, replyToMessageId?, mentionUserId? }（后两者为渠道侧 id，2026-09-23 加）
+outboundDraftSchema / OutboundDraft // { channel, target, text, toolCallId?, kind?, replyToMessageId?, mentionUserId? }（kind ∈ OUTBOUND_KINDS，缺省 recommendation；后两者为渠道侧 id，2026-09-23 加）
 TRACE_KINDS / TraceKind           // 'rule' | 'jev' | 'agent_run' | 'gate'
 decisionTraceInputSchema / DecisionTraceInput // { kind, inputRef, output: unknown, phase, latencyMs, costMicro? }
 INBOUND_QUESTION_IDS = ['is_demand','is_supply','category','urgency','has_location','is_sensitive','is_move_event'] as const
@@ -94,7 +94,7 @@ interface Repositories {
     claimPending(limit: number): Promise<OutboundMessage[]>;       // 取 pending 并不改状态；发送方 markSent/markFailed
     markSent(id: string): Promise<void>;
     markFailed(id: string, error: string): Promise<void>;
-    countSentToTargetSince(target: string, since: Date): Promise<number>;   // 频控用
+    countSentToTargetSince(target: string, since: Date, kind?: OutboundKind): Promise<number>; // 频控传 'recommendation'
   };
   traces: {
     create(input: DecisionTraceInput): Promise<DecisionTrace>;
@@ -194,7 +194,7 @@ parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' |
 AGENT_VERSION: string                          // 已有，改 instructions/工具描述时递增
 createMatchAgent(deps: AgentDeps): { agent: Agent<MatchContext>; runner: Runner }
 interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; modelProvider?: ModelProvider }
-interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; demandId?: string; demand?: DemandDraft; recentReplies: string[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标
+interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number; demandId?: string; demand?: DemandDraft; recentReplies: string[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标
 runInbound(p: { deps: AgentDeps; ctx: MatchContext; input: string }): Promise<RunOutcome>
 resumeRun(p: { deps: AgentDeps; runState: RunState; approval: Approval }): Promise<RunOutcome>
 type RunOutcome =

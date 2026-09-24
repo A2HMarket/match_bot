@@ -1,9 +1,12 @@
 import { createRateLimiter, decideOutbound, type OutboundDecision } from '@matchbot/gating';
+import type { OutboundKind } from '@matchbot/domain';
 import { hashText } from '@matchbot/shared';
 import type { RunContext } from '@openai/agents';
 import type { AgentDeps, MatchContext } from '../context.js';
 
 export interface OutboundDraftInput {
+  /** 用途；决定是否计入频控。每个出站工具必须显式给出。 */
+  kind: OutboundKind;
   target: string;
   text: string;
   supplierSummaries: string[];
@@ -39,8 +42,8 @@ export function disclaimerFor(lang: string | undefined, text: string): string {
   return DISCLAIMERS[key]!;
 }
 
-/** PRD §6.2「一个群一天三次就是广告机器人」。群级覆盖留待 group_configs 落地后接入。 */
-const OUTBOUND_LIMIT_PER_DAY = 3;
+/** PRD §6.2「一个群一天三次就是广告机器人」。群级额度取 groups.rateLimitPerDay，这里只是缺省。 */
+const DEFAULT_LIMIT_PER_DAY = 3;
 
 /**
  * needsApproval 与 execute 在一次 run 里都会要出站决定；按（ctx, target+text）缓存，
@@ -76,11 +79,14 @@ export async function decideForOutbound(
         })
       : null;
     verdict = v && v.ok ? v : null;
-    rateOk = await createRateLimiter(deps.repos.outbound).check({
-      target: d.target,
-      limitPerDay: OUTBOUND_LIMIT_PER_DAY,
-      now: new Date(),
-    });
+    // 只有推荐受频控；追问、通知、线索不占额度
+    rateOk =
+      d.kind !== 'recommendation' ||
+      (await createRateLimiter(deps.repos.outbound).check({
+        target: d.target,
+        limitPerDay: ctx.rateLimitPerDay ?? DEFAULT_LIMIT_PER_DAY,
+        now: new Date(),
+      }));
   }
   const decision = decideOutbound({
     phase: ctx.phase,
@@ -119,6 +125,7 @@ export async function executeOutbound(
   const row = await deps.repos.outbound.create(
     {
       channel: 'telegram',
+      kind: d.kind,
       target: d.target,
       text: d.disclaimer ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text)}` : d.text,
       ...(d.toolCallId ? { toolCallId: d.toolCallId } : {}),

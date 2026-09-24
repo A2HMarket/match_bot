@@ -15,6 +15,7 @@ export function notifyUserTool(deps: AgentDeps) {
       Promise.resolve(
         ctx.source
           ? {
+              kind: 'notification',
               target: ctx.source.userId,
               text: args.text,
               supplierSummaries: [],

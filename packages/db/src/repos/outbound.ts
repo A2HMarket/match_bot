@@ -1,4 +1,4 @@
-import type { OutboundDraft } from '@matchbot/domain';
+import type { OutboundDraft, OutboundKind } from '@matchbot/domain';
 import type { OutboundMessage, OutboundStatus, PrismaClient } from '../generated/client.js';
 
 export function outboundRepo(prisma: PrismaClient) {
@@ -10,6 +10,7 @@ export function outboundRepo(prisma: PrismaClient) {
           target: draft.target,
           text: draft.text,
           toolCallId: draft.toolCallId ?? null,
+          kind: draft.kind ?? 'recommendation',
           replyToMessageId: draft.replyToMessageId ?? null,
           mentionUserId: draft.mentionUserId ?? null,
           status,
@@ -32,9 +33,10 @@ export function outboundRepo(prisma: PrismaClient) {
     async markFailed(id: string, error: string): Promise<void> {
       await prisma.outboundMessage.update({ where: { id }, data: { status: 'failed', error } });
     },
-    countSentToTargetSince(target: string, since: Date): Promise<number> {
+    /** kind 缺省时数全部用途（兼容旧调用）；频控传 recommendation。 */
+    countSentToTargetSince(target: string, since: Date, kind?: OutboundKind): Promise<number> {
       return prisma.outboundMessage.count({
-        where: { target, status: 'sent', sentAt: { gte: since } },
+        where: { target, status: 'sent', sentAt: { gte: since }, ...(kind ? { kind } : {}) },
       });
     },
   };

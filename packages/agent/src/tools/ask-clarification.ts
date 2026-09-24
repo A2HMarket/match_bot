@@ -17,6 +17,7 @@ export function askClarificationTool(deps: AgentDeps) {
     }),
     toDraft: (ctx, args: { question: string; missingFields: string[] }) =>
       Promise.resolve({
+        kind: 'clarification',
         target: ctx.chatId,
         text: args.question,
         supplierSummaries: [],
