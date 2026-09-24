@@ -49,7 +49,7 @@ const groupSchema = z.object({
   phase: z.number().int().min(0).max(2).default(0),
   categoriesEnabled: z.array(z.enum(DEMAND_CATEGORIES)).default([]),
   adminContact: z.string().nullish(),
-  rateLimitPerDay: z.number().int().positive().default(3),
+  rateLimitPerDay: z.number().int().positive().nullish(), // 不填 = 不限
   isActive: z.boolean().default(false), // 默认关闭：管理员同意后才手动开（PRD §6.2）
 });
 

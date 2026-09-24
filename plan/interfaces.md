@@ -206,7 +206,7 @@ parseApprovalCallback(data: string): { runStateId: string; decision: 'approve' |
 AGENT_VERSION: string                          // 已有，改 instructions/工具描述时递增
 createMatchAgent(deps: AgentDeps): { agent: Agent<MatchContext>; runner: Runner }
 interface AgentDeps { env: Env; repos: Repositories; jev: JevClient; thresholds: Thresholds; logger: Logger; evaluateOutbound: typeof evaluateOutbound; webSearch?: WebSearch; modelProvider?: ModelProvider }   // webSearch 缺省则库外工具不注册
-interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number; demandId?: string; demand?: DemandDraft; recentReplies: string[]; addressedToBot?: boolean; replyToBotText?: string; supplierSearchEmpty?: boolean; outboundBlocked?: boolean; searchResults?: SearchCandidate[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标；outboundBlocked：出站门拒过一次后本轮不再出站
+interface MatchContext { userId: string; chatId: string; groupId: string | null; phase: Phase; sourceMessageId: string; source?: { messageId: string; userId: string }; rateLimitPerDay?: number /* 缺省 = 不限 */; demandId?: string; demand?: DemandDraft; recentReplies: string[]; addressedToBot?: boolean; replyToBotText?: string; supplierSearchEmpty?: boolean; outboundBlocked?: boolean; searchResults?: SearchCandidate[] }  // source 为渠道侧 id，用于回帖 @ 作者与私聊目标；outboundBlocked：出站门拒过一次后本轮不再出站
 runInbound(p: { deps: AgentDeps; ctx: MatchContext; input: string }): Promise<RunOutcome>
 resumeRun(p: { deps: AgentDeps; runState: RunState; approval: Approval }): Promise<RunOutcome>
 type RunOutcome =

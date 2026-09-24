@@ -64,10 +64,17 @@ describe('decideForOutbound', () => {
     d.evaluateOutbound.mockResolvedValueOnce({ ok: false, reason: 'timeout' });
     expect(await decideForOutbound(d as never, ctx(2), draft)).toBe('review');
   });
-  it('phase 2 rate limit hit -> review', async () => {
+  it('phase 2 rate limit hit -> review, when the group has a limit', async () => {
     const d = deps();
     d.repos.outbound.countSentToTargetSince.mockResolvedValueOnce(3);
-    expect(await decideForOutbound(d as never, ctx(2), draft)).toBe('review');
+    const limited = { ...(ctx(2) as object), rateLimitPerDay: 3 } as never;
+    expect(await decideForOutbound(d as never, limited, draft)).toBe('review');
+  });
+  it('phase 2 has no daily cap when the group sets none (default)', async () => {
+    const d = deps();
+    d.repos.outbound.countSentToTargetSince.mockResolvedValue(50);
+    expect(await decideForOutbound(d as never, ctx(2), draft)).toBe('auto');
+    expect(d.repos.outbound.countSentToTargetSince).not.toHaveBeenCalled();
   });
   it('phase 2 rate limit does not apply to clarifying questions', async () => {
     const d = deps();

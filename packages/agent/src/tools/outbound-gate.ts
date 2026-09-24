@@ -62,9 +62,6 @@ export function disclaimerFor(
   return set[key]!;
 }
 
-/** PRD §6.2「一个群一天三次就是广告机器人」。群级额度取 groups.rateLimitPerDay，这里只是缺省。 */
-const DEFAULT_LIMIT_PER_DAY = 3;
-
 /**
  * needsApproval 与 execute 在一次 run 里都会要出站决定；按（ctx, target+text）缓存，
  * 避免 Phase 2 下同一草稿调两次 Jev。
@@ -113,12 +110,15 @@ export async function decideForOutbound(
         })
       : null;
     verdict = v && v.ok ? v : null;
-    // 只有推荐受频控；追问、通知、线索不占额度
+    // 只有推荐受频控，且只在群设了额度时才限（2026-09-25 起默认不限；PRD §6.2 原为一天 3 次）。
+    // 追问、通知、线索、表情不占额度。
+    const limit = ctx.rateLimitPerDay;
     rateOk =
       d.kind !== 'recommendation' ||
+      limit === undefined ||
       (await createRateLimiter(deps.repos.outbound).check({
         target: d.target,
-        limitPerDay: ctx.rateLimitPerDay ?? DEFAULT_LIMIT_PER_DAY,
+        limitPerDay: limit,
         now: new Date(),
       }));
   }

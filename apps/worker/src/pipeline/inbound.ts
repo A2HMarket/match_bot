@@ -158,7 +158,7 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     phase,
     sourceMessageId: stored.id,
     source: { messageId: msg.messageId, userId: msg.userId },
-    ...(group ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
+    ...(group?.rateLimitPerDay != null ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
     ...(msg.addressedToBot ? { addressedToBot: true } : {}),
     ...(msg.replyToBotText ? { replyToBotText: msg.replyToBotText } : {}),
     recentReplies: [],

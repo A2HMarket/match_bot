@@ -96,7 +96,7 @@ model Group {
   phase             Int      @default(0) // 0 shadow / 1 review / 2 auto
   categoriesEnabled String[] @map("categories_enabled")
   adminContact      String?  @map("admin_contact")
-  rateLimitPerDay   Int      @default(3) @map("rate_limit_per_day")
+  rateLimitPerDay   Int?     @map("rate_limit_per_day") // 每天最多推荐几次；空 = 不限（2026-09-25 起默认不限）
   isActive          Boolean  @default(true) @map("is_active")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz

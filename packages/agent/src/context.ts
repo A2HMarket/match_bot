@@ -18,7 +18,7 @@ export interface MatchContext {
    * 群内回帖用它回复原消息并 @ 作者；私聊回复发给这个作者。可选：旧快照里没有。
    */
   source?: { messageId: string; userId: string };
-  /** 该群每天可推荐的条数（groups.rateLimitPerDay）；私聊或旧快照缺省用 3。 */
+  /** 该群每天最多推荐几次（groups.rateLimitPerDay）；缺省 = 不限。 */
   rateLimitPerDay?: number;
   /** 用户在对 bot 说话（回复 bot / @bot），以及被回复的那条 bot 消息原文。 */
   addressedToBot?: boolean;
