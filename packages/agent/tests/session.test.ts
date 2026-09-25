@@ -1,5 +1,6 @@
+import type { AgentInputItem } from '@openai/agents';
 import { describe, expect, it, vi } from 'vitest';
-import { createPgSession } from '../src/session.js';
+import { createPgSession, trimHistory } from '../src/session.js';
 
 function repos() {
   const store: unknown[] = [];
@@ -68,16 +69,111 @@ describe('createPgSession', () => {
     const out = s.prepareHistoryItemForModelInput?.(item) as { content: object[] };
     expect(out.content[0]).toEqual({ type: 'output_text', text: 'ok' });
   });
+});
 
-  it('trims history to 40 items without splitting a function_call pair', async () => {
+// 夹具用 SDK 自己的 AgentInputItem 类型写：类型名一旦写错（如 function_call_output），
+// 编译就过不了。旧测试用手写对象，与实现一起写错了名字，所以一直是绿的。
+const user = (text: string): AgentInputItem => ({ type: 'message', role: 'user', content: text });
+const assistant = (text: string): AgentInputItem => ({
+  type: 'message',
+  role: 'assistant',
+  status: 'completed',
+  content: [{ type: 'output_text', text }],
+});
+const call = (id: string, name: string): AgentInputItem => ({
+  type: 'function_call',
+  callId: id,
+  name,
+  arguments: '{}',
+});
+const result = (id: string, name: string): AgentInputItem => ({
+  type: 'function_call_result',
+  callId: id,
+  name,
+  status: 'completed',
+  output: { type: 'text', text: 'ok' },
+});
+/** 一轮：用户说话 → 若干工具调用与结果 → 助手收尾。 */
+function turn(n: number, tools: string[]): AgentInputItem[] {
+  return [
+    user(`u${n}`),
+    ...tools.flatMap((t, i) => [call(`c${n}_${i}`, t), result(`c${n}_${i}`, t)]),
+    assistant(`a${n}`),
+  ];
+}
+
+/** chat completions 的硬约束：每个工具结果前有它的调用，每个调用后有它的结果。 */
+function assertToolPairing(items: AgentInputItem[]) {
+  const seen = new Set<string>();
+  for (const i of items as Array<{ type?: string; callId?: string }>) {
+    if (i.type === 'function_call') seen.add(i.callId!);
+    if (i.type === 'function_call_result')
+      expect(seen.has(i.callId!), `orphan result ${i.callId}`).toBe(true);
+  }
+  const results = new Set(
+    (items as Array<{ type?: string; callId?: string }>)
+      .filter((i) => i.type === 'function_call_result')
+      .map((i) => i.callId),
+  );
+  for (const id of seen) expect(results.has(id), `call without result ${id}`).toBe(true);
+}
+
+describe('trimHistory', () => {
+  it('regression 2026-09-24: 42 items used to start on an orphaned tool result', () => {
+    // 与实测用户的历史同形：5 轮，共 42 条；旧逻辑从第 3 条（upsert_demand 的结果）开始
+    const items = [
+      ...turn(1, ['upsert_demand', 'ask_clarification']),
+      ...turn(2, ['upsert_demand', 'find_suppliers', 'reply_in_group']),
+      ...turn(3, ['web_search', 'upsert_demand', 'find_suppliers', 'web_search', 'do_nothing']),
+      ...turn(4, ['web_search', 'reply_with_search_results']),
+      ...turn(5, ['upsert_demand', 'find_suppliers', 'web_search', 'reply_with_search_results']),
+    ];
+    expect(items).toHaveLength(42);
+    const got = trimHistory(items);
+    expect(got[0]).toEqual(user('u2'));
+    assertToolPairing(got);
+  });
+
+  it('always starts the window on a user message', () => {
+    const items = Array.from({ length: 12 }, (_, n) => turn(n, ['a', 'b'])).flat(); // 12 × 6 = 72
+    const got = trimHistory(items);
+    expect(got.length).toBeLessThanOrEqual(40);
+    expect((got[0] as { role?: string }).role).toBe('user');
+    assertToolPairing(got);
+  });
+
+  it('drops orphans even inside a short history (e.g. a run that crashed mid-tool)', () => {
+    const items = [
+      user('u'),
+      call('c1', 'x'),
+      result('c1', 'x'),
+      call('c2', 'y'),
+      result('c9', 'z'),
+    ];
+    const got = trimHistory(items);
+    expect(got).toEqual([user('u'), call('c1', 'x'), result('c1', 'x')]);
+  });
+
+  it('falls back to a hard cut plus pairing when one turn alone exceeds the window', () => {
+    const items = turn(
+      1,
+      Array.from({ length: 30 }, (_, i) => `t${i}`),
+    ); // 62 items, one user message
+    const got = trimHistory(items);
+    expect(got.length).toBeLessThanOrEqual(40);
+    assertToolPairing(got);
+  });
+
+  it('is applied by the session on read, so already-stored histories heal', async () => {
     const r = repos();
-    const s = createPgSession({ repos: r as never, userId: 'u1' });
-    const items = Array.from({ length: 45 }, (_, i) => ({ type: 'message', n: i }));
-    // 把第 6 条（裁剪后应为第 1 条）变成 function_call_output，验证窗口会后移避开拆对
-    items[5] = { type: 'function_call_output', n: 5 };
-    r.store.push(...items);
-    const got = (await s.getItems()) as Array<{ n: number }>;
-    expect(got).toHaveLength(39);
-    expect(got[0]?.n).toBe(6);
+    r.store.push(
+      ...[
+        ...turn(1, ['a', 'b', 'c', 'd']),
+        ...Array.from({ length: 8 }, (_, n) => turn(n + 2, ['e'])).flat(),
+      ],
+    );
+    const got = await createPgSession({ repos: r as never, userId: 'u1' }).getItems();
+    expect((got[0] as { role?: string }).role).toBe('user');
+    assertToolPairing(got);
   });
 });

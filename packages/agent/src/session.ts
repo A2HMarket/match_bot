@@ -23,17 +23,42 @@ function stripProviderData<T>(value: T): T {
   return value;
 }
 
-/** 从头裁到 MAX_HISTORY_ITEMS，但不能把 function_call_output 和它的 function_call 拆散。 */
-function trimHistory(items: AgentInputItem[]): AgentInputItem[] {
-  if (items.length <= MAX_HISTORY_ITEMS) return items;
-  let start = items.length - MAX_HISTORY_ITEMS;
-  while (
-    start < items.length &&
-    (items[start] as { type?: string } | undefined)?.type === 'function_call_output'
-  ) {
-    start++;
-  }
-  return items.slice(start);
+type Item = { type?: string; role?: string; callId?: string };
+const isUserMessage = (i: Item) => i.role === 'user';
+const isToolCall = (i: Item) => i.type === 'function_call';
+// SDK 0.18 的工具结果类型是 function_call_result。此前这里写的是 function_call_output
+// （测试夹具也照抄了同一个错名字，所以一直是绿的），保护从未生效：任何用户历史一过
+// 40 条就可能从一条孤立的工具结果开始，DeepSeek 400「role 'tool' must be a response to
+// a preceding message with 'tool_calls'」，此后该用户每条消息都失败（2026-09-24 实测）。
+const isToolResult = (i: Item) =>
+  i.type === 'function_call_result' || i.type === 'function_call_output';
+
+/**
+ * 发给模型的历史必须满足：每个工具结果前面有它的调用，每个工具调用后面有它的结果。
+ * 两种孤儿都会被 chat completions 拒绝，所以都丢掉。
+ */
+function pairToolItems(items: AgentInputItem[]): AgentInputItem[] {
+  const list = items as Item[];
+  const calls = new Set(list.filter(isToolCall).map((i) => i.callId));
+  const results = new Set(list.filter(isToolResult).map((i) => i.callId));
+  return items.filter((raw) => {
+    const i = raw as Item;
+    if (isToolResult(i)) return calls.has(i.callId);
+    if (isToolCall(i)) return results.has(i.callId);
+    return true;
+  });
+}
+
+/**
+ * 裁到最近 MAX_HISTORY_ITEMS 条，并且只在「用户说话」处下刀：一轮对话从用户消息开始，
+ * 在这里切开，工具调用与结果天然成对。窗口里找不到用户消息（单轮就超长）时退回硬切，
+ * 由 pairToolItems 兜底。
+ */
+export function trimHistory(items: AgentInputItem[]): AgentInputItem[] {
+  if (items.length <= MAX_HISTORY_ITEMS) return pairToolItems(items);
+  const cut = items.length - MAX_HISTORY_ITEMS;
+  const turnStart = items.findIndex((i, idx) => idx >= cut && isUserMessage(i as Item));
+  return pairToolItems(items.slice(turnStart === -1 ? cut : turnStart));
 }
 
 /**
