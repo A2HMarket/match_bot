@@ -94,7 +94,7 @@ if (!skipReplay) {
     const report = scoreInbound({
       verdicts,
       unavailable,
-      decide: (verdict) => gate(verdict),
+      decide: (verdict, _thresholds, opts) => gate(verdict, opts),
       thresholds: undefined,
     });
     const { rows: _rows, ...summary } = report;

@@ -124,7 +124,10 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     return;
   }
 
-  const decision = decideInbound(verdict, d.thresholds, { addressedToBot: msg.addressedToBot });
+  const decision = decideInbound(verdict, d.thresholds, {
+    addressedToBot: msg.addressedToBot,
+    text: msg.text,
+  });
   if (decision.action === 'drop') {
     await trace('gate', stored.id, {
       outcome: 'dropped_by_jev',

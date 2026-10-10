@@ -62,13 +62,18 @@ describe('decideInbound', () => {
       { action: 'drop', reason: 'not_demand' },
     ],
     [
-      'housing is not rescued by the local-request question',
+      'housing requests enter the public market search',
       { ...base, category: 'housing' as const, isLocalRequest: 0.97 },
-      { action: 'drop', reason: 'not_demand' },
+      { action: 'enter_agent', category: 'housing', kind: 'demand' },
     ],
     [
-      'second-hand is not rescued by the local-request question',
+      'second-hand requests enter the public market search',
       { ...base, category: 'second_hand' as const, isLocalRequest: 0.97 },
+      { action: 'enter_agent', category: 'second_hand', kind: 'demand' },
+    ],
+    [
+      'job requests are not rescued',
+      { ...base, category: 'job' as const, isLocalRequest: 0.99 },
       { action: 'drop', reason: 'not_demand' },
     ],
     [
@@ -99,5 +104,28 @@ describe('decideInbound — replies to the bot', () => {
       action: 'drop',
       reason: 'sensitive',
     });
+  });
+});
+
+describe('market advertisements', () => {
+  it('does not turn a high-scoring standalone ad into a search request', () => {
+    expect(
+      decideInbound({ ...base, category: 'second_hand', isLocalRequest: 0.99 }, T, {
+        text: 'Selling an IKEA MALM desk, £25',
+      }),
+    ).toEqual({ action: 'drop', reason: 'not_demand' });
+  });
+  it('keeps an explicit buyer request and a direct message to the bot', () => {
+    expect(
+      decideInbound({ ...base, category: 'second_hand', isLocalRequest: 0.99 }, T, {
+        text: 'Anyone want to buy my old iPhone?',
+      }).action,
+    ).toBe('enter_agent');
+    expect(
+      decideInbound({ ...base, category: 'second_hand', isLocalRequest: 0.99 }, T, {
+        text: 'Selling my desk',
+        addressedToBot: true,
+      }).action,
+    ).toBe('enter_agent');
   });
 });

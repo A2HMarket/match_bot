@@ -2,6 +2,7 @@ import type { OutboundMessage } from '@matchbot/db';
 import type { Logger } from '@matchbot/shared';
 import type { Bot } from 'grammy';
 import type { MessageEntity, ReactionTypeEmoji, User } from 'grammy/types';
+import { formatRecommendation } from './recommendation-format.js';
 
 type ReactionEmoji = ReactionTypeEmoji['emoji'];
 
@@ -69,10 +70,19 @@ export function createTelegramSender(p: { bot: Bot; logger: Logger }) {
           return;
         }
         const user = m.mentionUserId ? await lookupUser(chatId, m.mentionUserId) : null;
-        const body = user ? withMention(m.text, user) : { text: m.text };
+        const formatted = formatRecommendation(m.text, m.kind);
+        const body = user ? withMention(formatted.text, user) : { text: formatted.text };
+        const mentionLength = body.text.length - formatted.text.length;
+        const entities = [
+          ...(body.entities ?? []),
+          ...(formatted.entities ?? []).map((entity) => ({
+            ...entity,
+            offset: entity.offset + mentionLength,
+          })),
+        ];
         await p.bot.api.sendMessage(chatId, body.text, {
           link_preview_options: { is_disabled: true },
-          ...(body.entities ? { entities: body.entities } : {}),
+          ...(entities.length ? { entities } : {}),
           ...(m.replyToMessageId
             ? {
                 // 原消息被删了也照发，只是不挂在它下面

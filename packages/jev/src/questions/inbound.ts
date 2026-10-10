@@ -81,16 +81,17 @@ export function inboundQuestions(): Record<InboundQuestionId, JevQuestion> {
       instructions:
         'Does the message imply the author is about to move home (looking for a room, leaving a tenancy, bought large furniture)?',
     },
-    // P14：库外需求走 web search。is_demand 的措辞写死了三个品类且已按 PoC V4 校准，
-    // 不能改；「在找本地商家/店铺/地方」单独一题，阈值见 P14 §4 的校准记录。
+    // 定位已放宽为「生活服务小助手」：任何伦敦日常生活需求都应响应。is_demand 的措辞写死了
+    // 三个品类且已按 PoC V4 校准，不能改；库外需求一律由本题放行，走 web search 通道（P14）。
+    // P16 用户授权：租房/二手/帮带/搭子进入A2H公开检索，招聘仍不接。阈值见 gating 配置表注释。
     is_local_request: {
       type: 'noul',
       instructions:
-        'The author is a member of a London community group. Is the author asking the group to recommend, or point them to, a local business, service provider, shop, clinic, restaurant or place in or around London, for their own use? Asking where to buy or find something counts.',
+        'The author is a member of a London community group. Is the author asking for help with everyday life in London — a recommendation or pointer to a local business, service provider, shop, activity, event or place, practical local information for daily life, or help finding a second-hand item, a buyer for an item, a room/flat/tenant, someone to carry an item on a trip, or an activity companion? Asking where to find, buy, book or do something counts. A request to find a counterparty counts; a standalone advertisement without asking for help does not.',
       criteria: {
-        true: 'The author wants a provider, shop, place or contact for themselves, e.g. a locksmith, plumber, dentist, hairdresser, bakery, Asian supermarket, repair shop or a man and van. Counts even if no location is given.',
+        true: 'The author wants a recommendation, contact, place, activity or event idea, practical local-life information, or a matching marketplace offer/request for themselves, e.g. a locksmith, dentist, bakery, Christmas market, GP registration, second-hand pot, rental room, someone bringing an item from China, a tennis/exhibition companion, or a buyer for their item. Asking whether anyone wants to buy their item is an explicit request for a buyer/counterparty, even if it resembles a sale ad. Counts even if no location is given.',
         false:
-          'The author offers their own service or advertises a business; is looking for a room, flat or tenant; is looking for or offering a job; is buying, selling or giving away second-hand items; asks about rules, documents, visas or transport; exchanges currency; or is just chatting.',
+          'The author only advertises a service, room or item without asking for help or a counterparty; is looking for or offering a job; exchanges currency or crypto; requests third-party payment; or is just chatting or venting without asking for anything.',
       },
     },
   };

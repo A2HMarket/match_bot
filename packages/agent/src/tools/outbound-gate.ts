@@ -18,7 +18,8 @@ export interface OutboundDraftInput {
    * 附哪种免责。推荐库内商家用 catalogue，推荐 web search 结果用 web（明说未核实）；
    * 追问与线索不附。
    */
-  disclaimer?: 'catalogue' | 'web'; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
+  disclaimer?:
+    'catalogue' | 'web' | 'xhs' | 'market'; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
   replyToMessageId?: string;
   mentionUserId?: string;
 }
@@ -30,7 +31,7 @@ export interface OutboundDraftInput {
  */
 // 免责保留 PRD F7 的意思（直接找商家确认、我们不经手交易），但用群友的口吻、第一人称单数说：
 // 原来那句「请直接联系商家确认报价与档期，我们不参与交易。」像公司公告，一看就是广告号。
-const DISCLAIMERS: Record<'catalogue' | 'web', Record<string, string>> = {
+const DISCLAIMERS: Record<'catalogue' | 'web' | 'xhs' | 'market', Record<string, string>> = {
   catalogue: {
     zh: '价格和档期直接找商家确认就好，我只是帮忙牵个线，不经手交易。',
     en: "Check price and availability with them directly — I just point the way and I'm not part of the transaction.",
@@ -46,6 +47,20 @@ const DISCLAIMERS: Record<'catalogue' | 'web', Record<string, string>> = {
     uk: 'Знайшов це в інтернеті й сам не перевіряв — краще спершу напишіть їм.',
     pt: 'Achei isso na internet e não conferi — vale mandar mensagem antes.',
   },
+  market: {
+    zh: '以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。',
+    en: 'From public A2H listings. Confirm availability, dates and prices with the poster; contact reposts through the original post. I do not handle transactions.',
+    ru: 'Публичные объявления A2H. Наличие, даты и цены уточняйте у автора; для репостов используйте оригинал. Я не участвую в сделке.',
+    uk: 'Публічні оголошення A2H. Наявність, дати й ціни уточнюйте в автора; для репостів відкрийте оригінал. Я не проводжу угоди.',
+    pt: 'Anúncios públicos do A2H. Confirme disponibilidade, datas e preços com o autor; para reposts, use o original. Não intermedio a transação.',
+  },
+  xhs: {
+    zh: '以上来自小红书笔记，我未独立核实；时间、价格和开放情况请以官方最新信息为准。',
+    en: 'Based on Xiaohongshu notes, not independently verified. Check official sources for current dates, prices and availability.',
+    ru: 'По заметкам Xiaohongshu, без независимой проверки. Актуальные даты, цены и доступность уточняйте у организаторов.',
+    uk: 'За дописами Xiaohongshu, без незалежної перевірки. Актуальні дати, ціни та доступність уточнюйте в організаторів.',
+    pt: 'Com base em notas do Xiaohongshu, sem verificação independente. Confira datas, preços e disponibilidade nos canais oficiais.',
+  },
 };
 
 /**
@@ -55,7 +70,7 @@ const DISCLAIMERS: Record<'catalogue' | 'web', Record<string, string>> = {
 export function disclaimerFor(
   lang: string | undefined,
   text: string,
-  kind: 'catalogue' | 'web' = 'catalogue',
+  kind: 'catalogue' | 'web' | 'xhs' | 'market' = 'catalogue',
 ): string {
   const set = DISCLAIMERS[kind];
   const key = lang && set[lang] ? lang : /\p{Script=Han}/u.test(text) ? 'zh' : 'en';
@@ -148,6 +163,12 @@ export async function decideForOutbound(
 }
 
 /** 出站只写 outbound_messages 表（AGENTS.md §3.3 第 3 条）；发送由 apps/bot 消费。 */
+export function formatOutboundText(ctx: MatchContext, d: OutboundDraftInput): string {
+  return d.disclaimer
+    ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text, d.disclaimer)}`
+    : d.text;
+}
+
 export async function executeOutbound(
   deps: AgentDeps,
   ctx: MatchContext,
@@ -164,9 +185,7 @@ export async function executeOutbound(
       channel: 'telegram',
       kind: d.kind,
       target: d.target,
-      text: d.disclaimer
-        ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text, d.disclaimer)}`
-        : d.text,
+      text: formatOutboundText(ctx, d),
       ...(d.toolCallId ? { toolCallId: d.toolCallId } : {}),
       ...(d.replyToMessageId ? { replyToMessageId: d.replyToMessageId } : {}),
       ...(d.mentionUserId ? { mentionUserId: d.mentionUserId } : {}),

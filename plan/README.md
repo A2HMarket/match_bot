@@ -26,8 +26,10 @@
 | P11 | apps/worker | [P11-app-worker.md](./P11-app-worker.md) | P8, P9, P10 | 3 | claude | 完成 | 直接提交 main | 2026-09-22 |
 | P12 | eval | [P12-eval.md](./P12-eval.md) | P8 | 3 | claude | 完成 | 直接提交 main | 2026-09-22 |
 | P13 | Phase 0 上线清单 | [P13-phase0-launch.md](./P13-phase0-launch.md) | P11, P12 | 3 | claude | 进行中 | 工程项已完成；数据/合规/Shadow 待人工 | 2026-09-22 |
-| P14 | 库外需求 web search 兜底 | [P14-web-search.md](./P14-web-search.md) | P8, P11 | 4 | claude | 完成 | 方案 B，真实群验证通过 | 2026-09-24 |
+| P14 | 库外需求 web search 兜底 | [P14-web-search.md](./P14-web-search.md) | P8, P11 | 4 | codex | 完成 | 0.10.1；随 P16/P17 提交并合并主干；472测试 | 2026-10-10 |
 | P15 | 人感：会接话、像群友、有分寸 | [P15-human-feel.md](./P15-human-feel.md) | P14 | 4 | claude | 完成 | 1+2+3 已做；4、5 待定 | 2026-09-25 |
+| P16 | A2H公开集市搜索：二手/租房/帮带/搭子 | [P16-market-search.md](./P16-market-search.md) | P8, P11, P14 | 5 | codex | 完成 | 0.10.1；SELL/BUY/PEER；随 P14/P17 合并主干 | 2026-10-10 |
+| P17 | 出站参数重试与图文入站修复、A2H 命名 | [P17-fix-outbound-input-and-photo.md](./P17-fix-outbound-input-and-photo.md) | P7, P8, P16 | 5 | codex | 完成 | 0.10.1；472测试、92回放；随 P14/P16 合并主干 | 2026-10-10 |
 
 ## 波次与并行
 

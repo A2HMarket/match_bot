@@ -5,8 +5,6 @@ export interface Thresholds {
   T_IS_SENSITIVE_DROP: number;
   T_IS_MOVE_EVENT_TAG: number;
   T_IS_LOCAL_REQUEST_ENTER: number;
-  T_WORTH_REPLYING_AUTO: number;
-  T_LANGUAGE_OK_AUTO: number;
   T_MENTIONS_UNVERIFIED_DROP: number;
   T_WORTH_REPLYING_DROP: number;
 }
@@ -20,11 +18,12 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   T_IS_SUPPLY_ENTER: 0.8,
   T_IS_SENSITIVE_DROP: 0.5,
   T_IS_MOVE_EVENT_TAG: 0.6,
-  // P14 校准（n=80，jev-1.13-20260917，只看 category=other 的 31 条）：正类最低 0.88，
-  // 负类最高 0.59（「怎么注册 GP」，办事咨询而非找商家），其余负类 ≤ 0.15。0.8 两边都有余量。
-  T_IS_LOCAL_REQUEST_ENTER: 0.8,
-  T_WORTH_REPLYING_AUTO: 2.2,
-  T_LANGUAGE_OK_AUTO: 0.8,
+  // 生活服务小助手校准（n=80，jev-1.13-20260917，category=other 的 34 条）：题目放宽为
+  // 「任何伦敦日常生活需求」后，正类最低 0.79（BRP 补办），负类最高 0.13，空带 0.13–0.79，
+  // 0.7 两侧都有余量。响应范围含生活办事咨询（GP / NI / BRP）与本地生活信息（罢工等）；
+  // 租房 / 招聘 / 二手 / 换汇 / 纯闲聊仍不接。
+  T_IS_LOCAL_REQUEST_ENTER: 0.7,
+  // 出站立两个硬下限，过了就自动发，没有中间带（2026-10-10：回复不经过人工过目）。
   T_MENTIONS_UNVERIFIED_DROP: 0.5,
   T_WORTH_REPLYING_DROP: 1.0,
 };

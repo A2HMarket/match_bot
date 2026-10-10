@@ -1,0 +1,90 @@
+import { demandDraftSchema } from '@matchbot/domain';
+import { z } from 'zod';
+import type { MatchContext } from './context.js';
+import { XHS_RESEARCH_LIMITS, xhsResearchQuerySchema } from './xhs-research.js';
+import { xhsRecommendationSchema } from './xhs-recommendations.js';
+import { MARKET_INTENTS } from '@matchbot/websearch';
+import {
+  marketCandidateSchema,
+  marketResearchQuerySchema,
+  MARKET_RESEARCH_LIMITS,
+} from './market-research.js';
+
+const contextSchema = z.object({
+  userId: z.string(),
+  chatId: z.string(),
+  phase: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+  sourceMessageId: z.string(),
+  groupId: z.string().nullable(),
+  source: z.object({ messageId: z.string(), userId: z.string() }).optional(),
+  demand: demandDraftSchema.optional(),
+  rateLimitPerDay: z.number().int().nonnegative().optional(),
+  xhsNotes: z
+    .array(
+      z.object({
+        ref: z.string(),
+        title: z.string(),
+        desc: z.string(),
+        author: z.string(),
+        likes: z.number().int().nonnegative(),
+        url: z.url(),
+        isDetailLoaded: z.boolean().optional(),
+      }),
+    )
+    .max(XHS_RESEARCH_LIMITS.notes)
+    .optional(),
+  marketListings: z.array(marketCandidateSchema).max(MARKET_RESEARCH_LIMITS.listings).optional(),
+  marketQueries: z.array(marketResearchQuerySchema).max(MARKET_RESEARCH_LIMITS.queries).optional(),
+  marketDetailIds: z.array(z.string()).max(MARKET_RESEARCH_LIMITS.details).optional(),
+  marketIntent: z.enum(MARKET_INTENTS).optional(),
+  marketTarget: z.enum(['SELL', 'BUY', 'PEER', 'ANY']).optional(),
+  xhsQueries: z.array(xhsResearchQuerySchema).max(XHS_RESEARCH_LIMITS.queries).optional(),
+  xhsDetailRefs: z.array(z.string()).max(XHS_RESEARCH_LIMITS.detailReads).optional(),
+  xhsValidatedRecommendations: z.array(xhsRecommendationSchema).max(6).optional(),
+  outboundPreviews: z.record(z.string(), z.string().max(4000)).optional(),
+});
+const snapshotSchema = z.object({
+  context: z.object({ context: z.record(z.string(), z.unknown()) }),
+});
+
+/** 只读服务端解密快照。SDK 的 context override 只合并审批信息，不合并业务上下文（P14 实测）。 */
+export function restoreSearchContext(ctx: MatchContext, snapshot: string): MatchContext {
+  const raw = snapshotSchema.parse(JSON.parse(snapshot) as unknown).context.context;
+  if (
+    raw['xhsNotes'] === undefined &&
+    raw['marketListings'] === undefined &&
+    raw['outboundPreviews'] === undefined
+  )
+    return ctx;
+  const saved = contextSchema.parse(raw);
+  if (saved.userId !== ctx.userId || saved.chatId !== ctx.chatId || saved.phase !== ctx.phase) {
+    throw new Error('Search snapshot context does not match the stored run');
+  }
+  return {
+    ...ctx,
+    ...(saved.xhsNotes
+      ? {
+          xhsNotes: saved.xhsNotes.map(({ isDetailLoaded, ...note }) => ({
+            ...note,
+            ...(isDetailLoaded === undefined ? {} : { isDetailLoaded }),
+          })),
+        }
+      : {}),
+    ...(saved.marketListings ? { marketListings: saved.marketListings } : {}),
+    ...(saved.marketQueries ? { marketQueries: saved.marketQueries } : {}),
+    ...(saved.marketDetailIds ? { marketDetailIds: saved.marketDetailIds } : {}),
+    ...(saved.marketIntent ? { marketIntent: saved.marketIntent } : {}),
+    ...(saved.marketTarget ? { marketTarget: saved.marketTarget } : {}),
+    ...(saved.xhsQueries ? { xhsQueries: saved.xhsQueries } : {}),
+    ...(saved.xhsDetailRefs ? { xhsDetailRefs: saved.xhsDetailRefs } : {}),
+    ...(saved.xhsValidatedRecommendations
+      ? { xhsValidatedRecommendations: saved.xhsValidatedRecommendations }
+      : {}),
+    ...(saved.outboundPreviews ? { outboundPreviews: saved.outboundPreviews } : {}),
+    sourceMessageId: saved.sourceMessageId,
+    groupId: saved.groupId,
+    ...(saved.source ? { source: saved.source } : {}),
+    ...(saved.rateLimitPerDay !== undefined ? { rateLimitPerDay: saved.rateLimitPerDay } : {}),
+    ...(!ctx.demand && saved.demand ? { demand: saved.demand } : {}),
+  };
+}

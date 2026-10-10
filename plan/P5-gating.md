@@ -336,3 +336,4 @@ git commit -m "feat(gating): decideOutbound and rate limiter"
 | PR | 留空（未开 PR） |
 | 与 interfaces.md 的偏差 | 无，仅补充了 `tag_move_event` 的注释澄清（适用于任意非服务品类，不限于 housing/job/second_hand） |
 | 备注 | |
+| 2026-10-10 变更 | 取消 Phase 2「分数居中送审」中间带（用户要求回复不经过人工过目）：`decideOutbound` 过了 `T_WORTH_REPLYING_DROP` / `T_MENTIONS_UNVERIFIED_DROP` 硬下限即 auto；删除 `T_WORTH_REPLYING_AUTO`、`T_LANGUAGE_OK_AUTO` 两个阈值（`language_ok` 仍由 Jev 出题留痕，不再参与门控）。`onUnsure` 只剩 Jev 不可用与触发频控两种情况，§3.3 第 5 条「Jev 挂了永远不自动发」不变。出站无标注评测集，入站评测（fixture，n=80）复跑不变；`pnpm check` 53 文件 / 306 用例 |

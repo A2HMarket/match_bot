@@ -11,6 +11,19 @@ const base = {
 };
 
 describe('loadEnv', () => {
+  it('reads the optional Sandbase credential only through the environment boundary', () => {
+    expect(loadEnv({ ...base, SANDBASE_API_KEY: 'sandbase-test-key' }).SANDBASE_API_KEY).toBe(
+      'sandbase-test-key',
+    );
+    expect(loadEnv(base).SANDBASE_API_KEY).toBeUndefined();
+    expect(() => loadEnv({ ...base, SANDBASE_API_KEY: '' })).toThrow();
+  });
+  it('keeps experimental XHS research disabled unless explicitly enabled', () => {
+    expect(loadEnv(base).XHS_RESEARCH_ENABLED).toBe(false);
+    expect(loadEnv({ ...base, XHS_RESEARCH_ENABLED: 'false' }).XHS_RESEARCH_ENABLED).toBe(false);
+    expect(loadEnv({ ...base, XHS_RESEARCH_ENABLED: 'true' }).XHS_RESEARCH_ENABLED).toBe(true);
+    expect(() => loadEnv({ ...base, XHS_RESEARCH_ENABLED: 'yes' })).toThrow();
+  });
   it('defaults Jev to the OpenRouter decisions host (PoC V4)', () => {
     // 客户端拼 `${JEV_BASE_URL}/decisions`；默认必须指向实际可用的端点，
     // 否则未显式配置时会打到不存在的 api.typesafe.ai/decisions。

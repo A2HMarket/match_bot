@@ -3,17 +3,20 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Approval, RunState } from '@matchbot/db';
 import type { DemandDraft, Phase } from '@matchbot/domain';
+import { selectMarketTradeType } from '@matchbot/gating';
 import { decrypt, encrypt } from '@matchbot/shared';
 import { RunContext, RunState as SdkRunState } from '@openai/agents';
+import { z } from 'zod';
 import { AGENT_VERSION, createMatchAgent } from './agent.js';
 import type { AgentDeps, MatchContext } from './context.js';
 import { createPgSession } from './session.js';
+import { restoreSearchContext } from './restore-search-context.js';
 
 export type RunOutcome =
   { kind: 'completed'; toolsCalled: string[] } | { kind: 'interrupted'; runStateId: string };
 
 const SNAPSHOT_TTL_DAYS = 7; // AGENTS.md §6：7 天后标 expired
-const MAX_TURNS = 8;
+const MAX_TURNS = 12; // P14：需求建档 + 分主题召回 + 展名补全 + 一次回复，仍有固定上限
 
 /** 从 @openai/agents 的 package.json 读版本，避免手写漂移；读不到就标 unknown。 */
 function resolveSdkVersion(): string {
@@ -37,6 +40,17 @@ export async function runInbound(p: {
   ctx: MatchContext;
   input: string;
 }): Promise<RunOutcome> {
+  if (p.deps.marketSearch) {
+    p.ctx.marketTarget = selectMarketTradeType(p.input);
+    await p.deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: p.ctx.sourceMessageId,
+      output: { gate: 'market_trade_direction', target: p.ctx.marketTarget },
+      phase: p.ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+  }
   const { agent, runner } = createMatchAgent(p.deps, { phase: p.ctx.phase });
   const session = createPgSession({ repos: p.deps.repos, userId: p.ctx.userId });
   const result = await runner.run(agent, p.input, {
@@ -57,14 +71,11 @@ export async function resumeRun(p: {
   runState: RunState;
   approval: Approval;
 }): Promise<RunOutcome> {
-  const ctx = await rebuildContext(p.deps, p.runState);
+  const snapshot = decrypt(p.runState.snapshot, snapshotKey(p.deps));
+  const ctx = restoreSearchContext(await rebuildContext(p.deps, p.runState), snapshot);
   const { agent, runner } = createMatchAgent(p.deps, { phase: ctx.phase });
   // PoC V2：用 fromStringWithContext 才能还原自己的 RunContext
-  const state = await SdkRunState.fromStringWithContext(
-    agent,
-    decrypt(p.runState.snapshot, snapshotKey(p.deps)),
-    new RunContext(ctx),
-  );
+  const state = await SdkRunState.fromStringWithContext(agent, snapshot, new RunContext(ctx));
   for (const item of state.getInterruptions()) {
     if (p.approval.decision === 'approve') {
       state.approve(item);
@@ -129,7 +140,11 @@ async function rebuildContext(deps: AgentDeps, runState: RunState): Promise<Matc
 }
 
 interface SettleResult {
-  interruptions: Array<{ name?: string | undefined; arguments?: string | undefined }>;
+  interruptions: Array<{
+    name?: string | undefined;
+    arguments?: string | undefined;
+    rawItem?: unknown;
+  }>;
   state: { toString(): string };
   newItems: Array<{ type: string; rawItem: unknown }>;
 }
@@ -147,10 +162,15 @@ async function settle(
       snapshot: encrypt(result.state.toString(), snapshotKey(deps)),
       agentVersion: AGENT_VERSION,
       sdkVersion: SDK_VERSION,
-      interruptions: result.interruptions.map((i) => ({
-        tool: i.name ?? 'unknown',
-        args: i.arguments ?? '',
-      })),
+      interruptions: result.interruptions.map((i) => {
+        const parsed = z.object({ callId: z.string() }).safeParse(i.rawItem);
+        const draftText = parsed.success ? ctx.outboundPreviews?.[parsed.data.callId] : undefined;
+        return {
+          tool: i.name ?? 'unknown',
+          args: i.arguments ?? '',
+          ...(draftText ? { draftText } : {}),
+        };
+      }),
       expiresAt: new Date(Date.now() + SNAPSHOT_TTL_DAYS * 86400e3),
     });
     return { kind: 'interrupted', runStateId: row.id };

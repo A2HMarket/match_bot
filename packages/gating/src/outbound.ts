@@ -9,11 +9,14 @@ export interface OutboundSignals {
 export type OutboundDecision = 'dry_run' | 'review' | 'auto' | 'drop';
 
 /**
- * Phase 0 不发；Phase 1 全审；Phase 2 看分数。
+ * Phase 0 不发；Phase 1 全审；Phase 2 过了硬下限就自动发。
  *
- * Phase 2 里「拿不准」的三种情况——Jev 不可用、分数居中、触发频控——交给 onUnsure：
- * 有人值守送审（review），无人值守直接不发（drop）。两种取值都不会在拿不准时自动发，
- * 所以 Jev 挂了仍然不会放行（AGENTS.md §3.3 第 5 条）。
+ * 2026-10-10 起取消「分数居中送审」的中间带：用户要求回复不经过人工过目。
+ * worthReplying / mentionsUnverified 的硬下限保留（明显文不对题、推荐未核实商家的仍然不发）；
+ * language_ok 仍由 Jev 出题留痕，但不再参与门控。
+ *
+ * 拿不准只剩两种情况——Jev 不可用、触发频控——交给 onUnsure：有人值守送审（review），
+ * 无人值守直接不发（drop）。Jev 挂了仍然永远不自动发（AGENTS.md §3.3 第 5 条）。
  */
 export function decideOutbound(p: {
   phase: Phase;
@@ -29,10 +32,5 @@ export function decideOutbound(p: {
   if (p.verdict.mentionsUnverified >= p.t.T_MENTIONS_UNVERIFIED_DROP) return 'drop';
   if (p.verdict.worthReplying < p.t.T_WORTH_REPLYING_DROP) return 'drop';
   if (!p.rateOk) return unsure;
-  if (
-    p.verdict.worthReplying >= p.t.T_WORTH_REPLYING_AUTO &&
-    p.verdict.languageOk >= p.t.T_LANGUAGE_OK_AUTO
-  )
-    return 'auto';
-  return unsure;
+  return 'auto';
 }

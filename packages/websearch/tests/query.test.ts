@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSearchQuery, UnsafeQueryError } from '../src/query.js';
+import { assertSafeXhsKeyword, buildSearchQuery, UnsafeQueryError } from '../src/query.js';
 
 describe('buildSearchQuery', () => {
   it('joins need and area and appends London', () => {
@@ -25,5 +25,27 @@ describe('buildSearchQuery', () => {
   });
   it('accepts non-Latin letters', () => {
     expect(buildSearchQuery({ need: '华人理发店', area: 'Soho' })).toBe('华人理发店 Soho London');
+  });
+});
+
+describe('assertSafeXhsKeyword', () => {
+  it('allows public date and exhibit-number queries', () => {
+    expect(assertSafeXhsKeyword('伦敦 2026年10月 展览')).toBe('伦敦 2026年10月 展览');
+    expect(assertSafeXhsKeyword('伦敦 1015 梦华录')).toBe('伦敦 1015 梦华录');
+    expect(assertSafeXhsKeyword('Knit + Stitch London Alexandra Palace 2026')).toBe(
+      'Knit + Stitch London Alexandra Palace 2026',
+    );
+  });
+  it.each([
+    '找我 07700 900123',
+    'user@example.com',
+    '@alice 看展',
+    'https://example.com',
+    '<script>',
+    '123456',
+    'NW1 6XE 看展',
+    '+44 7700 900123',
+  ])('rejects private or unsafe query: %s', (keyword) => {
+    expect(() => assertSafeXhsKeyword(keyword)).toThrow(UnsafeQueryError);
   });
 });

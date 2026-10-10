@@ -13,6 +13,31 @@ const runState = {
 } as never;
 
 describe('publishApproval', () => {
+  it('uses the compiled draft preview rather than original model arguments after curation', async () => {
+    const cards = { sendApprovalCard: vi.fn().mockResolvedValue({ messageId: '9' }) };
+    const repos = {
+      suppliers: { findByIds: vi.fn() },
+      demands: { findOpenByUser: vi.fn().mockResolvedValue([{ category: 'other' }]) },
+    } as never;
+    await publishApproval({
+      repos,
+      cards,
+      runState: {
+        id: 'rs',
+        userId: 'u',
+        interruptions: [
+          {
+            tool: 'reply_with_xhs_notes',
+            args: '{"intro":"old selection"}',
+            draftText: '实际筛选后的推荐与来源',
+          },
+        ],
+      } as never,
+    });
+    expect(cards.sendApprovalCard).toHaveBeenCalledWith(
+      expect.objectContaining({ draftText: '实际筛选后的推荐与来源' }),
+    );
+  });
   it('renders supplier lines from repo and sends one card', async () => {
     const cards = { sendApprovalCard: vi.fn().mockResolvedValue({ messageId: '9' }) };
     const repos = {

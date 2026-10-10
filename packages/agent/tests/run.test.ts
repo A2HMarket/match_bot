@@ -86,6 +86,423 @@ const replyCall = (callId = 'c1') =>
   );
 
 describe('runInbound', () => {
+  it('reads two shortlisted full notes, then preserves evidence and read budget through approval resume', async () => {
+    const cards = [
+      {
+        ref: 'x1',
+        title: 'Southbank 集市',
+        desc: '摘要',
+        author: '甲',
+        likes: 1,
+        url: 'https://www.xiaohongshu.com/explore/n1',
+        isDetailLoaded: false,
+      },
+      {
+        ref: 'x2',
+        title: 'Southbank 集市攻略',
+        desc: '摘要',
+        author: '乙',
+        likes: 2,
+        url: 'https://www.xiaohongshu.com/explore/n2',
+        isDetailLoaded: false,
+      },
+    ];
+    const args = {
+      intro: '这场可以先看：',
+      recommendations: [
+        {
+          name: 'Southbank 集市',
+          aliases: [],
+          group: '市集',
+          summary: '河边小吃与艺术摊位。',
+          reason: '适合散步。',
+          sources: [
+            { ref: 'x1', passages: ['x1:p1'] },
+            { ref: 'x2', passages: ['x2:p1'] },
+          ],
+          facts: [],
+        },
+      ],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'xhs_search',
+          {
+            purpose: 'discover',
+            queries: [
+              {
+                keyword: '伦敦 Southbank 集市',
+                page: 1,
+                sort: 'general',
+                timeFilter: '不限',
+                entity: null,
+              },
+            ],
+          },
+          { callId: 'discover' },
+        ),
+      ],
+      [functionCall('xhs_read_notes', { refs: ['x1', 'x2'] }, { callId: 'read' })],
+      [functionCall('reply_with_xhs_notes', args, { callId: 'reply' })],
+    ]);
+    const { deps, repos, runStates } = makeDeps(model);
+    const readNote = vi.fn((note: (typeof cards)[number]) =>
+      Promise.resolve({
+        ...note,
+        desc: note.ref === 'x1' ? 'Southbank 集市有河边小吃摊。' : 'Southbank 集市还有艺术摊位。',
+        isDetailLoaded: true,
+      }),
+    );
+    const configured = {
+      ...deps,
+      env: { ...deps.env, XHS_RESEARCH_ENABLED: true },
+      xhsSearch: { find: vi.fn(() => Promise.resolve(cards)), readNote },
+    };
+    const result = await runInbound({
+      deps: configured as never,
+      ctx: { ...ctx(1), demand: { category: 'other', confidence: 1, lang: 'zh' } },
+      input: '伦敦有什么集市推荐',
+    });
+    expect(result.kind).toBe('interrupted');
+    expect(readNote).toHaveBeenCalledTimes(2);
+    const preview = (runStates[0]!['interruptions'] as Array<{ draftText?: string }>)[0]?.draftText;
+    expect(preview).toContain('综合2篇');
+    model.enqueue([assistantMessage('done')]);
+    await resumeRun({
+      deps: configured as never,
+      runState: runStates[0]!,
+      approval: { decision: 'approve' },
+    });
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    expect(readNote).toHaveBeenCalledTimes(2);
+    const [draft] = repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('综合2篇');
+    expect(draft.text).toBe(preview);
+  });
+  it('returns schema field limits to the model with sensitive tracing disabled and recovers once', async () => {
+    const note = {
+      ref: 'x1',
+      title: 'Southbank 集市',
+      desc: 'Southbank 集市有河边小吃摊。',
+      author: '作者',
+      likes: 1,
+      url: 'https://www.xiaohongshu.com/explore/n1?xsec_token=tok',
+    };
+    const item = {
+      name: 'Southbank 集市',
+      aliases: [],
+      group: '市集',
+      summary: '河边小吃摊。',
+      reason: '适合散步。',
+      sources: [{ ref: 'x1', passages: ['x1:p1'] }],
+      facts: [],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'reply_with_xhs_notes',
+          {
+            intro: '可以看这个：',
+            recommendations: [
+              { ...item, sources: Array.from({ length: 5 }, () => item.sources[0]) },
+            ],
+          },
+          { callId: 'bad-schema' },
+        ),
+      ],
+      [
+        functionCall(
+          'reply_with_xhs_notes',
+          { intro: '可以看这个：', recommendations: [item] },
+          { callId: 'repaired-schema' },
+        ),
+      ],
+      [assistantMessage('done')],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    await runInbound({
+      deps: {
+        ...deps,
+        env: { ...deps.env, XHS_RESEARCH_ENABLED: true },
+        xhsSearch: { find: () => Promise.resolve([]) },
+      } as never,
+      ctx: {
+        ...ctx(0),
+        xhsNotes: [note],
+        demand: { category: 'other', confidence: 1, lang: 'zh' },
+      },
+      input: '伦敦有什么集市推荐',
+    });
+    const session = await repos.sessionItems.list();
+    const errors = JSON.stringify(
+      session.filter(
+        (i: unknown) =>
+          typeof i === 'object' && i !== null && 'type' in i && i.type === 'function_call_result',
+      ),
+    );
+    expect(errors).toContain('recommendations.0.sources');
+    expect(errors).toContain('4');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    expect(repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'dry_run');
+  });
+  it.each(['schema', 'evidence'] as const)(
+    'ends after three invalid outbound calls (%s), with one trace per call',
+    async (kind) => {
+      const args =
+        kind === 'schema'
+          ? { text: '', supplierIds: ['a'] }
+          : { text: 'A candidate', supplierIds: ['unknown'] };
+      const model = new ScriptedModel([
+        ...Array.from({ length: 3 }, (_, i) => [
+          functionCall('reply_in_group', args, { callId: `invalid-${i}` }),
+        ]),
+        [assistantMessage('done')],
+      ]);
+      const { deps, repos } = makeDeps(model);
+      if (kind === 'evidence') repos.suppliers.findByIds.mockResolvedValue([]);
+      const result = await runInbound({ deps: deps as never, ctx: ctx(0), input: 'need a van' });
+      expect(result.kind).toBe('completed');
+      expect(repos.outbound.create).not.toHaveBeenCalled();
+      const rows = repos.traces.create.mock.calls.map(
+        ([row]) => row as { output?: { gate?: string; reason?: string } },
+      );
+      expect(rows.filter((row) => row.output?.gate === 'outbound_input')).toHaveLength(3);
+      expect(rows.filter((row) => row.output?.reason === 'input_retry_limit')).toHaveLength(1);
+      const errors = JSON.stringify(await repos.sessionItems.list());
+      expect(errors).toContain('not sent: outbound input retry limit');
+      expect(errors).not.toContain('unknown supplier id: unknown');
+    },
+  );
+  it('repairs a short market fact quote using precise schema feedback without weakening evidence', async () => {
+    const listing = {
+      id: 'listing_a',
+      ref: 'm1',
+      title: '伦敦 硅胶锅铲',
+      description: '硅胶锅铲，伦敦象堡自提。',
+      tags: ['物品交易'],
+      tradeType: 'SELL',
+      status: 'ON_SALE',
+      url: 'https://a2hmarket.ai/listings/listing_a',
+      sourceUrl: null,
+      isRepost: false,
+      priceLabel: '帖子未标价',
+      availableFrom: null,
+      availableUntil: null,
+      sourcePublishedAt: null,
+      createdAt: null,
+    };
+    const item = {
+      ref: 'm1',
+      name: '硅胶锅铲',
+      group: '厨房',
+      summary: '可自提的硅胶锅铲。',
+      reason: '符合要找的锅铲类型。',
+      evidence: listing.description,
+      facts: [{ label: 'location', value: '伦敦', quote: '伦敦' }],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'reply_with_market_results',
+          { intro: '有闲找到这条公开帖子：', recommendations: [item] },
+          { callId: 'bad-market' },
+        ),
+      ],
+      [
+        functionCall(
+          'reply_with_market_results',
+          {
+            intro: 'A2H找到这条公开帖子：',
+            recommendations: [
+              {
+                ...item,
+                facts: [{ label: 'location', value: '伦敦象堡', quote: '伦敦象堡自提。' }],
+              },
+            ],
+          },
+          { callId: 'fixed-market' },
+        ),
+      ],
+      [assistantMessage('done')],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    const c = { ...ctx(0), marketListings: [listing] };
+    await runInbound({
+      deps: { ...deps, marketSearch: { find: vi.fn(), detail: vi.fn() } } as never,
+      ctx: c as never,
+      input: '收 硅胶锅铲/炒菜木铲',
+    });
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    const errors = JSON.stringify(await repos.sessionItems.list());
+    expect(errors).toContain('recommendations.0.facts.0.quote');
+    expect(errors).toContain('4');
+    const rows = repos.traces.create.mock.calls.map(
+      ([row]) => row as { output?: { reason?: string; detail?: string[] } },
+    );
+    const denied = rows.find((row) => row.output?.reason === 'invalid_schema');
+    expect(denied?.output?.detail).toEqual(['recommendations.0.facts.0.quote:too_small']);
+    model.assertComplete();
+  });
+  it('researches public market offers, enriches them and resumes an approved grouped recommendation with stable refs', async () => {
+    const listing = {
+      id: 'listing_a',
+      title: '伦敦小绿锅',
+      description: '小绿锅成色新，Camberwell 自提。',
+      tags: ['物品交易'],
+      tradeType: 'SELL',
+      status: 'ON_SALE',
+      url: 'https://a2hmarket.ai/listings/listing_a',
+      sourceUrl: 'https://www.xiaohongshu.com/explore/n1?xsec_token=tok',
+      isRepost: true,
+      priceLabel: '帖子未标价',
+      availableFrom: null,
+      availableUntil: null,
+      sourcePublishedAt: '2026-09-01T00:00:00Z',
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    const args = {
+      intro: '这条可以先看成色和位置：',
+      recommendations: [
+        {
+          ref: 'm1',
+          name: '小绿锅',
+          group: '厨房',
+          summary: '成色新，可在 Camberwell 自提。',
+          reason: '适合想自提的人。',
+          evidence: '小绿锅成色新，Camberwell 自提',
+          facts: [],
+        },
+      ],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'market_search',
+          {
+            intent: 'second_hand',
+            purpose: 'discover',
+            queries: [{ keyword: '小绿锅', page: 1, tradeType: 'SELL', entity: null }],
+          },
+          { callId: 'market1' },
+        ),
+      ],
+      [functionCall('market_enrich', { refs: ['m1'] }, { callId: 'detail1' })],
+      [functionCall('reply_with_market_results', args, { callId: 'market-reply' })],
+    ]);
+    const { deps, repos, runStates } = makeDeps(model);
+    const marketSearch = {
+      find: vi.fn(() => Promise.resolve({ items: [listing], hasNext: false, total: 1 })),
+      detail: vi.fn(() => Promise.resolve(listing)),
+    };
+    const configured = { ...deps, marketSearch };
+    expect(
+      await runInbound({
+        deps: configured as never,
+        ctx: {
+          ...ctx(1),
+          source: { messageId: '77', userId: '42' },
+          demand: { category: 'second_hand', confidence: 0.95, lang: 'zh' },
+        },
+        input: '伦敦收小绿锅',
+      }),
+    ).toMatchObject({ kind: 'interrupted' });
+    expect(repos.outbound.create).not.toHaveBeenCalled();
+    model.enqueue([assistantMessage('done')]);
+    const state = runStates[0];
+    if (!state) throw new Error('missing market snapshot');
+    await resumeRun({
+      deps: configured as never,
+      runState: state,
+      approval: { decision: 'approve' },
+    });
+    expect(repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({ replyToMessageId: '77', mentionUserId: '42' }),
+      'pending',
+    );
+    const [draft] = repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('[A2H详情]');
+    expect(draft.text).toContain('小红书原帖');
+    expect(marketSearch.find).toHaveBeenCalledTimes(1);
+    expect(marketSearch.detail).toHaveBeenCalledTimes(1);
+    model.assertComplete();
+  });
+  it('searches notes, recommends a concrete option, persists approval and resumes the same draft', async () => {
+    const args = {
+      intro: '想逛河边集市的话，我会先看这个：',
+      recommendations: [
+        {
+          name: 'Southbank 集市',
+          aliases: [],
+          group: '河边集市',
+          summary: '河边的小吃集市，可以边逛边吃。',
+          reason: '适合想散步又想吃小吃的人。',
+          sources: [{ ref: 'x1', passages: ['x1:p1'] }],
+          facts: [],
+        },
+      ],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'xhs_search',
+          {
+            purpose: 'discover',
+            queries: [
+              {
+                keyword: '伦敦 圣诞集市',
+                page: 1,
+                sort: 'general',
+                timeFilter: '不限',
+                entity: null,
+              },
+            ],
+          },
+          { callId: 'search1' },
+        ),
+      ],
+      [functionCall('reply_with_xhs_notes', args, { callId: 'reply1' })],
+    ]);
+    const { deps, repos, runStates } = makeDeps(model);
+    const xhsSearch = {
+      find: vi.fn(() =>
+        Promise.resolve([
+          {
+            ref: 'x1',
+            title: '伦敦圣诞集市攻略',
+            author: '作者',
+            desc: 'Southbank 集市有河边小吃摊，适合散步。',
+            likes: 5,
+            url: 'https://www.xiaohongshu.com/explore/n1?xsec_token=tok',
+          },
+        ]),
+      ),
+    };
+    const configured = { ...deps, env: { ...deps.env, XHS_RESEARCH_ENABLED: true }, xhsSearch };
+    const result = await runInbound({
+      deps: configured as never,
+      ctx: { ...ctx(1), demand: { category: 'other', confidence: 0.9, lang: 'zh' } },
+      input: '伦敦有什么集市推荐',
+    });
+    expect(result.kind).toBe('interrupted');
+    expect(repos.outbound.create).not.toHaveBeenCalled();
+    expect(xhsSearch.find).toHaveBeenCalledTimes(1);
+    model.enqueue([assistantMessage('done')]);
+    const state = runStates[0];
+    if (!state) throw new Error('missing approval snapshot');
+    await resumeRun({
+      deps: configured as never,
+      runState: state,
+      approval: { decision: 'approve' },
+    });
+    expect(repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'pending');
+    const [draft] = repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('1. Southbank 集市');
+    expect(draft.text).toContain(
+      '[小红书原文 1](https://www.xiaohongshu.com/explore/n1?xsec_token=tok)',
+    );
+    expect(xhsSearch.find).toHaveBeenCalledTimes(1);
+  });
   it('phase 1: outbound tool interrupts and an encrypted run_state row is written', async () => {
     const model = new ScriptedModel([[replyCall()]]);
     const { deps, repos, runStates } = makeDeps(model);

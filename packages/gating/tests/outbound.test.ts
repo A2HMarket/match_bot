@@ -11,10 +11,16 @@ describe('decideOutbound', () => {
     ['phase 2 auto when good and rate ok', { phase: 2, verdict: good, rateOk: true }, 'auto'],
     ['phase 2 review when rate exceeded', { phase: 2, verdict: good, rateOk: false }, 'review'],
     ['phase 2 review when jev unavailable', { phase: 2, verdict: null, rateOk: true }, 'review'],
+    // 2026-10-10 起没有中间带：过了硬下限就发，分数居中不再送审
     [
-      'phase 2 review when language doubtful',
+      'phase 2 auto when worth replying is middling',
+      { phase: 2, verdict: { ...good, worthReplying: 1.8 }, rateOk: true },
+      'auto',
+    ],
+    [
+      'phase 2 auto even when language is doubtful',
       { phase: 2, verdict: { ...good, languageOk: 0.5 }, rateOk: true },
-      'review',
+      'auto',
     ],
     [
       'phase 2 drop when not worth it',
@@ -36,16 +42,14 @@ describe('decideOutbound with onUnsure = drop (无人值守)', () => {
   it.each([
     ['jev unavailable', { verdict: null, rateOk: true }],
     ['rate exceeded', { verdict: good, rateOk: false }],
-    ['language doubtful', { verdict: { ...good, languageOk: 0.5 }, rateOk: true }],
-    [
-      'worth replying in the middle band',
-      { verdict: { ...good, worthReplying: 1.8 }, rateOk: true },
-    ],
   ])('phase 2 does not send when unsure: %s', (_n, p) => {
     expect(decideOutbound({ ...p, phase: 2, ...unattended })).toBe('drop');
   });
-  it('still sends confident drafts', () => {
-    expect(decideOutbound({ phase: 2, verdict: good, rateOk: true, ...unattended })).toBe('auto');
+  it('still sends middling drafts: only the hard floors gate sending', () => {
+    const middling = { worthReplying: 1.27, languageOk: 0.6, mentionsUnverified: 0.03 };
+    expect(decideOutbound({ phase: 2, verdict: middling, rateOk: true, ...unattended })).toBe(
+      'auto',
+    );
   });
   it('does not change phase 1: a human-review phase is still reviewed', () => {
     expect(decideOutbound({ phase: 1, verdict: good, rateOk: true, ...unattended })).toBe('review');

@@ -71,10 +71,12 @@ describe('offline replay against the recorded fixture', () => {
     // category 准确率：V4 实测 0.98，唯一一条分歧出在标注本身可争议的样本上
     expect(s.categoryAccuracy).toBeGreaterThanOrEqual(0.96);
     expect(s.categoryMismatches.length).toBeLessThanOrEqual(2);
-    // P14：is_local_request 只在 category=other 上用；阈值 0.8。实测正类最低 0.87、负类最高 0.72
-    // （「怎么注册 GP」，同一条两次调用 0.59 / 0.72，是离阈值最近的已知样本）
-    expect(s.isLocalRequest.positive.min).toBeGreaterThanOrEqual(0.8);
-    expect(s.isLocalRequest.negative.max).toBeLessThan(0.8);
+    // 生活服务小助手（P14 放宽后）：is_local_request 只在 category=other 上用；阈值 0.7。
+    // 实测正类最低 0.79（「BRP 丢了怎么补办」，生活办事咨询纳入响应范围后是离阈值最近的
+    // 已知正例）、负类最高 0.13，空带 0.13–0.79。
+    // P16 92 条重新录制：BRP 最低 0.73，仍高于实际阈值 0.7；不降低门阈值。
+    expect(s.isLocalRequest.positive.min).toBeGreaterThanOrEqual(0.7);
+    expect(s.isLocalRequest.negative.max).toBeLessThan(0.7);
   });
 
   it('reports cost, latency and the pinned model version from the same traces as production', async () => {

@@ -28,6 +28,8 @@ export function webSearchTool(deps: AgentDeps & { webSearch: WebSearch }) {
     }),
     execute: async (args, rc) => {
       const ctx = (rc as RunContext<MatchContext>).context;
+      if (ctx.marketListings || ctx.xhsNotes)
+        return 'another search source was already used; do not switch sources';
       const allowed = ctx.demand?.category === 'other' || ctx.supplierSearchEmpty === true;
       if (!allowed) {
         return 'not allowed: call find_suppliers first; web_search is only for when it finds nothing';

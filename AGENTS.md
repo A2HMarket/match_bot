@@ -71,7 +71,7 @@ packages/eval         回放与指标
 7. **Session 粒度是用户**，不是群，不是消息。群上下文与用户画像通过 instructions 注入，不塞进 session。
 8. **`process.env` 只在 `packages/shared` 的 `loadEnv()` 里读一次**，其他地方通过传入的 `Env` 对象取值。
 9. **禁止 Agents SDK 默认 tracing 导出**。`packages/agent` 初始化时必须禁用默认 exporter 并注册写 `decision_traces` 的 processor。
-10. **不处理支付、不做担保、不代收款**，代码里不得出现相关分支。租房、招聘、二手品类只打标签，不进撮合。
+10. **不处理支付、不做担保、不代收款**，代码里不得出现相关分支。招聘品类只打标签，不进撮合。2026-10-10 用户授权：二手交易、租房、帮带、搭子需求可经A2H公开 API 做只读搜索与推荐，不代发帖、不联系贴主、不经手交易。
 11. **PII 不进日志**。pino 的 redact 已配 `text`、`phone`，新增含个人信息的字段必须加到 redact 列表。
 
 ## 4. 命名契约

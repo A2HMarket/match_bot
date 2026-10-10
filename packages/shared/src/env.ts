@@ -20,10 +20,18 @@ export const envSchema = z.object({
   // run_states.snapshot 落库加密口令（AGENTS.md §6）。Phase 0 无审批中断用不到，故 optional；
   // 一旦进入 Phase 1（产生中断快照）就必须配置，否则 runInbound 在写快照时报错。
   SNAPSHOT_KEY: z.string().min(16).optional(),
-  // Phase 2 里出站门拿不准（分数居中 / Jev 不可用 / 触发频控）时怎么办。
+  // Phase 2 里出站门拿不准（Jev 不可用 / 触发频控）时怎么办；分数过了硬下限一律自动发，
+  // 不再有「分数居中」（2026-10-10 起取消中间带送审）。
   // drop = 不发，无人值守时用；review = 送运营群审批，有人值守时用。
   // P14 库外需求兜底搜索（Tavily）。不配则不启用，库外需求一律不回。
   SEARCH_API_KEY: z.string().min(1).optional(),
+  // 吃喝玩乐类需求的兜底搜索：小红书（经 Sandbase）。不配则这类需求走 Tavily 或不回。
+  SANDBASE_API_KEY: z.string().min(1).optional(),
+  // 多轮研究由环境显式启用；新环境默认保留单次推荐协议。
+  XHS_RESEARCH_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   OUTBOUND_UNSURE_ACTION: z.enum(['drop', 'review']).default('drop'),
 });
 

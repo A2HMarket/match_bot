@@ -19,6 +19,7 @@ import type { LabeledSample } from './samples.js';
 export type InboundDecider<TThresholds> = (
   verdict: InboundVerdict,
   thresholds: TThresholds,
+  opts?: { text?: string },
 ) => { action: string };
 
 export interface SampleVerdict {
@@ -127,7 +128,7 @@ export function scoreInbound<TThresholds>(p: {
   const rows: ReplayRow[] = [];
 
   for (const { sample, verdict } of p.verdicts) {
-    const decision = p.decide(verdict, p.thresholds);
+    const decision = p.decide(verdict, p.thresholds, { text: sample.text });
     actions[decision.action] = (actions[decision.action] ?? 0) + 1;
     const predicted = decision.action === 'enter_agent';
     const expected = sample.is_demand || sample.is_supply || sample.is_local_request;

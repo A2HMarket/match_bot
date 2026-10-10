@@ -32,7 +32,7 @@ function deps(goodVerdict = true) {
       Promise.resolve(
         goodVerdict
           ? { ok: true, worthReplying: 2.8, languageOk: 0.95, mentionsUnverified: 0 }
-          : { ok: true, worthReplying: 1.5, languageOk: 0.95, mentionsUnverified: 0 },
+          : { ok: false, reason: 'jev_unavailable' },
       ),
     ),
     thresholds: DEFAULT_THRESHOLDS,
@@ -112,7 +112,7 @@ describe.each(cases)('$name (出站工具四阶段用例)', ({ make, args, targe
     expect(d.repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'pending');
   });
 
-  it('phase 2 weak verdict: needsApproval interrupts', async () => {
+  it('phase 2 jev unavailable: needsApproval interrupts', async () => {
     const d = deps(false);
     const t = make(d as never);
     expect(await t.needsApproval(rc(makeCtx(2)), args as never, 'c1')).toBe(true);
@@ -192,7 +192,7 @@ describe('notify_user without a channel user id', () => {
 });
 
 describe('unattended phase 2 (OUTBOUND_UNSURE_ACTION = drop)', () => {
-  it('a weak verdict neither interrupts nor writes anything', async () => {
+  it('a failed Jev evaluation neither interrupts nor writes anything', async () => {
     const d = {
       ...deps(false),
       env: { TELEGRAM_OPS_CHAT_ID: '-100ops', OUTBOUND_UNSURE_ACTION: 'drop' },

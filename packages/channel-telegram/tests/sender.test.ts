@@ -39,6 +39,36 @@ describe('group replies', () => {
   const reply = { ...(msg as object), replyToMessageId: '77', mentionUserId: '42' } as never;
   const member = (user: object) => vi.fn(() => Promise.resolve({ status: 'member', user }));
 
+  it.each([
+    { id: 42, is_bot: false, first_name: '🙂小王' },
+    { id: 42, is_bot: false, first_name: 'Ann', username: 'ann_l' },
+  ])(
+    'preserves recommendation links and bold offsets alongside mentions: $first_name',
+    async (user) => {
+      const sendMessage = vi.fn(() => Promise.resolve({ message_id: 1 }));
+      const url = 'https://www.xiaohongshu.com/explore/abc?xsec_token=tok';
+      await createTelegramSender({
+        bot: { api: { sendMessage, getChatMember: member(user) } } as never,
+        logger,
+      }).send({
+        ...(reply as object),
+        text: `先看这个：\n\n1. 河边集市\n来源：[小红书原文](${url}) · 作者`,
+      } as never);
+      const [, text, options] = sendMessage.mock.calls[0] as unknown as [
+        number,
+        string,
+        { entities: Array<{ type: string; offset: number; length: number; url?: string }> },
+      ];
+      expect(text).not.toContain('xsec_token');
+      const link = options.entities.find((e) => e.type === 'text_link');
+      expect(link).toMatchObject({ offset: text.indexOf('小红书原文'), length: 5, url });
+      expect(options.entities.find((e) => e.type === 'bold')).toMatchObject({
+        offset: text.indexOf('1. 河边集市'),
+        length: 7,
+      });
+    },
+  );
+
   it('replies to the source message and @mentions an author who has a username', async () => {
     const sendMessage = vi.fn(() => Promise.resolve({ message_id: 1 }));
     const getChatMember = member({ id: 42, is_bot: false, first_name: 'Ann', username: 'ann_l' });

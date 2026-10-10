@@ -5,3 +5,4 @@ export { isBlacklisted } from './blacklist.js';
 export { decideInbound, type InboundSignals, type InboundDecision } from './inbound.js';
 export { decideOutbound, type OutboundSignals, type OutboundDecision } from './outbound.js';
 export { createRateLimiter } from './rate-limit.js';
+export { selectMarketTradeType } from './market-request.js';

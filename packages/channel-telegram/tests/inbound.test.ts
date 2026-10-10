@@ -26,6 +26,30 @@ describe('toInboundMessage', () => {
     expect(m?.replyToMessageId).toBeUndefined();
     expect(m?.addressedToBot).toBe(true);
   });
+  it('keeps photo album captions and caption mentions in the text pipeline', () => {
+    const m = toInboundMessage(load('update-photo-caption'), {
+      botId: 111,
+      botUsername: 'london_match_bot',
+    });
+    expect(m?.text).toBe('@London_Match_Bot 出 s 码全新衣服');
+    expect(m?.addressedToBot).toBe(true);
+    expect(m?.messageId).toBe('56');
+  });
+  it('recognizes a caption text_mention pointing to the bot', () => {
+    const u = load('update-photo-caption');
+    Object.assign(u.message!, {
+      caption: 'Bot 出 s 码全新衣服',
+      caption_entities: [
+        {
+          type: 'text_mention',
+          offset: 0,
+          length: 3,
+          user: { id: 111, is_bot: true, first_name: 'Bot' },
+        },
+      ],
+    });
+    expect(toInboundMessage(u, { botId: 111 })?.addressedToBot).toBe(true);
+  });
   it('returns null for non-text and for the bot itself', () => {
     expect(toInboundMessage(load('update-photo'), { botId: 111 })).toBeNull();
     const own = load('update-group-text');

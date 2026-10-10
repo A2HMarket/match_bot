@@ -1,7 +1,12 @@
 import { tool, type RunContext } from '@openai/agents';
 import type { z } from 'zod';
 import type { AgentDeps, MatchContext } from '../context.js';
-import { decideForOutbound, executeOutbound, type OutboundDraftInput } from './outbound-gate.js';
+import {
+  decideForOutbound,
+  executeOutbound,
+  formatOutboundText,
+  type OutboundDraftInput,
+} from './outbound-gate.js';
 
 export type DraftResult = OutboundDraftInput | { error: string };
 
@@ -20,31 +25,86 @@ export function makeOutboundTool<A>(
   },
 ) {
   const toArgs = (raw: unknown): A => cfg.parameters.parse(raw) as A;
+  // SDK 在敏感信息关闭时会清掉 InvalidToolInputError 的原始参数/原因；先保存字段路径与限值。
+  // 不保存参数值，不写日志/快照。每个工具独立，批量无效调用的错误一并供模型修正。
+  const retryLimitMessage =
+    'not sent: outbound input retry limit reached after three failed calls. Stop; do not retry.';
+  // 同一个 SDK call 在 needsApproval 和 execute 都经过校验，只算一次失败。
+  const rejectedCalls = new WeakMap<MatchContext, Map<string, string>>();
+  const schemaFeedback = new WeakMap<MatchContext, Set<string>>();
   return tool({
     name: cfg.name,
     description: cfg.description,
     parameters: cfg.parameters,
+    errorFunction: (rc, error) => {
+      if ((rc.context as MatchContext).outboundBlocked) return retryLimitMessage;
+      if (error instanceof Error && error.name === 'InvalidToolInputError') {
+        const feedback = schemaFeedback.get(rc.context as MatchContext);
+        return `invalid tool input: ${feedback ? [...feedback].join('; ') : 'arguments do not match the tool schema'}. Correct the listed fields; do not repeat identical arguments.`;
+      }
+      return 'tool failed: internal error; stop rather than repeating this action';
+    },
     needsApproval: async (rc, args, callId) => {
       const ctx = rc.context as MatchContext;
       if (ctx.outboundBlocked) return false;
+      // needsApproval 在 SDK 的工具入参校验前调用；格式错误只交给该校验返回，不让整轮崩掉。
+      const parsed = cfg.parameters.safeParse(args);
+      if (!parsed.success) {
+        const feedback = schemaFeedback.get(ctx) ?? new Set<string>();
+        parsed.error.issues.forEach((issue) =>
+          feedback.add(`${issue.path.join('.')}: ${issue.message}`),
+        );
+        schemaFeedback.set(ctx, feedback);
+        // 只记字段路径与错误码，不记参数值（PII）：没有这条，模型反复改不对时线上无从排查
+        await recordInvalidDraft(ctx, 'invalid_schema', [
+          ...new Set(parsed.error.issues.map((i) => `${i.path.join('.') || '<root>'}:${i.code}`)),
+        ]);
+        return false;
+      }
       const d = await cfg.toDraft(ctx, toArgs(args));
-      if ('error' in d) return false;
+      if ('error' in d) {
+        await recordInvalidDraft(ctx, 'invalid_evidence', [d.error]);
+        if (callId) {
+          const calls = rejectedCalls.get(ctx) ?? new Map<string, string>();
+          calls.set(callId, d.error);
+          rejectedCalls.set(ctx, calls);
+        }
+        return false;
+      }
+      delete ctx.outboundInputFailures;
+      schemaFeedback.delete(ctx);
       const decision = await decideForOutbound(deps, ctx, {
         ...d,
         ...(callId ? { toolCallId: callId } : {}),
       });
+      if (decision === 'review' && callId) {
+        ctx.outboundPreviews ??= {};
+        ctx.outboundPreviews[callId] = formatOutboundText(ctx, d);
+      }
       return decision === 'review';
     },
     execute: async (args, rc, details) => {
       if (!rc) return 'internal error: missing run context';
       const ctx = (rc as RunContext<MatchContext>).context;
       if (ctx.outboundBlocked) {
-        return 'not sent: this run was already declined by the outbound gate. Stop; do not retry.';
+        return ctx.outboundInputFailures?.count === 3
+          ? retryLimitMessage
+          : 'not sent: this run was already declined by the outbound gate. Stop; do not retry.';
       }
+      const callId = details?.toolCall?.callId;
+      const rejection = callId ? rejectedCalls.get(ctx)?.get(callId) : undefined;
+      if (rejection) return rejection;
       const d = await cfg.toDraft(ctx, toArgs(args));
-      if ('error' in d) return d.error;
+      if ('error' in d) {
+        await recordInvalidDraft(ctx, 'invalid_evidence', [d.error]);
+        return ctx.outboundBlocked ? retryLimitMessage : d.error;
+      }
+      delete ctx.outboundInputFailures;
+      schemaFeedback.delete(ctx);
+      const preview = callId ? ctx.outboundPreviews?.[callId] : undefined;
+      const { disclaimer: _disclaimer, ...withoutDisclaimer } = d;
       const draft: OutboundDraftInput = {
-        ...d,
+        ...(preview ? { ...withoutDisclaimer, text: preview } : d),
         ...(details?.toolCall?.callId ? { toolCallId: details.toolCall.callId } : {}),
       };
       const result = await executeOutbound(
@@ -56,4 +116,43 @@ export function makeOutboundTool<A>(
       return d.resultNote ? `${result}; ${d.resultNote}` : result;
     },
   });
+
+  /** detail 只放字段路径 / 错误码 / 给模型的纠错文案，绝不放原始参数值（PII）。 */
+  async function recordInvalidDraft(ctx: MatchContext, reason: string, detail?: string[]) {
+    const previous = ctx.outboundInputFailures;
+    const count = previous?.tool === cfg.name ? previous.count + 1 : 1;
+    ctx.outboundInputFailures = { tool: cfg.name, count };
+    await deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: ctx.sourceMessageId,
+      output: {
+        gate: 'outbound_input',
+        tool: cfg.name,
+        decision: 'deny',
+        reason,
+        attempt: count,
+        ...(detail ? { detail } : {}),
+      },
+      phase: ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+    if (count >= 3) {
+      ctx.outboundBlocked = true;
+      await deps.repos.traces.create({
+        kind: 'gate',
+        inputRef: ctx.sourceMessageId,
+        output: {
+          gate: 'outbound_retry',
+          tool: cfg.name,
+          decision: 'deny',
+          reason: 'input_retry_limit',
+          attempts: count,
+        },
+        phase: ctx.phase,
+        latencyMs: 0,
+        costMicro: 0,
+      });
+    }
+  }
 }

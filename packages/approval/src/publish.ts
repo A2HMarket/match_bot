@@ -2,7 +2,11 @@ import type { createOpsCardSender } from '@matchbot/channel-telegram';
 import type { Repositories, RunState } from '@matchbot/db';
 import { z } from 'zod';
 
-const interruptionSchema = z.object({ tool: z.string(), args: z.string() });
+const interruptionSchema = z.object({
+  tool: z.string(),
+  args: z.string(),
+  draftText: z.string().max(4000).optional(),
+});
 const replyArgsSchema = z.object({
   text: z.string(),
   supplierIds: z.array(z.string()).default([]),
@@ -18,7 +22,7 @@ export async function publishApproval(p: {
   const first = interruptions[0];
   if (!first) return;
   const args = replyArgsSchema.safeParse(JSON.parse(first.args));
-  const text = args.success ? args.data.text : first.args;
+  const text = first.draftText ?? (args.success ? args.data.text : first.args);
   const ids = args.success ? args.data.supplierIds : [];
   const suppliers = ids.length ? await p.repos.suppliers.findByIds(ids) : [];
   const byId = new Map(suppliers.map((s) => [s.id, s]));
