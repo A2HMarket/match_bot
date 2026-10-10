@@ -23,6 +23,34 @@ function stripProviderData<T>(value: T): T {
   return value;
 }
 
+/**
+ * 搜索结果只在产生它的那一轮 run 里有用（选 ref、引文校验都在 run 内由代码对 ctx 完成），
+ * 之后每轮回放给模型只是重复计费：实测一个活跃用户的 session 里 61% 字符是历史搜索结果。
+ * 回放前把历史搜索类工具结果换成一行归档说明。只改模型输入，不落库：
+ * 审批恢复的持久化对比走 prepareHistoryItemsForPersistenceComparison（未实现），
+ * 用的是 getItems 原文，不受影响。
+ */
+const EPHEMERAL_RESULT_TOOLS = new Set([
+  'market_search',
+  'market_enrich',
+  'xhs_search',
+  'xhs_read_notes',
+  'web_search',
+  'xhs_legacy_search',
+]);
+
+function archiveEphemeralToolResult(item: AgentInputItem): AgentInputItem {
+  const i = item as { type?: string; name?: string; output?: unknown };
+  if (i.type !== 'function_call_result' || !i.name || !EPHEMERAL_RESULT_TOOLS.has(i.name))
+    return item;
+  const archived = `[archived ${i.name} result from an earlier conversation turn: the data is no longer available; call the tool again if you need fresh results]`;
+  // SDK 类型把 output 声明为 string，实际落库的是 { type: 'text', text }（见 session.test.ts 夹具）
+  if (typeof i.output === 'string') return { ...item, output: archived } as AgentInputItem;
+  if (i.output !== null && typeof i.output === 'object' && 'text' in i.output)
+    return { ...item, output: { ...i.output, text: archived } } as unknown as AgentInputItem;
+  return item;
+}
+
 type Item = { type?: string; role?: string; callId?: string };
 const isUserMessage = (i: Item) => i.role === 'user';
 const isToolCall = (i: Item) => i.type === 'function_call';
@@ -75,7 +103,7 @@ export function createPgSession(p: { repos: Repositories; userId: string }): Ses
       return trimHistory(items);
     },
     prepareHistoryItemForModelInput(item: AgentInputItem) {
-      return stripProviderData(item);
+      return archiveEphemeralToolResult(stripProviderData(item));
     },
     async addItems(items: AgentInputItem[]) {
       await p.repos.sessionItems.append(p.userId, items.map(stripProviderData));

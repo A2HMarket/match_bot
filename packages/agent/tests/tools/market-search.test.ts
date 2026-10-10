@@ -185,6 +185,29 @@ describe('market research tools', () => {
     expect(c.marketListings?.[1]?.id).toBe('listing_other');
     expect(c.marketListings).toHaveLength(11);
   });
+  it('returns truncated projections to the model while ctx keeps full text for quote validation', async () => {
+    const d = deps(),
+      c = ctx();
+    const long = { ...POT, description: `小绿锅成色新。${'细'.repeat(3000)}` };
+    d.marketSearch.find.mockResolvedValueOnce({ items: [long], hasNext: false, total: 1 });
+    const out = JSON.parse(
+      await marketSearchTool(d as never).invoke(rc(c), JSON.stringify(search())),
+    ) as { listings: Array<Record<string, unknown>> };
+    const shown = out.listings[0]!;
+    expect(shown['description']).toBe(`小绿锅成色新。${'细'.repeat(493)}…`);
+    expect(shown['descriptionTruncated']).toBe(true);
+    expect(shown).not.toHaveProperty('id');
+    expect(shown).not.toHaveProperty('url');
+    expect(shown).not.toHaveProperty('sourceUrl');
+    expect(shown['ref']).toBe('m1');
+    expect(c.marketListings?.[0]?.description).toHaveLength(3007);
+    d.marketSearch.detail.mockResolvedValueOnce(long);
+    const enriched = JSON.parse(
+      await marketEnrichTool(d as never).invoke(rc(c), JSON.stringify({ refs: ['m1'] })),
+    ) as { listings: Array<Record<string, unknown>> };
+    expect(enriched.listings[0]?.['description']).toHaveLength(1501);
+    expect(c.marketListings?.[0]?.description).toHaveLength(3007);
+  });
 });
 
 describe('reply_with_market_results', () => {

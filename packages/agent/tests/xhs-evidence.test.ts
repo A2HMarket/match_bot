@@ -19,7 +19,7 @@ describe('source-owned XHS passages', () => {
   it('bounds large paragraphs and uses only the returned excerpt', () => {
     const passages = getXhsPassages({ ref: 'x1', desc: '字'.repeat(2300) });
     expect(passages.every((p) => p.text.length <= 300)).toBe(true);
-    expect(passages.map((p) => p.text).join('')).toBe('字'.repeat(2000));
+    expect(passages.map((p) => p.text).join('')).toBe('字'.repeat(600));
   });
   it('recognizes escaped and Unicode line breaks from real notes without combining dates and venue', () => {
     const desc = '📍地址：V&A\\n▪️展期：2026年11月8日结束\u2028▪️票价：工作日 £28 / 周末 £30';

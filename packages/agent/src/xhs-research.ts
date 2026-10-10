@@ -6,7 +6,8 @@ export const XHS_RESEARCH_LIMITS = {
   discoveryQueries: 4,
   notes: 40,
   detailReads: 12,
-  excerptChars: 2000,
+  // 卡片与全文都只留头部给模型：引文按 passage 校验，子串关系保持；实测 2000 字/篇是多轮 token 膨胀大头
+  excerptChars: 600,
 } as const;
 export const xhsQuerySchema = z.object({
   keyword: z.string().min(2).max(60),

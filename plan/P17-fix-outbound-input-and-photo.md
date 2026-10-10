@@ -75,3 +75,12 @@ WHERE output->>'gate' = 'outbound_input' ORDER BY created_at DESC LIMIT 10;
 ### 主干交付（2026-10-10）
 
 用户授权将这几轮已在本地部署的改动一并提交并合并到 main。采用 codex/search-recommendations-p17 分支提交后快进合并，保留既有工作；不直接在 main 创建提交。跨包改动覆盖 shared/websearch/agent/channel-telegram/approval/gating/jev/eval/worker 的搜索、推荐呈现、审批正文及入站契约，没有新增依赖、数据库字段或交易能力。验证：472 测试通过；92 条入站 fixture 回放 precision/recall/silenceCorrect=1，既有 s39 分类分歧保留。
+
+### 2026-10-10 Kimi 压缩多轮 token 膨胀（Agent 0.11.0）
+
+- 起因：用户要求压缩多轮搜索导致的 token 膨胀。实测某活跃用户 session：189 项共 255,890 字符，工具返回占 68%，其中搜索类（market_search/xhs_search/market_enrich/web_search）占 61%；单条 market_search 返回最大 37,217 字符（26 条完整 listing）。
+- 杠杆 1（跨 run，约 60%）：搜索结果只在产生它的那轮 run 里有用（选 ref、引文校验都在 run 内由代码对 ctx 完成），之后每轮回放只是重复计费。`packages/agent/src/session.ts` 的 `prepareHistoryItemForModelInput` 在回放前把历史搜索类 `function_call_result`（market_search / market_enrich / xhs_search / xhs_read_notes / web_search / xhs_legacy_search）换成一行归档说明。只改模型输入、不落库；审批恢复的持久化对比走 `prepareHistoryItemsForPersistenceComparison`（未实现），用 getItems 原文，不受影响（SDK 0.18 sessionPersistence.js 实测确认该 hook 只用于模型输入）。
+- 杠杆 2（run 内）：`market_search` 返回改为投影（`marketListingForModel`）：去 id/url/sourceUrl，描述截 500 字、tags 截 10 个；`market_enrich` 返回同形投影、描述截 1500 字。全文始终留在 `ctx.marketListings`，引文子串校验保持成立；工具描述与 guidance 明示「enrich 后再引用、只引用看得见的文字」。xhs `XHS_RESEARCH_LIMITS.excerptChars` 2000→600，卡片与详读共用此上限，passage 校验同步收窄。
+- 常量位置：`MARKET_EXCERPT_CHARS`（`packages/agent/src/market-research.ts`）、`XHS_RESEARCH_LIMITS.excerptChars`（`packages/agent/src/xhs-research.ts`）。
+- 回归：新增 session 归档 6 例（含字符串形 output、只读不落库、配对保持）与 market 投影 1 例；更新 xhs 两条依赖 2000 的断言。`pnpm check` 全绿（61 文件 / 482 测试）；fixture 评测（n=92）precision/recall/silenceCorrect=1，categoryAccuracy=0.9891（s39 既有分歧保留），与基线一致。
+- 部署：`pnpm build` 后 launchd worker 重启（pid 45772），dist AGENT_VERSION=0.11.0，stderr 自 2026-10-09 无新增。改动未提交，与既有未提交工作一起留在工作树。

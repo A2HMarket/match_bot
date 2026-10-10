@@ -2,12 +2,16 @@ import { MarketSearchError, type MarketSearch } from '@matchbot/websearch';
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
 import type { AgentDeps, MatchContext } from '../context.js';
-import { MARKET_RESEARCH_LIMITS } from '../market-research.js';
+import {
+  MARKET_EXCERPT_CHARS,
+  marketListingForModel,
+  MARKET_RESEARCH_LIMITS,
+} from '../market-research.js';
 export function marketEnrichTool(deps: AgentDeps & { marketSearch: MarketSearch }) {
   return tool({
     name: 'market_enrich',
     description:
-      'Read public details of already discovered A2H listings before recommending them. Fills original-post publication date, status and public practical information. Choose 1-4 returned refs per batch; at most 8 distinct listing details per run. Re-check status: sold/expired is not an available offer. No contact lookup or private messages.',
+      'Read public details of already discovered A2H listings before recommending them. Fills original-post publication date, status and public practical information (descriptions truncated to the first 1500 characters). Choose 1-4 returned refs per batch; at most 8 distinct listing details per run. Re-check status: sold/expired is not an available offer. No contact lookup or private messages.',
     parameters: z.object({ refs: z.array(z.string()).min(1).max(4) }),
     execute: async (args, rc) => {
       const ctx = (rc as RunContext<MatchContext>).context;
@@ -62,11 +66,11 @@ export function marketEnrichTool(deps: AgentDeps & { marketSearch: MarketSearch 
         costMicro: 0,
       });
       return JSON.stringify({
-        listings: enriched,
+        listings: enriched.map((n) => marketListingForModel(n, MARKET_EXCERPT_CHARS.detail)),
         failures,
         remainingDetails: MARKET_RESEARCH_LIMITS.details - attempted.size,
         guidance:
-          'Original sourcePublishedAt is not the import createdAt. Keep data from each listing together, do not recommend ended offers; uncertain dates/routes/rent units must be checked via the original post.',
+          'Original sourcePublishedAt is not the import createdAt. Keep data from each listing together, do not recommend ended offers; uncertain dates/routes/rent units must be checked via the original post. Descriptions are truncated to the shown text; quote only text you can see.',
       });
     },
   });

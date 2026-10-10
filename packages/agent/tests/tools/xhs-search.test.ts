@@ -180,13 +180,13 @@ describe('xhs_search research', () => {
     );
     expect(d.xhsSearch.find).not.toHaveBeenCalled();
   });
-  it('caps source excerpts at 2000 characters', async () => {
+  it('caps source excerpts at 600 characters', async () => {
     const d = deps();
     d.xhsSearch.find.mockResolvedValueOnce([{ ...ART, desc: 'x'.repeat(3000) }]);
     const r = JSON.parse(
       await xhsSearchTool(d as never).invoke(rc(ctx()), JSON.stringify(search())),
     ) as { notes: Array<{ passages: Array<{ id: string; text: string }> }> };
-    expect(r.notes[0]?.passages.map((p) => p.text).join('').length).toBe(2000);
+    expect(r.notes[0]?.passages.map((p) => p.text).join('').length).toBe(600);
   });
 });
 

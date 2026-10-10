@@ -177,3 +177,70 @@ describe('trimHistory', () => {
     assertToolPairing(got);
   });
 });
+
+describe('archiving ephemeral search results on replay', () => {
+  const big = (id: string, name: string): AgentInputItem => ({
+    type: 'function_call_result',
+    callId: id,
+    name,
+    status: 'completed',
+    output: { type: 'text', text: 'x'.repeat(30_000) },
+  });
+
+  it('replaces past search tool results with a one-line archive note for the model', () => {
+    const s = createPgSession({ repos: repos() as never, userId: 'u1' });
+    const out = s.prepareHistoryItemForModelInput?.(big('c1', 'market_search')) as {
+      type: string;
+      callId: string;
+      name: string;
+      output: { type: string; text: string };
+    };
+    expect(out.type).toBe('function_call_result');
+    expect(out.callId).toBe('c1');
+    expect(out.name).toBe('market_search');
+    expect(out.output.type).toBe('text');
+    expect(out.output.text).toContain('archived market_search result');
+    expect(out.output.text.length).toBeLessThan(200);
+  });
+
+  it.each(['xhs_search', 'xhs_read_notes', 'market_enrich', 'web_search', 'xhs_legacy_search'])(
+    'archives %s too',
+    (name) => {
+      const s = createPgSession({ repos: repos() as never, userId: 'u1' });
+      const out = s.prepareHistoryItemForModelInput?.(big('c1', name)) as {
+        output: { text: string };
+      };
+      expect(out.output.text).toContain(`archived ${name} result`);
+    },
+  );
+
+  it('leaves non-search tool results and messages untouched', () => {
+    const s = createPgSession({ repos: repos() as never, userId: 'u1' });
+    const kept = big('c1', 'upsert_demand');
+    expect(s.prepareHistoryItemForModelInput?.(kept)).toEqual(kept);
+    const msg = user('你好');
+    expect(s.prepareHistoryItemForModelInput?.(msg)).toEqual(msg);
+  });
+
+  it('handles string-shaped outputs', () => {
+    const s = createPgSession({ repos: repos() as never, userId: 'u1' });
+    const out = s.prepareHistoryItemForModelInput?.({
+      type: 'function_call_result',
+      callId: 'c1',
+      name: 'xhs_search',
+      status: 'completed',
+      output: 'x'.repeat(10_000),
+    } as never) as { output: string };
+    expect(out.output).toContain('archived xhs_search result');
+  });
+
+  it('is read-time only: stored items keep the full payload and pairing survives', async () => {
+    const r = repos();
+    r.store.push(...turn(1, ['market_search', 'reply_with_market_results']));
+    const s = createPgSession({ repos: r as never, userId: 'u1' });
+    const stored = await s.getItems();
+    expect(stored).toEqual(r.store);
+    const replayed = stored.map((i) => s.prepareHistoryItemForModelInput?.(i) ?? i);
+    assertToolPairing(replayed);
+  });
+});
