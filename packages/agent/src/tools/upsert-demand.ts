@@ -58,11 +58,43 @@ function toDraft(args: z.output<typeof params>): DemandDraft {
 }
 
 export function upsertDemandTool(deps: AgentDeps) {
+  const feedback = new WeakMap<MatchContext, string>();
   return tool({
     name: 'upsert_demand',
     description:
-      "Record or update the user's open service demand (category, when, from/to postcode, quantity, budget). Call this whenever the user states or refines what they need.",
+      "Record or update the user's open service demand (category, when, from/to postcode, quantity, budget). Call this whenever the user states or refines what they need. Every schema field is required: use null for unspecified fields, and quote ISO timestamps as JSON strings.",
     parameters: params,
+    needsApproval: async (rc, args) => {
+      const ctx = rc.context as MatchContext;
+      const parsed = params.safeParse(args);
+      if (parsed.success) {
+        feedback.delete(ctx);
+        return false;
+      }
+      feedback.set(
+        ctx,
+        parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; '),
+      );
+      await deps.repos.traces.create({
+        kind: 'gate',
+        inputRef: ctx.sourceMessageId,
+        output: {
+          gate: 'demand_input',
+          decision: 'deny',
+          reason: 'invalid_schema',
+          fields: parsed.error.issues.map((issue) => issue.path.join('.')),
+        },
+        phase: ctx.phase,
+        latencyMs: 0,
+        costMicro: 0,
+      });
+      return false;
+    },
+    errorFunction: (rc, error) => {
+      if (error instanceof Error && ['InvalidToolInputError', 'SyntaxError'].includes(error.name))
+        return `invalid demand input: ${feedback.get(rc.context as MatchContext) ?? Object.keys(params.shape).join(', ')}. Missing fields must be included with null; quote timestamps as strings and use valid JSON. Correct all listed fields in one call.`;
+      return 'demand update failed internally; stop rather than repeating';
+    },
     execute: async (args, rc) => {
       const ctx = (rc as RunContext<MatchContext>).context;
       const draft = toDraft(args);

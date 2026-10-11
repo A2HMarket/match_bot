@@ -306,3 +306,10 @@ handleApprovalCallback(p: { repos: Repositories; queues: Queues; reviewer: strin
 - market_search/market_enrich返回choiceHints（首选/备选refs与关键缺口）和researchTasks（先详情、再源内实体名+缺口补搜）。既有8查询/8详情上界不变；已尝试enrich、无预算或无可执行任务时不反复强制补搜。
 - 带plan的reply_with_market_results最多3首选+2备选，无首选时最多3备选；确定冲突仍拒绝，未知候选可以和已确认候选分别展示，但不能用未知候选替代已有确认候选。适配/已知风险/同档单品报价排序、同原帖同物品去重，由代码执行并写trace；不同物品/贴主不合并。
 - 精确原句、单品价、原帖日期与链接保持事实归属；评分/原文提及不等于真实库存、机器功能或入住/航班可用保证。原门、频控与出站表不变。
+
+
+### P20 agent 内部出站反馈与评估（0.13.1）
+
+`DraftResult` 的错误分支增加可选 `kind: 'research_required'`。它表示正常的缺口补搜，单独记 `outbound_research` trace，不计入 `outboundInputFailures`；真正 schema/证据错误仍累计三次后终止。
+
+`OutboundDraftInput.evaluationDemand?: DemandDraft` 只由工具内部构造，不开放给模型参数。A2H 推荐使用本轮受原请求约束的 `MarketPlan`（当前品类、分项需求、路线、区域、日期、预算）；没指定的字段不从历史建档继承。旧工具仍默认使用 ctx.demand。该字段不写出站表，不新增 DB/PII 字段；phase、Jev、频控及审批契约不变。

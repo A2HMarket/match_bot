@@ -86,6 +86,43 @@ const replyCall = (callId = 'c1') =>
   );
 
 describe('runInbound', () => {
+  it('returns all missing demand fields so a failed update can be repaired in one call', async () => {
+    const valid = {
+      category: 'second_hand',
+      confidence: 0.9,
+      need: 'desk and office chair',
+      fromPostcode: 'E14',
+      whenText: null,
+      whenAt: null,
+      toPostcode: null,
+      quantity: null,
+      budgetPence: null,
+      lang: 'zh',
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'upsert_demand',
+          {
+            category: 'second_hand',
+            confidence: 0.9,
+            need: 'desk and office chair',
+            fromPostcode: 'E14',
+          },
+          { callId: 'missing-fields' },
+        ),
+      ],
+      [functionCall('upsert_demand', valid, { callId: 'repaired-fields' })],
+      [assistantMessage('done')],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    await runInbound({ deps: deps as never, ctx: ctx(0), input: 'E14想收书桌和办公椅' });
+    const session = JSON.stringify(await repos.sessionItems.list());
+    expect(session).toContain('Missing fields must be included with null');
+    expect(session).toContain('whenAt');
+    expect(repos.demands.create).toHaveBeenCalledOnce();
+    model.assertComplete();
+  });
   it('reads two shortlisted full notes, then preserves evidence and read budget through approval resume', async () => {
     const cards = [
       {
@@ -274,7 +311,7 @@ describe('runInbound', () => {
       expect(errors).not.toContain('unknown supplier id: unknown');
     },
   );
-  it('performs one source-attested followup before writing a market recommendation', async () => {
+  it('allows research after two invalid drafts and evaluates the current market need', async () => {
     const listing = {
       id: 'listing_a',
       title: '伦敦小绿锅',
@@ -328,6 +365,16 @@ describe('runInbound', () => {
         ),
       ],
       [functionCall('market_enrich', { refs: ['m1'] }, { callId: 'detail' })],
+      ...['bad-one', 'bad-two'].map((callId) => [
+        functionCall(
+          'reply_with_market_results',
+          {
+            ...reply,
+            recommendations: [{ ...reply.recommendations[0], name: 'invented source name' }],
+          },
+          { callId },
+        ),
+      ]),
       [functionCall('reply_with_market_results', reply, { callId: 'before-gap' })],
       [
         functionCall(
@@ -348,15 +395,42 @@ describe('runInbound', () => {
       find: vi.fn(() => Promise.resolve({ items: [listing], total: 1, hasNext: false })),
       detail: vi.fn(() => Promise.resolve(listing)),
     };
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 1,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
     const result = await runInbound({
       deps: { ...deps, marketSearch } as never,
-      ctx: { ...ctx(0), demand: { category: 'second_hand', confidence: 1, lang: 'zh' } },
+      ctx: {
+        ...ctx(2),
+        demand: {
+          category: 'second_hand',
+          need: 'laser printer',
+          budgetPence: 6000,
+          confidence: 1,
+          lang: 'zh',
+        },
+      },
       input: '伦敦收小绿锅，预算20镑',
     });
     expect(result.kind).toBe('completed');
     expect(marketSearch.find).toHaveBeenCalledTimes(2);
     expect(repos.outbound.create).toHaveBeenCalledOnce();
     expect(JSON.stringify(await repos.sessionItems.list())).toContain('one focused market_search');
+    const evaluation = deps.evaluateOutbound.mock.calls[0] as unknown as [
+      unknown,
+      { demand: { need: string; budgetPence: number } },
+    ];
+    expect(evaluation[1].demand.need).toBe('小绿锅');
+    expect(evaluation[1].demand.budgetPence).toBe(2000);
+    expect(repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'pending');
+    expect(
+      repos.traces.create.mock.calls.filter(
+        ([row]) => (row as { output?: { gate?: string } }).output?.gate === 'outbound_input',
+      ),
+    ).toHaveLength(2);
     const [draft] = repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
     expect(draft.text).toContain('【备选');
     expect(draft.text).toContain('待确认：价格/计价单位');

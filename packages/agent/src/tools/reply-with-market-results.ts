@@ -1,5 +1,7 @@
 import { isActiveMarketListing, hasLondonEvidence, redactMarketText } from '@matchbot/websearch';
 import { z } from 'zod';
+import type { DemandDraft } from '@matchbot/domain';
+import type { MarketPlan } from '../market-strategy.js';
 import { marketListingForModel } from '../market-research.js';
 import { assessMarketListing } from '../market-strategy.js';
 import type { AgentDeps, MatchContext } from '../context.js';
@@ -7,7 +9,7 @@ import type { MarketCandidate } from '../market-research.js';
 import { buildMarketChoices, buildMarketResearchTasks } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { groupReplyAddressing } from './addressing.js';
-import { makeOutboundTool } from './make-outbound-tool.js';
+import { makeOutboundTool, type DraftResult } from './make-outbound-tool.js';
 const params = z.object({
   intro: z
     .string()
@@ -83,7 +85,7 @@ const singleLine = (s: string) => s.replace(/[\r\n]+/g, ' ').trim();
 function validateSelections(
   ctx: MatchContext,
   args: z.infer<typeof params>,
-): MarketCandidate[] | { error: string } {
+): MarketCandidate[] | Extract<DraftResult, { error: string }> {
   const selected: MarketCandidate[] = [];
   const publicFields = [
     args.intro,
@@ -207,7 +209,7 @@ function validateSelections(
     };
 
   const followup = requestFocusedFollowup(ctx, args, selected);
-  if (followup) return { error: followup };
+  if (followup) return { error: followup, kind: 'research_required' };
   return selected;
 }
 function requestFocusedFollowup(
@@ -424,10 +426,34 @@ export function replyWithMarketResultsTool(deps: AgentDeps) {
               : args.recommendations.find((item) => item.ref === n.ref)?.facts,
           }),
         ),
+        ...(ctx.marketPlan ? { evaluationDemand: buildEvaluationDemand(ctx.marketPlan, zh) } : {}),
         inputRef: ctx.sourceMessageId,
         disclaimer: 'market' as const,
         ...groupReplyAddressing(ctx),
       });
     },
   });
+}
+
+/** P20: 建档失败时仍按本轮经原请求约束的计划评估，不能携带上一条需求或预算。 */
+function buildEvaluationDemand(plan: MarketPlan, zh: boolean): DemandDraft {
+  const route = plan.route ? `${plan.route.from[0] ?? ''} → ${plan.route.to[0] ?? ''}` : '';
+  return {
+    category:
+      plan.intent === 'second_hand'
+        ? 'second_hand'
+        : plan.intent === 'housing'
+          ? 'housing'
+          : 'other',
+    confidence: 1,
+    need: [...plan.needs.map((need) => need.terms[0] ?? need.id), ...(route ? [route] : [])]
+      .join(' / ')
+      .slice(0, 80),
+    lang: zh ? 'zh' : 'en',
+    ...(plan.budget !== undefined ? { budgetPence: Math.round(plan.budget * 100) } : {}),
+    ...(plan.dateRange ? { whenText: `${plan.dateRange.from} to ${plan.dateRange.to}` } : {}),
+    ...(plan.requiredArea?.length
+      ? { fromPostcode: plan.requiredArea.join(' / ').slice(0, 20) }
+      : {}),
+  };
 }

@@ -8,7 +8,7 @@ import {
   type OutboundDraftInput,
 } from './outbound-gate.js';
 
-export type DraftResult = OutboundDraftInput | { error: string };
+export type DraftResult = OutboundDraftInput | { error: string; kind?: 'research_required' };
 
 /**
  * 四个出站工具共用的骨架：needsApproval 与 execute 都只经 outbound-gate 决定（AGENTS.md §3.3
@@ -63,7 +63,7 @@ export function makeOutboundTool<A>(
       }
       const d = await cfg.toDraft(ctx, toArgs(args));
       if ('error' in d) {
-        await recordInvalidDraft(ctx, 'invalid_evidence', [d.error]);
+        await recordDraftFeedback(ctx, d);
         if (callId) {
           const calls = rejectedCalls.get(ctx) ?? new Map<string, string>();
           calls.set(callId, d.error);
@@ -96,7 +96,7 @@ export function makeOutboundTool<A>(
       if (rejection) return rejection;
       const d = await cfg.toDraft(ctx, toArgs(args));
       if ('error' in d) {
-        await recordInvalidDraft(ctx, 'invalid_evidence', [d.error]);
+        await recordDraftFeedback(ctx, d);
         return ctx.outboundBlocked ? retryLimitMessage : d.error;
       }
       delete ctx.outboundInputFailures;
@@ -116,6 +116,30 @@ export function makeOutboundTool<A>(
       return d.resultNote ? `${result}; ${d.resultNote}` : result;
     },
   });
+
+  async function recordDraftFeedback(
+    ctx: MatchContext,
+    draft: { error: string; kind?: 'research_required' },
+  ) {
+    if (draft.kind !== 'research_required') {
+      await recordInvalidDraft(ctx, 'invalid_evidence', [draft.error]);
+      return;
+    }
+    // P20: 补搜是正常编排，不能耗掉用于纠正无效证据的三次机会。
+    await deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: ctx.sourceMessageId,
+      output: {
+        gate: 'outbound_research',
+        tool: cfg.name,
+        decision: 'continue',
+        reason: 'research_required',
+      },
+      phase: ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+  }
 
   /** detail 只放字段路径 / 错误码 / 给模型的纠错文案，绝不放原始参数值（PII）。 */
   async function recordInvalidDraft(ctx: MatchContext, reason: string, detail?: string[]) {

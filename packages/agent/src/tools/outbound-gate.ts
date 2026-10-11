@@ -1,5 +1,5 @@
 import { createRateLimiter, decideOutbound, type OutboundDecision } from '@matchbot/gating';
-import type { OutboundKind } from '@matchbot/domain';
+import type { DemandDraft, OutboundKind } from '@matchbot/domain';
 import { hashText } from '@matchbot/shared';
 import type { RunContext } from '@openai/agents';
 import type { AgentDeps, MatchContext } from '../context.js';
@@ -7,6 +7,8 @@ import type { AgentDeps, MatchContext } from '../context.js';
 export interface OutboundDraftInput {
   /** 用途；决定是否计入频控。每个出站工具必须显式给出。 */
   kind: OutboundKind;
+  /** P20: 本轮来源核对的搜索需求，不复用建档失败时残留的上一条需求。 */
+  evaluationDemand?: DemandDraft;
   target: string;
   text: string;
   supplierSummaries: string[];
@@ -114,10 +116,11 @@ export async function decideForOutbound(
     return decision;
   }
   if (ctx.phase === 2) {
-    const v = ctx.demand
+    const demand = d.evaluationDemand ?? ctx.demand;
+    const v = demand
       ? await deps.evaluateOutbound(deps.jev, {
           draft: d.text,
-          demand: ctx.demand,
+          demand,
           supplierSummaries: d.supplierSummaries,
           recentReplies: ctx.recentReplies,
           inputRef: d.inputRef,

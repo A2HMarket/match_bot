@@ -59,6 +59,33 @@ describe('decideForOutbound', () => {
   it('phase 2 good verdict -> auto', async () => {
     expect(await decideForOutbound(deps() as never, ctx(2), draft)).toBe('auto');
   });
+  it('evaluates a current desk/chair request without inheriting the printer budget', async () => {
+    const d = deps();
+    const evaluationDemand = {
+      category: 'second_hand' as const,
+      confidence: 1,
+      need: 'desk / office chair',
+      fromPostcode: 'E14',
+      lang: 'zh',
+    };
+    const stale = {
+      ...(ctx(2) as object),
+      demand: { category: 'second_hand', confidence: 1, need: 'laser printer', budgetPence: 6000 },
+    } as never;
+    expect(await decideForOutbound(d as never, stale, { ...draft, evaluationDemand })).toBe('auto');
+    expect(d.evaluateOutbound).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ demand: evaluationDemand }),
+    );
+    d.evaluateOutbound.mockResolvedValueOnce({ ok: false, reason: 'timeout' });
+    expect(
+      await decideForOutbound(d as never, stale, {
+        ...draft,
+        text: 'another validated draft',
+        evaluationDemand,
+      }),
+    ).toBe('review');
+  });
   it('phase 2 jev down -> review (降级方向固定送审)', async () => {
     const d = deps();
     d.evaluateOutbound.mockResolvedValueOnce({ ok: false, reason: 'timeout' });
