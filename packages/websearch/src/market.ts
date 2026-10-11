@@ -16,7 +16,10 @@ const rawListingSchema = z.object({
   tradeType: z.enum(['SELL', 'BUY', 'PEER']),
   status: z.string().regex(/^[A-Z_]{1,30}$/),
   postType: z.string().default(''),
-  repost: z.boolean().default(false),
+  repost: z
+    .boolean()
+    .nullish()
+    .transform((value) => value ?? false),
   price: z.number().finite().nonnegative().nullable().optional(),
   priceMin: z.number().finite().nonnegative().nullable().optional(),
   priceMax: z.number().finite().nonnegative().nullable().optional(),
@@ -40,6 +43,7 @@ const listResponseSchema = z.object({
     size: z.number().int().positive(),
     total: z.number().int().nonnegative(),
     hasNext: z.boolean(),
+    notice: z.string().nullish(),
     items: z.array(rawListingSchema),
   }),
 });
@@ -66,7 +70,7 @@ export type MarketSearch = {
     keyword: string;
     page: number;
     tradeType: MarketTradeType;
-  }): Promise<{ items: MarketListing[]; hasNext: boolean; total: number }>;
+  }): Promise<{ items: MarketListing[]; hasNext: boolean; total: number; notice?: string | null }>;
   detail(id: string): Promise<MarketListing>;
 };
 export class MarketSearchError extends Error {
@@ -98,7 +102,11 @@ const LONDON =
 export const hasLondonEvidence = (listing: MarketListing) =>
   LONDON.test([listing.title, listing.description, ...listing.tags].join('\n'));
 /** 日期型可用期按伦敦本地日历日判断，时间戳型按瞬间判断。 */
-export function isActiveMarketListing(listing: MarketListing, now = new Date()): boolean {
+export function isActiveMarketListing(
+  listing: MarketListing,
+  now = new Date(),
+  options: { respectAvailability?: boolean } = {},
+): boolean {
   if (listing.status !== 'ON_SALE') return false;
   // 转载库存可能滞后；原文明确宣布整帖已结束时，不能只信 ON_SALE 标记。
   if (
@@ -107,7 +115,7 @@ export function isActiveMarketListing(listing: MarketListing, now = new Date()):
     )
   )
     return false;
-  if (!listing.availableUntil) return true;
+  if (options.respectAvailability === false || !listing.availableUntil) return true;
   if (listing.availableUntil.length === 10) {
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Europe/London',
@@ -159,7 +167,7 @@ function normalizeListing(raw: z.infer<typeof rawListingSchema>): MarketListing 
   return marketListingSchema.parse({
     id: raw.listingId,
     title: redactMarketText(raw.title).slice(0, 160),
-    description: redactMarketText(raw.description ?? '').slice(0, 2800),
+    description: redactMarketText(raw.description ?? '').slice(0, 16000),
     tags: raw.tags.map(redactMarketText).slice(0, 30),
     tradeType: raw.tradeType,
     status: raw.status,
@@ -181,7 +189,7 @@ export function createMarketSearch(p: { logger: Logger; fetchImpl?: typeof fetch
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const res = await fetchImpl(url.toString(), {
-          headers: { accept: 'application/json' },
+          headers: { accept: 'application/json', 'X-A2H-Agent': 'cli' },
           signal: AbortSignal.timeout(8000),
         });
         if (res.ok) {
@@ -230,7 +238,7 @@ export function createMarketSearch(p: { logger: Logger; fetchImpl?: typeof fetch
       const items = parsed.data.data.items.map(normalizeListing).filter((item) => {
         if (
           seen.has(item.id) ||
-          !isActiveMarketListing(item) ||
+          !isActiveMarketListing(item, new Date(), { respectAvailability: false }) ||
           !hasLondonEvidence(item) ||
           (tradeType !== 'ANY' && item.tradeType !== tradeType)
         )
@@ -242,7 +250,14 @@ export function createMarketSearch(p: { logger: Logger; fetchImpl?: typeof fetch
         { page, total: parsed.data.data.total, eligible: items.length },
         'public market search completed',
       );
-      return { items, hasNext: parsed.data.data.hasNext, total: parsed.data.data.total };
+      return {
+        items,
+        hasNext: parsed.data.data.hasNext,
+        total: parsed.data.data.total,
+        notice: parsed.data.data.notice
+          ? redactMarketText(parsed.data.data.notice).slice(0, 500)
+          : null,
+      };
     },
     async detail(id) {
       const safeId = z

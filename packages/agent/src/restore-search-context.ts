@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { MatchContext } from './context.js';
 import { XHS_RESEARCH_LIMITS, xhsResearchQuerySchema } from './xhs-research.js';
 import { xhsRecommendationSchema } from './xhs-recommendations.js';
+import { marketPlanSchema } from './market-strategy.js';
 import { MARKET_INTENTS } from '@matchbot/websearch';
 import {
   marketCandidateSchema,
@@ -37,6 +38,7 @@ const contextSchema = z.object({
   marketQueries: z.array(marketResearchQuerySchema).max(MARKET_RESEARCH_LIMITS.queries).optional(),
   marketDetailIds: z.array(z.string()).max(MARKET_RESEARCH_LIMITS.details).optional(),
   marketIntent: z.enum(MARKET_INTENTS).optional(),
+  marketPlan: marketPlanSchema.optional(),
   marketTarget: z.enum(['SELL', 'BUY', 'PEER', 'ANY']).optional(),
   xhsQueries: z.array(xhsResearchQuerySchema).max(XHS_RESEARCH_LIMITS.queries).optional(),
   xhsDetailRefs: z.array(z.string()).max(XHS_RESEARCH_LIMITS.detailReads).optional(),
@@ -74,6 +76,27 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
     ...(saved.marketQueries ? { marketQueries: saved.marketQueries } : {}),
     ...(saved.marketDetailIds ? { marketDetailIds: saved.marketDetailIds } : {}),
     ...(saved.marketIntent ? { marketIntent: saved.marketIntent } : {}),
+    ...(saved.marketPlan
+      ? {
+          marketPlan: {
+            intent: saved.marketPlan.intent,
+            needs: saved.marketPlan.needs,
+            preferences: saved.marketPlan.preferences,
+            ...(saved.marketPlan.budget !== undefined ? { budget: saved.marketPlan.budget } : {}),
+            ...(saved.marketPlan.requiredArea
+              ? { requiredArea: saved.marketPlan.requiredArea }
+              : {}),
+            ...(saved.marketPlan.requiredTerms
+              ? { requiredTerms: saved.marketPlan.requiredTerms }
+              : {}),
+            ...(saved.marketPlan.excludeTerms
+              ? { excludeTerms: saved.marketPlan.excludeTerms }
+              : {}),
+            ...(saved.marketPlan.route ? { route: saved.marketPlan.route } : {}),
+            ...(saved.marketPlan.dateRange ? { dateRange: saved.marketPlan.dateRange } : {}),
+          },
+        }
+      : {}),
     ...(saved.marketTarget ? { marketTarget: saved.marketTarget } : {}),
     ...(saved.xhsQueries ? { xhsQueries: saved.xhsQueries } : {}),
     ...(saved.xhsDetailRefs ? { xhsDetailRefs: saved.xhsDetailRefs } : {}),

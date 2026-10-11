@@ -40,6 +40,19 @@ const snapshot = (over: Record<string, unknown>) =>
   });
 
 describe('restoreSearchContext', () => {
+  it('keeps normalized requirements through encrypted approval snapshot reconstruction', () => {
+    const plan = {
+      intent: 'second_hand',
+      needs: [{ id: 'desk', terms: ['书桌', 'desk'] }],
+      preferences: ['白色'],
+      requiredTerms: [],
+      excludeTerms: [],
+      requiredArea: ['E14'],
+      budget: 50,
+    };
+    const restored = restoreSearchContext(ctx, snapshot({ marketPlan: plan }));
+    expect(restored.marketPlan).toEqual(plan);
+  });
   it('restores evidence, addressing and limits, keeping the latest demand from the database', () => {
     const demand = { category: 'other', confidence: 0.95, lang: 'en' } as const;
     const restored = restoreSearchContext(

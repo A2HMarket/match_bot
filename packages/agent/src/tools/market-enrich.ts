@@ -66,7 +66,13 @@ export function marketEnrichTool(deps: AgentDeps & { marketSearch: MarketSearch 
         costMicro: 0,
       });
       return JSON.stringify({
-        listings: enriched.map((n) => marketListingForModel(n, MARKET_EXCERPT_CHARS.detail)),
+        listings: enriched.map((n) =>
+          marketListingForModel(
+            n,
+            MARKET_EXCERPT_CHARS.detail,
+            ctx.marketPlan?.needs.flatMap((need) => need.terms) ?? [],
+          ),
+        ),
         failures,
         remainingDetails: MARKET_RESEARCH_LIMITS.details - attempted.size,
         guidance:

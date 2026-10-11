@@ -1,5 +1,7 @@
 import { isActiveMarketListing, hasLondonEvidence, redactMarketText } from '@matchbot/websearch';
 import { z } from 'zod';
+import { marketListingForModel } from '../market-research.js';
+import { assessMarketListing } from '../market-strategy.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 import type { MarketCandidate } from '../market-research.js';
 import { groupReplyAddressing } from './addressing.js';
@@ -100,6 +102,7 @@ function validateSelections(
   for (const [index, item] of args.recommendations.entries()) {
     const path = `recommendations.${index}`;
     if (
+      !ctx.marketPlan &&
       /[£€¥$]\s*\d|\d+\s*(?:英镑|镑|元)|符合预算|预算内|within (?:your )?budget/i.test(
         [item.summary, item.reason, ...item.facts.map((f) => f.value)].join(' '),
       )
@@ -112,7 +115,44 @@ function validateSelections(
       errors.push(`${path}.ref: use distinct refs returned by market_search`);
       continue;
     }
-    if (!isActiveMarketListing(listing) || !hasLondonEvidence(listing))
+    if (ctx.marketPlan) {
+      const assessment = assessMarketListing(listing, ctx.marketPlan, item.name);
+      if (!assessment.needs.length)
+        errors.push(`${path}.ref: this is not an offer for the requested core need`);
+      for (const criterion of ['area', 'route']) {
+        if (
+          !assessment.checks.some(
+            (check) => check.label === criterion && check.status === 'unknown',
+          )
+        )
+          continue;
+        const alternatives = (ctx.marketListings ?? []).filter((candidate) => {
+          const other = assessMarketListing(candidate, ctx.marketPlan!);
+          return (
+            candidate.id !== listing.id &&
+            other.needs.some((id) => assessment.needs.includes(id)) &&
+            !other.checks.some((check) => check.status === 'mismatch') &&
+            other.checks.some((check) => check.label === criterion && check.status === 'met')
+          );
+        });
+        if (alternatives.length)
+          errors.push(
+            `${path}.ref: prefer confirmed ${criterion} before unknown ${criterion}; usable refs: ${alternatives
+              .slice(0, 6)
+              .map((candidate) => candidate.ref)
+              .join(',')}`,
+          );
+      }
+      const wrong = assessment.checks.filter((check) => check.status === 'mismatch');
+      if (wrong.length)
+        errors.push(
+          `${path}.ref: conflicts with hard requirements (${wrong.map((check) => check.label).join(',')}); choose a met or explicitly unknown candidate, not this one`,
+        );
+    }
+    if (
+      !isActiveMarketListing(listing, new Date(), { respectAvailability: !ctx.marketPlan }) ||
+      !hasLondonEvidence(listing)
+    )
       errors.push(`${path}.ref: listing ended or lacks London evidence`);
     if (ctx.marketTarget && ctx.marketTarget !== 'ANY' && listing.tradeType !== ctx.marketTarget)
       errors.push(`${path}.ref: listing is on the wrong counterpart side`);
@@ -124,7 +164,7 @@ function validateSelections(
       errors.push(
         `${path}.evidence: copy an exact contiguous description quote, preserving punctuation/newlines; use a shorter quote`,
       );
-    for (const [factIndex, fact] of item.facts.entries()) {
+    for (const [factIndex, fact] of (ctx.marketPlan ? [] : item.facts).entries()) {
       const factPath = `${path}.facts.${factIndex}`;
       if (!listing.description.includes(fact.quote))
         errors.push(
@@ -148,16 +188,52 @@ function renderListings(p: {
   args: z.infer<typeof params>;
   listings: MarketCandidate[];
   zh: boolean;
+  ctx: MatchContext;
 }): string {
   const blocks: string[] = [];
   let group = '';
   for (const [index, item] of p.args.recommendations.entries()) {
     const listing = p.listings[index]!;
+    const assessment = p.ctx.marketPlan
+      ? assessMarketListing(listing, p.ctx.marketPlan, item.name)
+      : null;
+    const conditionLabels: Record<string, string> = {
+      area: '地点',
+      budget:
+        listing.tradeType === 'BUY'
+          ? '买家预算/报价'
+          : p.ctx.marketPlan?.intent === 'housing'
+            ? '租金/计价单位'
+            : '价格/计价单位',
+      route: '路线',
+      date: '日期/年份',
+      date_conflict: '原文行程与可用期冲突',
+      required: '必要条件',
+      excluded: '排除条件',
+      availability: '可用状态',
+      skill: '活动水平',
+    };
+    const unknown =
+      assessment?.checks
+        .filter((check) => check.status === 'unknown')
+        .map((check) =>
+          check.label.startsWith('preference:')
+            ? check.label.slice('preference:'.length)
+            : p.zh
+              ? (conditionLabels[check.label] ?? check.label)
+              : check.label,
+        ) ?? [];
+    const uncertain = unknown.length
+      ? `${p.zh ? '待确认：' : 'Unconfirmed: '}${unknown.join(' / ')}`
+      : '';
+    const itemPrice = assessment?.itemPriceEvidence
+      ? `${p.zh ? (listing.tradeType === 'BUY' ? '买家报价依据：' : p.ctx.marketPlan?.intent === 'housing' ? '租金依据：' : '单品报价依据：') : 'Item price evidence: '}${singleLine([...assessment.itemPriceEvidence].slice(0, 140).join(''))}${[...assessment.itemPriceEvidence].length > 140 ? '…' : ''}`
+      : '';
     if (item.group !== group) {
       group = item.group;
       blocks.push(`【${singleLine(group)}】`);
     }
-    const facts = item.facts
+    const facts = (p.ctx.marketPlan ? [] : item.facts)
       .map(
         (f) =>
           `${p.zh ? { location: '地点', date: '时间', requirements: '要求' }[f.label] : { location: 'Location', date: 'When', requirements: 'Requirements' }[f.label]}${p.zh ? '：' : ': '}${singleLine(f.value)}`,
@@ -188,9 +264,22 @@ function renderListings(p: {
     blocks.push(
       [
         `${index + 1}. ${singleLine(item.name)}`,
-        singleLine(item.summary),
-        `${p.zh ? '适合：' : 'Why: '}${singleLine(item.reason)}`,
+        singleLine(p.ctx.marketPlan ? item.evidence : item.summary),
+        `${p.zh ? '适合：' : 'Why: '}${p.ctx.marketPlan ? (p.zh ? '主体需求相符；条件核对见下方。' : 'Matches the core need; see checked conditions below.') : singleLine(item.reason)}`,
+        ...(assessment?.checks
+          .filter(
+            (check) =>
+              check.status === 'met' &&
+              ['area', 'route', 'date'].includes(check.label) &&
+              check.evidence,
+          )
+          .map(
+            (check) =>
+              `${p.zh ? (conditionLabels[check.label] ?? check.label) : check.label}${p.zh ? '依据：' : ' evidence: '}${singleLine(check.evidence!)}`,
+          ) ?? []),
         facts,
+        itemPrice,
+        uncertain,
         ...(listing.tradeType === 'PEER' && listing.priceLabel === '帖子未标价' ? [] : [price]),
         `${listing.tradeType === 'PEER' ? (p.zh ? '搭伴帖' : 'Companion post') : listing.tradeType === 'SELL' ? (p.zh ? '供给帖' : 'Offer') : p.zh ? '求购/求助帖' : 'Wanted/request'} · ${stamp}`,
         `${p.zh ? '来源：' : 'Source: '}${links}`,
@@ -205,17 +294,22 @@ export function replyWithMarketResultsTool(deps: AgentDeps) {
   return makeOutboundTool(deps, {
     name: 'reply_with_market_results',
     description:
-      'SENDS a grouped recommendation of 1-6 specific London A2H listings matching second-hand, housing, carry-on help or companion requests. Explain the actual item/room/route/activity and why it fits, not the post. Keep different owners/rooms/offers separate. Use market_enrich for selected refs first. The tool adds each listing own post-level price, original date and public links. Do not type monetary amounts or budget-fit claims in summary, reason or facts; prices are appended from structured source fields. Never assign a bundle price range to one item, claim a listing is within budget without item-level price evidence, invent contact details, publish or arrange a transaction. Reposts must be confirmed through their original link.',
+      'SENDS a grouped recommendation of 1-6 specific London A2H listings matching second-hand, housing, carry-on help or companion requests. Explain the actual item/room/route/activity and why it fits, not the post. With an adaptive plan, the final description uses ONLY your exact evidence quote, and fit/location/route/price come from code assessments; free summary/reason/facts are ignored. Choose an informative contiguous quote about this specific offer. Keep different owners/rooms/offers separate. Use market_enrich for selected refs first. The tool adds each listing own post-level price, original date and public links. Do not type monetary amounts or budget-fit claims in summary, reason or facts; prices are appended from structured source fields. Never assign a bundle price range to one item, claim a listing is within budget without item-level price evidence, invent contact details, publish or arrange a transaction. Reposts must be confirmed through their original link.',
     parameters: params,
     toDraft: (ctx, args: z.infer<typeof params>) => {
       const selected = validateSelections(ctx, args);
       if ('error' in selected) return Promise.resolve(selected);
-      const intro = singleLine(args.intro);
+      let intro = singleLine(args.intro);
+      if (ctx.marketPlan)
+        intro = /\p{Script=Han}/u.test(intro)
+          ? '我按你的需求和原文信息选了这些公开帖子；标为“待确认”的信息还需要向贴主核实。'
+          : 'These public posts are relevant to your request; conditions marked unconfirmed still need checking with the poster.';
       const zh = ctx.demand?.lang ? ctx.demand.lang === 'zh' : /\p{Script=Han}/u.test(intro);
-      const text = `${intro}\n\n${renderListings({ args, listings: selected, zh })}`.replaceAll(
-        '有闲',
-        'A2H',
-      );
+      const text =
+        `${intro}\n\n${renderListings({ args, listings: selected, zh, ctx })}`.replaceAll(
+          '有闲',
+          'A2H',
+        );
       if (text.length > 3700)
         return Promise.resolve({
           error:
@@ -225,7 +319,18 @@ export function replyWithMarketResultsTool(deps: AgentDeps) {
         kind: 'recommendation' as const,
         target: ctx.chatId,
         text,
-        supplierSummaries: selected.map((n) => JSON.stringify(n)),
+        supplierSummaries: selected.map((n, index) =>
+          JSON.stringify({
+            ...marketListingForModel(
+              n,
+              500,
+              ctx.marketPlan?.needs.flatMap((need) => need.terms) ?? [],
+            ),
+            selectedName: args.recommendations[index]?.name,
+            selectedEvidence: args.recommendations[index]?.evidence,
+            selectedFacts: ctx.marketPlan ? [] : args.recommendations[index]?.facts,
+          }),
+        ),
         inputRef: ctx.sourceMessageId,
         disclaimer: 'market' as const,
         ...groupReplyAddressing(ctx),

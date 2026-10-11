@@ -2,8 +2,8 @@ import { MARKET_INTENTS, MARKET_TRADE_TYPES, marketListingSchema } from '@matchb
 import { z } from 'zod';
 export const MARKET_RESEARCH_LIMITS = {
   queries: 8,
-  discoveryQueries: 4,
-  listings: 40,
+  discoveryQueries: 8,
+  listings: 160,
   details: 8,
 } as const;
 /**
@@ -31,7 +31,20 @@ export const getMarketQueryKey = (q: MarketResearchQuery) =>
  * 返回给模型的 listing 投影：去掉 id/url/sourceUrl（模型只用 ref，链接由代码渲染），
  * 描述截到 excerptChars。ctx.marketListings 里始终存全文，供引文校验。
  */
-export function marketListingForModel(n: MarketCandidate, excerptChars: number) {
+export function marketListingForModel(
+  n: MarketCandidate,
+  excerptChars: number,
+  terms: string[] = [],
+) {
+  const rows = n.description
+    .split('\n')
+    .map((text) => text.trim())
+    .filter(Boolean);
+  const normalized = (s: string) => s.toLocaleLowerCase().replace(/\s+/g, '');
+  const selected = rows.filter((text) =>
+    terms.some((term) => normalized(text).includes(normalized(term))),
+  );
+  const evidence = selected.slice(0, 6).map((text) => text.slice(0, 300));
   const truncated = n.description.length > excerptChars;
   return {
     ref: n.ref,
@@ -47,5 +60,6 @@ export function marketListingForModel(n: MarketCandidate, excerptChars: number) 
     tags: n.tags.slice(0, 10),
     description: truncated ? `${n.description.slice(0, excerptChars)}…` : n.description,
     descriptionTruncated: truncated,
+    evidencePassages: evidence,
   };
 }

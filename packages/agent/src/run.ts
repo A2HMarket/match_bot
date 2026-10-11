@@ -51,7 +51,7 @@ export async function runInbound(p: {
       costMicro: 0,
     });
   }
-  const { agent, runner } = createMatchAgent(p.deps, { phase: p.ctx.phase });
+  const { agent, runner } = createMatchAgent(p.deps, { phase: p.ctx.phase, input: p.input });
   const session = createPgSession({ repos: p.deps.repos, userId: p.ctx.userId });
   const result = await runner.run(agent, p.input, {
     context: p.ctx,

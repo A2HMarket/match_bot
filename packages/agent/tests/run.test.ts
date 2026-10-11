@@ -274,6 +274,63 @@ describe('runInbound', () => {
       expect(errors).not.toContain('unknown supplier id: unknown');
     },
   );
+  it('repairs oversized search aliases with field feedback before executing public search', async () => {
+    const plan = {
+      needs: [{ id: 'room', terms: ['单间'] }],
+      preferences: [],
+      requiredTerms: [],
+      excludeTerms: [],
+      requiredArea: ['E14'],
+      budget: null,
+      route: null,
+      dateRange: null,
+    };
+    const args = {
+      plan,
+      intent: 'housing',
+      purpose: 'discover',
+      queries: [{ keyword: 'E14 单间', page: 1, tradeType: 'SELL', entity: null }],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'market_search',
+          {
+            ...args,
+            plan: {
+              ...plan,
+              needs: [{ id: 'room', terms: Array.from({ length: 13 }, (_, i) => `单间${i}`) }],
+            },
+          },
+          { callId: 'invalid-search' },
+        ),
+      ],
+      [functionCall('market_search', args, { callId: 'fixed-search' })],
+      [assistantMessage('暂时没有找到可用房源。')],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    const find = vi.fn(() => Promise.resolve({ items: [], hasNext: false, total: 0 }));
+    const result = await runInbound({
+      deps: { ...deps, marketSearch: { find, detail: vi.fn() } } as never,
+      ctx: { ...ctx(0), demand: { category: 'housing', confidence: 1, lang: 'zh' } },
+      input: 'E14找长租单间',
+    });
+    expect(result.kind).toBe('completed');
+    expect(find).toHaveBeenCalledOnce();
+    expect(repos.outbound.create).not.toHaveBeenCalled();
+    const session = JSON.stringify(await repos.sessionItems.list());
+    expect(session).toContain('plan.needs.0.terms');
+    expect(session).toContain('12');
+    const rows = repos.traces.create.mock.calls.map(
+      ([row]) => row as { output?: { gate?: string; reason?: string; detail?: string[] } },
+    );
+    expect(rows.find((row) => row.output?.gate === 'market_search_input')?.output).toMatchObject({
+      gate: 'market_search_input',
+      reason: 'invalid_schema',
+      detail: ['plan.needs.0.terms:too_big'],
+    });
+    model.assertComplete();
+  });
   it('repairs a short market fact quote using precise schema feedback without weakening evidence', async () => {
     const listing = {
       id: 'listing_a',
@@ -324,7 +381,6 @@ describe('runInbound', () => {
           { callId: 'fixed-market' },
         ),
       ],
-      [assistantMessage('done')],
     ]);
     const { deps, repos } = makeDeps(model);
     const c = { ...ctx(0), marketListings: [listing] };
@@ -408,7 +464,6 @@ describe('runInbound', () => {
       }),
     ).toMatchObject({ kind: 'interrupted' });
     expect(repos.outbound.create).not.toHaveBeenCalled();
-    model.enqueue([assistantMessage('done')]);
     const state = runStates[0];
     if (!state) throw new Error('missing market snapshot');
     await resumeRun({

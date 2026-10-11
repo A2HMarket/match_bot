@@ -1,5 +1,6 @@
-/** 真实A2H/DeepSeek预览：内存仓储、Phase 0，不写生产数据、不发送 Telegram。 */
+/** 真实A2H/DeepSeek预览：内存仓储、Phase 0，不修改业务帖子、不发送 Telegram。 */
 import { writeFileSync } from 'node:fs';
+import { z } from 'zod';
 import {
   configureModelProvider,
   createTraceProcessor,
@@ -14,12 +15,11 @@ import { createMarketSearch } from '../../../packages/websearch/dist/index.js';
 const env = loadEnv(),
   logger = createLogger('market-preview');
 const input = process.argv[2] ?? '伦敦想收一个二手小绿锅，看看有哪些出售的，介绍一下成色和自提位置';
-const category =
-  input.includes('租房') || input.includes('房源')
-    ? 'housing'
-    : input.includes('帮带') || input.includes('搭子')
-      ? 'other'
-      : 'second_hand';
+const category = /租房|房源|单间|长租|合租|短租/.test(input)
+  ? 'housing'
+  : input.includes('帮带') || input.includes('搭子')
+    ? 'other'
+    : 'second_hand';
 const traceRows: unknown[] = [],
   drafts: Array<{ text: string }> = [],
   session: unknown[] = [];
@@ -28,6 +28,7 @@ const requests: Array<{
   keyword: string | null;
   tradeType: string | null;
   status: number;
+  notice: string | null;
 }> = [];
 const repos = {
   traces: {
@@ -73,11 +74,16 @@ const marketSearch = createMarketSearch({
   fetchImpl: async (input, init) => {
     const url = new URL(String(input));
     const res = await fetch(input, init);
+    const payload = z
+      .object({ data: z.object({ notice: z.string().nullish() }).passthrough() })
+      .safeParse(await res.clone().json());
     requests.push({
       path: url.pathname,
       keyword: url.searchParams.get('keyword'),
       tradeType: url.searchParams.get('tradeType'),
       status: res.status,
+      notice:
+        payload.success && payload.data.data.notice ? payload.data.data.notice.slice(0, 500) : null,
     });
     return res;
   },

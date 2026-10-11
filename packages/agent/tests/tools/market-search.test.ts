@@ -151,20 +151,24 @@ describe('market research tools', () => {
     await t.invoke(rc(ctx()), JSON.stringify(search([query('未知物品', '未知物品')], 'enrich')));
     expect(d.marketSearch.find).not.toHaveBeenCalled();
   });
-  it('limits discovery searches to four and total queries to eight', async () => {
+  it('allows all eight queries to discover independent aliases/pages, then stops', async () => {
     const d = deps(),
       c = ctx(),
       t = marketSearchTool(d as never);
-    for (const keyword of ['小绿锅', '电煮锅', '电锅', '电火锅'])
+    for (const keyword of [
+      '小绿锅',
+      '电煮锅',
+      '电锅',
+      '电火锅',
+      '锅具',
+      '绿色锅',
+      '苏泊尔锅',
+      '电煮小锅',
+    ])
       await t.invoke(rc(c), JSON.stringify(search([query(keyword)])));
-    expect(await t.invoke(rc(c), JSON.stringify(search([query('锅具')])))).toContain(
-      'discovery budget',
+    expect(await t.invoke(rc(c), JSON.stringify(search([query('锅子')])))).toContain(
+      'budget exhausted',
     );
-    for (const keyword of ['小绿锅 成色', '小绿锅 自提', '小绿锅 清仓', '小绿锅 同城'])
-      await t.invoke(rc(c), JSON.stringify(search([query(keyword, '小绿锅')], 'enrich')));
-    expect(
-      await t.invoke(rc(c), JSON.stringify(search([query('小绿锅 候选', '小绿锅')], 'enrich'))),
-    ).toContain('budget exhausted');
     expect(d.marketSearch.find).toHaveBeenCalledTimes(8);
   });
   it('caps and interleaves recall so a broad first query cannot crowd out the other topic', async () => {
@@ -183,7 +187,91 @@ describe('market research tools', () => {
       JSON.stringify(search([query('小绿锅'), query('电煮锅')])),
     );
     expect(c.marketListings?.[1]?.id).toBe('listing_other');
-    expect(c.marketListings).toHaveLength(11);
+    expect(c.marketListings).toHaveLength(21);
+  });
+  it('ranks a useful result beyond the first ten, with source conditions and stable refs', async () => {
+    const d = deps(),
+      c = ctx();
+    const items = Array.from({ length: 20 }, (_, i) => ({
+      ...POT,
+      id: `item_${i}`,
+      title: '伦敦出办公椅',
+      description: '出售：办公椅，E14自提',
+    }));
+    items[15] = {
+      ...POT,
+      id: 'item_15',
+      title: '伦敦出书桌',
+      description: '出售：书桌\n地点：E14\n- 书桌｜£35',
+    };
+    d.marketSearch.find.mockResolvedValueOnce({ items, hasNext: true, total: 80 });
+    const plan = {
+      needs: [{ id: 'desk', terms: ['书桌'] }],
+      preferences: ['白色'],
+      requiredTerms: [],
+      excludeTerms: [],
+      requiredArea: ['E14'],
+      budget: 50,
+      route: null,
+      dateRange: null,
+    };
+    const output = JSON.parse(
+      await marketSearchTool(d as never).invoke(
+        rc(c),
+        JSON.stringify({ ...search([query('书桌')]), plan }),
+      ),
+    ) as {
+      listings: Array<{
+        ref: string;
+        assessment: { checks: Array<{ label: string; status: string }> };
+        evidencePassages: string[];
+      }>;
+      coverage: Array<{ candidates: number }>;
+    };
+    expect(c.marketListings).toHaveLength(20);
+    expect(output.listings).toHaveLength(1);
+    expect(output.listings[0]?.ref).toBe('m16');
+    expect(output.listings[0]?.assessment.checks).toContainEqual({
+      label: 'budget',
+      status: 'met',
+      evidence: '- 书桌｜£35',
+    });
+    expect(output.listings[0]?.evidencePassages).toContain('- 书桌｜£35');
+    expect(output.coverage[0]?.candidates).toBe(1);
+  });
+  it('exposes unmatched discoveries and learns a source-attested alias without relaxing the budget', async () => {
+    const d = deps(),
+      c = ctx();
+    const table = {
+      ...POT,
+      title: '伦敦写字台',
+      description: '出售：写字台\n地点：E14\n- 写字台｜£35',
+    };
+    d.marketSearch.find.mockResolvedValueOnce({ items: [table], hasNext: false, total: 1 });
+    const plan = {
+      needs: [{ id: 'desk', terms: ['书桌'] }],
+      preferences: [],
+      requiredTerms: [],
+      excludeTerms: [],
+      requiredArea: ['E14'],
+      budget: 50,
+      route: null,
+      dateRange: null,
+    };
+    const t = marketSearchTool(d as never);
+    const first = JSON.parse(
+      await t.invoke(rc(c), JSON.stringify({ ...search([query('书桌')]), plan })),
+    ) as { listings: Array<{ ref: string }> };
+    expect(first.listings[0]?.ref).toBe('m1');
+    await t.invoke(
+      rc(c),
+      JSON.stringify({
+        ...search([query('写字台')]),
+        plan: { ...plan, budget: 1000, needs: [{ id: 'desk', terms: ['书桌', '写字台'] }] },
+      }),
+    );
+    expect(c.marketPlan?.needs[0]?.terms).toContain('写字台');
+    expect(c.marketPlan?.budget).toBe(50);
   });
   it('returns truncated projections to the model while ctx keeps full text for quote validation', async () => {
     const d = deps(),
@@ -292,6 +380,91 @@ describe('reply_with_market_results', () => {
     expect(out).toContain('recommendations.0.facts.0.value');
     expect(out).toContain('sourcePublishedAt/createdAt');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('asks for a confirmed area candidate before an unknown area when the pool has one', async () => {
+    const d = deps();
+    const c = ctx({
+      marketPlan: {
+        intent: 'second_hand',
+        needs: [{ id: 'pot', terms: ['小绿锅'] }],
+        preferences: [],
+        requiredArea: ['E14'],
+      },
+      marketListings: [
+        { ...POT, ref: 'm1' },
+        { ...POT, id: 'listing_b', ref: 'm2', description: '小绿锅，地点：E14自提。' },
+      ],
+    });
+    const result = await replyWithMarketResultsTool(d as never).invoke(rc(c), JSON.stringify(args));
+    expect(result).toContain('prefer confirmed area');
+    expect(result).toContain('m2');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('renders source quotes and assessed fit instead of unsupported prose or rewritten facts', async () => {
+    const d = deps();
+    const c = ctx({
+      marketPlan: {
+        intent: 'companion',
+        needs: [{ id: 'badminton', terms: ['羽毛球'] }],
+        preferences: ['周末', '初学者'],
+      },
+      marketListings: [
+        {
+          ...POT,
+          ref: 'm1',
+          tradeType: 'PEER',
+          title: '伦敦羽毛球搭子',
+          description: '伦敦羽毛球搭子，新生老手均可。',
+        },
+      ],
+    });
+    await replyWithMarketResultsTool(d as never).invoke(
+      rc(c),
+      JSON.stringify({
+        intro: '找到搭子',
+        recommendations: [
+          {
+            ref: 'm1',
+            name: '伦敦羽毛球搭子',
+            group: '羽毛球',
+            summary: '明确接受初学者，周末有空。',
+            reason: '初学者友好且预算内。',
+            evidence: '伦敦羽毛球搭子，新生老手均可。',
+            facts: [{ label: 'requirements', value: '初学者可参加', quote: '新手均可参加。' }],
+          },
+        ],
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('伦敦羽毛球搭子，新生老手均可。');
+    expect(draft.text).toContain('待确认：周末 / 初学者');
+    expect(draft.text).not.toContain('初学者友好');
+    expect(draft.text).not.toContain('周末有空');
+    expect(draft.text).not.toContain('初学者可参加');
+  });
+  it('rejects a known budget conflict and renders unknown constraints plus item price evidence', async () => {
+    const d = deps();
+    const plan = {
+      intent: 'second_hand' as const,
+      needs: [{ id: 'pot', terms: ['小绿锅'] }],
+      preferences: [],
+      budget: 10,
+    };
+    const expensive = {
+      ...POT,
+      ref: 'm1',
+      description: '小绿锅成色新，Camberwell 自提。\n- 小绿锅｜£20',
+    };
+    const c = ctx({ marketPlan: plan, marketListings: [expensive] });
+    const result = await replyWithMarketResultsTool(d as never).invoke(rc(c), JSON.stringify(args));
+    expect(result).toContain('conflicts with hard requirements (budget)');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    const unknown = ctx({ marketPlan: plan, marketListings: [{ ...POT, ref: 'm1' }] });
+    await replyWithMarketResultsTool(d as never).invoke(rc(unknown), JSON.stringify(args));
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('待确认：价格/计价单位');
+    expect(draft.text).not.toContain('符合预算');
   });
   it('rejects an offer that became sold during enrichment', async () => {
     const d = deps(),

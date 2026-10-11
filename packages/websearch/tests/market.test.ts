@@ -32,6 +32,48 @@ const searchBody = (items: unknown[]) => ({
 });
 
 describe('createMarketSearch', () => {
+  it('treats a null repost marker as absent without discarding legitimate self-posted results', async () => {
+    const client = createMarketSearch({
+      logger,
+      fetchImpl: () =>
+        Promise.resolve(
+          response(
+            searchBody([
+              listing({ repost: null, postType: 'USER' }),
+              listing({ listingId: 'listing_b' }),
+            ]),
+          ),
+        ),
+    });
+    const out = await client.find({ keyword: '小绿锅', page: 1, tradeType: 'SELL' });
+    expect(out.items).toHaveLength(2);
+    expect(out.items[0]?.isRepost).toBe(false);
+  });
+  it('preserves the public fallback notice as redacted, untrusted source metadata', async () => {
+    const client = createMarketSearch({
+      logger,
+      fetchImpl: () =>
+        Promise.resolve(
+          response({
+            ...searchBody([listing()]),
+            notice: '已放宽地点条件，微信：abc123',
+          }),
+        ),
+    });
+    const result = await client.find({ keyword: '小绿锅 Camberwell', page: 1, tradeType: 'SELL' });
+    expect(result.notice).toContain('已放宽地点条件');
+    expect(result.notice).not.toContain('abc123');
+  });
+  it('recalls a visible post despite a past imported availability field for strategy assessment', async () => {
+    const client = createMarketSearch({
+      logger,
+      fetchImpl: () =>
+        Promise.resolve(response(searchBody([listing({ availableUntil: '2020-01-01' })]))),
+    });
+    expect(
+      (await client.find({ keyword: '小绿锅', page: 1, tradeType: 'SELL' })).items,
+    ).toHaveLength(1);
+  });
   it('accepts real PEER companion posts and filters out BUY/SELL goods for a PEER query', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(
@@ -79,7 +121,7 @@ describe('createMarketSearch', () => {
     expect(out.items[0]).not.toHaveProperty('posterUserId');
     expect(out.items[0]?.priceLabel).toContain('帖内报价范围');
   });
-  it('rejects wrong trade direction, ended listings and non-London evidence even with GBP or Europe/London', async () => {
+  it('filters wrong direction, ended status and non-London evidence, leaving expiry for strategy checks', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(
         response(
@@ -104,7 +146,7 @@ describe('createMarketSearch', () => {
       page: 1,
       tradeType: 'SELL',
     });
-    expect(out.items.map((l) => l.id)).toEqual(['listing_a']);
+    expect(out.items.map((l) => l.id)).toEqual(['listing_a', 'listing_d']);
   });
   it('allows BUY and ANY searches without treating every user as a buyer', async () => {
     const fetchImpl = vi.fn(() =>

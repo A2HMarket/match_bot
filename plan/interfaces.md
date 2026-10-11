@@ -246,10 +246,10 @@ handleApprovalCallback(p: { repos: Repositories; queues: Queues; reviewer: strin
 
 ### P16 A2H公开搜索契约（2026-10-10，实施中）
 
-- `createMarketSearch({logger,fetchImpl?}): MarketSearch` 仅 GET 固定 https://a2hmarket.ai/a2h-post/api/v1/public/listings 与 /{id}，无需 cookie/key。`find({keyword,page,tradeType})` 返回 items + hasNext，`detail(id)` 返回同条 listing 的详情。
+- `createMarketSearch({logger,fetchImpl?}): MarketSearch` 仅 GET 固定 https://a2hmarket.ai/a2h-post/api/v1/public/listings 与 /{id}，无需 cookie/key。`find({keyword,page,tradeType})` 返回 items + hasNext + total + notice（可为空的服务端退让/不完整提示），`detail(id)` 返回同条 listing 的详情。
 - `MarketListing` 只含公开 id/title/已脱敏 description/tags/tradeType/status、帖子级 priceDisplay、可用时间与原帖时间、构造的A2H详情 URL 与校验后来源 URL。用户 ID、联系方式、昵称不进入候选。
 - `MarketIntent = second_hand | housing | carry | companion`；MatchContext 保存市场候选、查询/详情预算及 intent，服务端加密快照保留 7 天，不新增 DB 个人字段。
-- `market_search({intent,purpose,queries:[{keyword,page,tradeType}]})`：每批至多 3、每 run 8 个不同查询/40 个候选；发现最多 4；去重 id、未知/空/失败也消耗预算。仅 London 有文本证据的活跃候选参与推荐；币种/时区不当作伦敦证据。
+- `market_search({plan?,intent,purpose,queries:[{keyword,page,tradeType}]})`：每批至多 3、每 run 8 个不同查询/160 个候选，每页20条均入池；8次均可发现/补搜；去重 id、未知/空/失败也消耗预算。仅 London 有文本证据的活跃候选参与推荐；币种/时区不当作伦敦证据。
 - `market_enrich({refs})`：每批至多 4、每 run 至多 8 个候选详情；只认已返回的 ref。同一卖家/房源的字段保持归属，不按物品名合并不同贴主。
 - `reply_with_market_results({intro,recommendations:[{ref,name,group,summary,reason,evidence,facts:[{label,value,quote}]}]})`：至多 6 项，facts 引用该 listing 原句；价格/日期/买卖方向由候选字段生成，允许未标价但不能宣称满足预算；转载帖附原始小红书链接并引导原帖确认。
 - 入站继续使用 is_local_request：新增主动求二手/房源/帮带/搭子，允许 category=other/housing/second_hand 进入搜索；job 与敏感请求仍不进。is_demand 校准题措辞不变。与 XHS/Tavily 每 run 一个来源，出站仍过原审批/频控/阶段门。
@@ -290,3 +290,12 @@ handleApprovalCallback(p: { repos: Repositories; queues: Queues; reviewer: strin
 - 同一 SDK callId 的失败只记一次；同一出站工具连续三次参数/证据失败后写 outbound_retry/input_retry_limit，拒绝本轮后续出站并结束运行。有效草稿清零；Phase 0/1/2 与 Jev 不可用降级不变。
 - Telegram 入站文字取 text ?? caption，按来源读取 entities/caption_entities；无文字的媒体继续忽略，不读取或新增持久化图片字段。
 - 平台用户可见名称统一 A2H；推荐仍仅由原出站表与渠道发送路径执行。
+
+### P18 自适应 A2H 搜索补充（2026-10-11，Agent 0.12.0）
+
+- 首次 plan 分开 needs/terms、preferences、requiredTerms/excludeTerms/requiredArea、budget、route、dateRange。只有用户明说的条件保留；技能/租期等不作为独立供给主体。后续只接受源内出现的别名，保留主体与原约束。
+- 后验检查返回 met/mismatch/unknown，价格按选择的单品行绑定，地区/路线按供给文本归属；明确冲突拒绝。已有同需求且地区/路线确认的候选时，优先这些候选再考虑未知线索。
+- 模型显示最多16个排序视图，额外连续 evidencePassages 暴露长帖后半部主体；候选编号保持稳定，加密快照保留规范后的 plan。
+- 使用 plan 时，最终描述只渲染 exact evidence 引文，适配/地点/路线/报价依据由代码计算。模型自由 summary/reason/facts 不出站、不进入评估摘要；旧无 plan 协议仍严格校验全部字段。
+- 公共 notice 为不可信源元数据，规范后给模型看，不能当成满足用户全部条件的证明。原文优先于转载活动摘要；明确非新手/中阶以上活动不推荐给初学者。
+- 搜索参数错误返回字段反馈，三次失败停止；市场来源推荐成功写出站表后立即结束 run，不额外生成第二份回复。阶段、Jev、频控和出站表不变；无新数据库或个人数据字段。

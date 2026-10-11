@@ -30,6 +30,7 @@
 | P15 | 人感：会接话、像群友、有分寸 | [P15-human-feel.md](./P15-human-feel.md) | P14 | 4 | claude | 完成 | 1+2+3 已做；4、5 待定 | 2026-09-25 |
 | P16 | A2H公开集市搜索：二手/租房/帮带/搭子 | [P16-market-search.md](./P16-market-search.md) | P8, P11, P14 | 5 | codex | 完成 | 0.10.1；SELL/BUY/PEER；随 P14/P17 合并主干 | 2026-10-10 |
 | P17 | 出站参数重试与图文入站修复、A2H 命名 | [P17-fix-outbound-input-and-photo.md](./P17-fix-outbound-input-and-photo.md) | P7, P8, P16 | 5 | codex | 完成 | 0.10.1；472测试、92回放；随 P14/P16 合并主干 | 2026-10-10 |
+| P18 | 裸接口自适应搜索策略与独立评测 | [P18-adaptive-market-search.md](./P18-adaptive-market-search.md) | P16, P17 | 5 | codex | 完成 | 0.12.0：独立实验、四类真实预览、后验核对及本地发布 | 2026-10-11 |
 
 ## 波次与并行
 

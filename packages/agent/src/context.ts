@@ -14,6 +14,7 @@ import type {
 import type { ModelProvider } from '@openai/agents';
 import type { XhsResearchQuery } from './xhs-research.js';
 import type { XhsRecommendation } from './xhs-recommendations.js';
+import type { MarketPlan } from './market-strategy.js';
 import type { MarketCandidate, MarketResearchQuery } from './market-research.js';
 
 /** 一次 run 的上下文。Session 粒度是用户；群上下文与开放需求经这里 + instructions 注入。 */
@@ -53,6 +54,7 @@ export interface MatchContext {
   marketQueries?: MarketResearchQuery[];
   marketDetailIds?: string[];
   marketIntent?: MarketIntent;
+  marketPlan?: MarketPlan;
   /** 当前请求对家的方向，由本轮输入确定，不复用用户历史。 */
   marketTarget?: 'SELL' | 'BUY' | 'PEER' | 'ANY';
   /** 已消耗的多词/翻页查询预算；与候选一起保存进加密快照。 */
