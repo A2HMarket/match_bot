@@ -62,6 +62,77 @@ describe('source-grounded market strategy', () => {
     expect(p.requiredTerms).toEqual([]);
     expect(p.preferences).toContain('无线');
   });
+  it('does not turn a preferred printer type into a hard requirement', () => {
+    const p = toMarketPlan(
+      {
+        intent: 'second_hand',
+        needs: [{ id: 'printer', terms: ['打印机'] }],
+        preferences: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        requiredArea: [],
+        budget: 60,
+        route: null,
+        dateRange: null,
+      },
+      '伦敦收打印机，最好激光打印机',
+    );
+    expect(p.requiredTerms).not.toContain('激光');
+    expect(p.essentialPreferences).not.toContain('激光打印机');
+  });
+  it('accepts an explicit London outcode as city evidence while keeping the stated item type essential', () => {
+    const p = toMarketPlan(
+      {
+        intent: 'second_hand',
+        needs: [{ id: 'printer', terms: ['激光打印机', '打印机'] }],
+        preferences: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        requiredArea: ['伦敦'],
+        budget: 60,
+        route: null,
+        dateRange: null,
+      },
+      '伦敦收激光打印机，预算60镑',
+    );
+    const row = assessMarketListing(listing('地点：狗岛 Canary Wharf (E14)\n- 激光打印机｜£40'), p);
+    expect(row.checks).toContainEqual(expect.objectContaining({ label: 'area', status: 'met' }));
+    expect(p.requiredTerms).toContain('激光');
+  });
+  it('retains a companion weekend and beginner level even if the model omitted them', () => {
+    const p = toMarketPlan(
+      {
+        intent: 'companion',
+        needs: [{ id: 'sport', terms: ['羽毛球'] }],
+        preferences: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        requiredArea: [],
+        budget: null,
+        route: null,
+        dateRange: null,
+      },
+      '伦敦周末找羽毛球搭子，初学者',
+    );
+    expect(p.essentialPreferences).toEqual(['周末', '初学者']);
+  });
+  it('preserves housing move-in and essential preferences separately from explicit soft preferences', () => {
+    const input = {
+      intent: 'housing' as const,
+      needs: [{ id: 'room', terms: ['单间'] }],
+      preferences: ['长租', '包bill'],
+      requiredTerms: [],
+      excludeTerms: [],
+      requiredArea: [],
+      budget: 1200,
+      route: null,
+      dateRange: null,
+    };
+    const p = toMarketPlan(input, '找长租单间，11月初入住，最好包bill');
+    expect(p.preferences).toEqual(['长租', '包bill', '11月初入住']);
+    expect(p.essentialPreferences).toEqual(['长租', '11月初入住']);
+    expect(p.dateRange).toBeUndefined();
+  });
   it('retains an explicit carry month even when the model omits dateRange', () => {
     const p = toMarketPlan(
       {

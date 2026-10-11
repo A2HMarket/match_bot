@@ -274,6 +274,94 @@ describe('runInbound', () => {
       expect(errors).not.toContain('unknown supplier id: unknown');
     },
   );
+  it('performs one source-attested followup before writing a market recommendation', async () => {
+    const listing = {
+      id: 'listing_a',
+      title: '伦敦小绿锅',
+      description: '小绿锅成色新，Camberwell 自提。',
+      tags: ['物品交易'],
+      tradeType: 'SELL',
+      status: 'ON_SALE',
+      url: 'https://a2hmarket.ai/listings/listing_a',
+      sourceUrl: null,
+      isRepost: false,
+      priceLabel: '帖子未标价',
+      availableFrom: null,
+      availableUntil: null,
+      sourcePublishedAt: null,
+      createdAt: null,
+    };
+    const reply = {
+      intro: '找到公开帖子',
+      recommendations: [
+        {
+          ref: 'm1',
+          name: '小绿锅',
+          group: '厨房',
+          summary: '可自提的小绿锅',
+          reason: '同类物品',
+          evidence: listing.description,
+          facts: [],
+        },
+      ],
+    };
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'market_search',
+          {
+            plan: {
+              needs: [{ id: 'pot', terms: ['小绿锅'] }],
+              preferences: [],
+              requiredTerms: [],
+              excludeTerms: [],
+              requiredArea: [],
+              budget: 20,
+              route: null,
+              dateRange: null,
+            },
+            intent: 'second_hand',
+            purpose: 'discover',
+            queries: [{ keyword: '小绿锅', page: 1, tradeType: 'SELL', entity: null }],
+          },
+          { callId: 'discover' },
+        ),
+      ],
+      [functionCall('market_enrich', { refs: ['m1'] }, { callId: 'detail' })],
+      [functionCall('reply_with_market_results', reply, { callId: 'before-gap' })],
+      [
+        functionCall(
+          'market_search',
+          {
+            plan: null,
+            intent: 'second_hand',
+            purpose: 'enrich',
+            queries: [{ keyword: '小绿锅 价格', page: 1, tradeType: 'SELL', entity: '小绿锅' }],
+          },
+          { callId: 'gap-search' },
+        ),
+      ],
+      [functionCall('reply_with_market_results', reply, { callId: 'after-gap' })],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    const marketSearch = {
+      find: vi.fn(() => Promise.resolve({ items: [listing], total: 1, hasNext: false })),
+      detail: vi.fn(() => Promise.resolve(listing)),
+    };
+    const result = await runInbound({
+      deps: { ...deps, marketSearch } as never,
+      ctx: { ...ctx(0), demand: { category: 'second_hand', confidence: 1, lang: 'zh' } },
+      input: '伦敦收小绿锅，预算20镑',
+    });
+    expect(result.kind).toBe('completed');
+    expect(marketSearch.find).toHaveBeenCalledTimes(2);
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    expect(JSON.stringify(await repos.sessionItems.list())).toContain('one focused market_search');
+    const [draft] = repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('【备选');
+    expect(draft.text).toContain('待确认：价格/计价单位');
+    model.assertComplete();
+  });
   it('repairs oversized search aliases with field feedback before executing public search', async () => {
     const plan = {
       needs: [{ id: 'room', terms: ['单间'] }],

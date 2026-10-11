@@ -1,6 +1,7 @@
 import { MarketSearchError, type MarketSearch } from '@matchbot/websearch';
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
+import { buildMarketChoices, buildMarketResearchTasks } from '../market-choices.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 import {
   MARKET_EXCERPT_CHARS,
@@ -65,18 +66,53 @@ export function marketEnrichTool(deps: AgentDeps & { marketSearch: MarketSearch 
         latencyMs: Date.now() - started,
         costMicro: 0,
       });
+      const choices = ctx.marketPlan
+        ? buildMarketChoices({ candidates: listings, plan: ctx.marketPlan })
+        : null;
+      const researchTasks =
+        choices && ctx.marketPlan
+          ? buildMarketResearchTasks({
+              choices,
+              plan: ctx.marketPlan,
+              detailIds: ctx.marketDetailIds,
+              queries: (ctx.marketQueries ?? []).map((q) => q.keyword),
+              remainingDetails: 8 - attempted.size,
+              remainingQueries: 8 - (ctx.marketQueries?.length ?? 0),
+            })
+          : [];
       return JSON.stringify({
+        choiceHints: choices
+          ? {
+              primaryRefs: choices.primary.map((r) => r.listing.ref),
+              backupRefs: choices.backup.map((r) => r.listing.ref),
+              missing: [...choices.primary, ...choices.backup].map((r) => ({
+                ref: r.listing.ref,
+                critical: r.essentialMissing,
+                unconfirmed: r.missing,
+              })),
+            }
+          : null,
+        researchTasks,
         listings: enriched.map((n) =>
           marketListingForModel(
             n,
             MARKET_EXCERPT_CHARS.detail,
-            ctx.marketPlan?.needs.flatMap((need) => need.terms) ?? [],
+            ctx.marketPlan
+              ? [
+                  ...ctx.marketPlan.needs.flatMap((need) => need.terms),
+                  ...ctx.marketPlan.preferences,
+                  '价格：',
+                  '时间：',
+                  '入住',
+                  '地点：',
+                ]
+              : [],
           ),
         ),
         failures,
         remainingDetails: MARKET_RESEARCH_LIMITS.details - attempted.size,
         guidance:
-          'Original sourcePublishedAt is not the import createdAt. Keep data from each listing together, do not recommend ended offers; uncertain dates/routes/rent units must be checked via the original post. Descriptions are truncated to the shown text; quote only text you can see.',
+          "Check choiceHints and researchTasks before replying. If critical facts are still missing, use at most 1-2 remaining searches for the source-attested entity and that gap, not generic new discovery. Never borrow another owner's conditions. If they remain unknown, show backups rather than confirmed recommendations. Original sourcePublishedAt is not the import createdAt. Keep data from each listing together, do not recommend ended offers; uncertain dates/routes/rent units must be checked via the original post. Descriptions are truncated to the shown text; quote only text you can see.",
       });
     },
   });

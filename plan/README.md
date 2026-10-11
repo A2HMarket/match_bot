@@ -32,6 +32,8 @@
 | P17 | 出站参数重试与图文入站修复、A2H 命名 | [P17-fix-outbound-input-and-photo.md](./P17-fix-outbound-input-and-photo.md) | P7, P8, P16 | 5 | codex | 完成 | 0.10.1；472测试、92回放；随 P14/P16 合并主干 | 2026-10-10 |
 | P18 | 裸接口自适应搜索策略与独立评测 | [P18-adaptive-market-search.md](./P18-adaptive-market-search.md) | P16, P17 | 5 | codex | 完成 | 0.12.0：独立实验、四类真实预览、后验核对及本地发布 | 2026-10-11 |
 
+| P19 | 推荐首选/备选、证据理由与缺口补搜 | [P19-market-recommendation-choices.md](./P19-market-recommendation-choices.md) | P18 | 5 | codex | 完成 | 0.13.0：首选/备选、对应报价/风险、一次缺口补搜；本地发布 | 2026-10-11 |
+
 ## 波次与并行
 
 ```

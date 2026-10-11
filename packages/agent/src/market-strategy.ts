@@ -1,4 +1,4 @@
-import { isActiveMarketListing } from '@matchbot/websearch';
+import { isActiveMarketListing, hasLondonEvidence } from '@matchbot/websearch';
 import { z } from 'zod';
 import type { MarketListing, MarketIntent } from '@matchbot/websearch';
 export type MarketNeed = { id: string; terms: string[] };
@@ -6,6 +6,7 @@ export type MarketPlan = {
   intent: MarketIntent;
   needs: MarketNeed[];
   preferences: string[];
+  essentialPreferences?: string[];
   budget?: number;
   requiredTerms?: string[];
   excludeTerms?: string[];
@@ -24,6 +25,7 @@ export type MarketAssessment = {
   score: number;
   checks: MarketCheck[];
   itemPriceEvidence: string | null;
+  itemPriceGBP?: { min: number; max: number };
 };
 const norm = (s: string) => s.normalize('NFKC').toLowerCase().replace(/\s+/g, '');
 const contains = (text: string, terms: string[]) =>
@@ -300,7 +302,12 @@ export function assessMarketListing(
         /(?:^|\s)(?:地点|位置|地址|交接)[：:]|自提|自取|面交/.test(line) ||
         (p.intent === 'housing' && /^(?:出租|转租|合租|找室友)[：:]/.test(line)),
     );
-    const actual = locations.find((line) => contains(line, p.requiredArea!));
+    const londonOnly = p.requiredArea.every((term) => /^(?:伦敦|倫敦|London)$/i.test(term));
+    const actual = locations.find(
+      (line) =>
+        contains(line, p.requiredArea!) ||
+        (londonOnly && hasLondonEvidence({ ...n, title: '', description: line, tags: [] })),
+    );
     const outcodes = (text: string) =>
       [...text.matchAll(/\b(?:SE|SW|NW|EC|WC|E|W|N)\d{1,2}[A-Z]?\b/gi)].map((m) =>
         m[0].toUpperCase(),
@@ -341,7 +348,12 @@ export function assessMarketListing(
   if (p.route) checks.push(routeCheck(n, p.route));
   const preferenceSource = focusName && matchedItems.length ? matchedItems.join('\n') : subject;
   for (const preference of p.preferences) {
-    if (!contains(preferenceSource, [preference]))
+    const escaped = preference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const unresolved = new RegExp(
+      `(?:没有|未|不支持|无)[^。\\n]{0,6}${escaped}|${escaped}[^。\\n]{0,10}(?:没有说明|未说明|未确认|待确认|不详|不支持)`,
+      'i',
+    ).test(preferenceSource);
+    if (!contains(preferenceSource, [preference]) || unresolved)
       checks.push({ label: `preference:${preference}`, status: 'unknown', evidence: null });
   }
   const met = checks.filter((c) => c.status === 'met').length,
@@ -356,6 +368,7 @@ export function assessMarketListing(
     needs,
     checks,
     itemPriceEvidence: price?.text ?? null,
+    ...(price ? { itemPriceGBP: { min: price.min, max: price.max } } : {}),
     score:
       Number(!checks.some((c) => c.status !== 'met')) * 12 +
       needs.length * 30 +
@@ -434,6 +447,7 @@ export const marketPlanSchema = marketPlanInputSchema.extend({
   budget: z.number().finite().nonnegative().max(100000).optional(),
   route: z.object({ from: terms.min(1), to: terms.min(1) }).optional(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).optional(),
+  essentialPreferences: terms.optional(),
   requiredTerms: terms.optional(),
   excludeTerms: terms.optional(),
   requiredArea: terms.optional(),
@@ -475,6 +489,15 @@ export function toMarketPlan(
       : input.requiredTerms.filter(
           (term) => requested.includes(norm(term)) && !preferred.includes(term),
         );
+  if (
+    input.intent === 'second_hand' &&
+    /(?:买|收|找|想要|求购|需要)[^，。；]{0,12}激光打印机/.test(requestText ?? '') &&
+    !/(?:最好|希望|prefer|ideally)[^，。]{0,8}激光打印机/i.test(requestText ?? '') &&
+    !/激光打印机[^，。；]{0,8}(?:或|或者).{0,8}喷墨/.test(requestText ?? '') &&
+    !/(?:不要|不是|排除|不买)[^，。]{0,4}激光打印机/.test(requestText ?? '') &&
+    !required.includes('激光')
+  )
+    required.push('激光');
   const excluded =
     requested === null
       ? input.excludeTerms
@@ -483,6 +506,36 @@ export function toMarketPlan(
             `(?:不要|排除|不想|不含|不能|exclude|without|not|no)[^，,。]{0,16}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
             'i',
           ).test(requestText ?? ''),
+        );
+  const preferences = [
+    ...new Set(
+      [
+        ...input.preferences,
+        ...preferred,
+        ...input.needs.flatMap((need) => need.terms.filter(isConditionTerm)),
+        ...(input.intent === 'companion'
+          ? (requestText?.matchAll(/周末|初学者|初学|新手|beginner/gi) ?? [])
+          : []),
+        ...(requestText?.matchAll(/(?:最好|希望)([\p{L}]{1,30})/gu) ?? []),
+        ...(input.intent === 'housing'
+          ? (requestText?.matchAll(/\d{1,2}月(?:初|底|末|上旬|中旬|下旬)?入住/gu) ?? [])
+          : []),
+      ]
+        .map((term) => (typeof term === 'string' ? term : (term[1] ?? term[0])))
+        .filter(Boolean),
+    ),
+  ]
+    .filter((term) => requested === null || requested.includes(norm(term)))
+    .slice(0, 12);
+  const essentialPreferences =
+    requested === null
+      ? []
+      : preferences.filter(
+          (term) =>
+            !new RegExp(
+              `(?:最好|希望|prefer|ideally)[^，,。]{0,12}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+              'i',
+            ).test(requestText ?? ''),
         );
   return {
     intent: input.intent,
@@ -504,18 +557,8 @@ export function toMarketPlan(
           .filter((term) => term && !isConditionTerm(term));
         return { ...need, terms: [...new Set(core.length ? core : need.terms)] };
       }),
-    preferences: [
-      ...new Set(
-        [
-          ...input.preferences,
-          ...preferred,
-          ...input.needs.flatMap((need) => need.terms.filter(isConditionTerm)),
-          ...(requestText?.matchAll(/(?:最好|希望)([\p{Script=Han}]{1,12})/gu) ?? []),
-        ]
-          .map((term) => (typeof term === 'string' ? term : term[1]!))
-          .filter(Boolean),
-      ),
-    ].filter((term) => requested === null || requested.includes(norm(term))),
+    preferences,
+    essentialPreferences,
     requiredTerms: required,
     excludeTerms: excluded,
     requiredArea: input.requiredArea.filter(

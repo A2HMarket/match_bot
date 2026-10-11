@@ -381,6 +381,106 @@ describe('reply_with_market_results', () => {
     expect(out).toContain('sourcePublishedAt/createdAt');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
   });
+  it('permits an area-unknown backup alongside a confirmed area choice', async () => {
+    const d = deps();
+    const c = ctx({
+      marketPlan: {
+        intent: 'second_hand',
+        needs: [{ id: 'pot', terms: ['小绿锅'] }],
+        preferences: [],
+        requiredArea: ['E14'],
+      },
+      marketListings: [
+        { ...POT, ref: 'm1' },
+        {
+          ...POT,
+          id: 'listing_b',
+          ref: 'm2',
+          sourceUrl: null,
+          description: '小绿锅成色新，E14 自提。',
+        },
+      ],
+    });
+    await replyWithMarketResultsTool(d as never).invoke(
+      rc(c),
+      JSON.stringify({
+        ...args,
+        recommendations: [
+          args.recommendations[0],
+          {
+            ...args.recommendations[0],
+            ref: 'm2',
+            evidence: '小绿锅成色新，E14 自提。',
+            facts: [],
+          },
+        ],
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('【优先看】');
+    expect(draft.text).toContain('【备选');
+    expect(draft.text).toContain('待确认：地点');
+  });
+  it('requires one bounded gap search after detail reading, then allows an honest unknown', async () => {
+    const d = deps();
+    const c = ctx({
+      marketPlan: {
+        intent: 'second_hand',
+        needs: [{ id: 'pot', terms: ['小绿锅'] }],
+        preferences: ['成色新'],
+        essentialPreferences: [],
+        budget: 20,
+      },
+      marketListings: [{ ...POT, ref: 'm1' }],
+      marketDetailIds: [POT.id],
+      marketQueries: [{ ...query('小绿锅'), purpose: 'discover', intent: 'second_hand' }],
+    });
+    const tool = replyWithMarketResultsTool(d as never);
+    expect(await tool.invoke(rc(c), JSON.stringify(args))).toContain('one focused market_search');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    c.marketQueries!.push({
+      ...query('小绿锅 价格', '小绿锅'),
+      purpose: 'enrich',
+      intent: 'second_hand',
+    });
+    await tool.invoke(rc(c), JSON.stringify(args));
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('【备选');
+    expect(draft.text).toContain('待确认：价格/计价单位');
+  });
+  it('presents evidence-based priorities and price-unknown backups without post-range confusion', async () => {
+    const d = deps();
+    const c = ctx({
+      marketPlan: {
+        intent: 'second_hand',
+        needs: [{ id: 'pot', terms: ['小绿锅'] }],
+        preferences: ['成色新'],
+        essentialPreferences: [],
+        budget: 20,
+      },
+      marketListings: [
+        { ...POT, ref: 'm1', description: '小绿锅成色新，Camberwell 自提。\n- 小绿锅｜£15' },
+        { ...POT, id: 'listing_b', ref: 'm2', sourceUrl: null },
+      ],
+    });
+    await replyWithMarketResultsTool(d as never).invoke(
+      rc(c),
+      JSON.stringify({
+        ...args,
+        recommendations: [{ ...args.recommendations[0], ref: 'm2' }, args.recommendations[0]],
+      }),
+    );
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('【优先看】');
+    expect(draft.text).toContain('【备选');
+    expect(draft.text).toContain('单品报价符合预算');
+    expect(draft.text).toContain('单品报价：£15');
+    expect(draft.text).not.toContain('帖内报价范围');
+    expect(draft.text).not.toContain('主体需求相符');
+    expect(draft.text.indexOf('【优先看】')).toBeLessThan(draft.text.indexOf('【备选'));
+  });
   it('asks for a confirmed area candidate before an unknown area when the pool has one', async () => {
     const d = deps();
     const c = ctx({

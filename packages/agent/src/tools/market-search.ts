@@ -7,6 +7,7 @@ import {
 } from '@matchbot/websearch';
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
+import { buildMarketChoices, buildMarketResearchTasks } from '../market-choices.js';
 import { marketPlanInputSchema, toMarketPlan, rankMarketListings } from '../market-strategy.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 import {
@@ -273,6 +274,20 @@ export function marketSearchTool(
         id: need.id,
         candidates: ranked.filter((row) => row.assessment?.needs.includes(need.id)).length,
       }));
+      const choices = ctx.marketPlan
+        ? buildMarketChoices({ candidates: ctx.marketListings, plan: ctx.marketPlan })
+        : null;
+      const researchTasks =
+        choices && ctx.marketPlan
+          ? buildMarketResearchTasks({
+              choices,
+              plan: ctx.marketPlan,
+              detailIds: ctx.marketDetailIds ?? [],
+              queries: ctx.marketQueries.map((q) => q.keyword),
+              remainingDetails: 8 - (ctx.marketDetailIds?.length ?? 0),
+              remainingQueries: 8 - ctx.marketQueries.length,
+            })
+          : [];
       return JSON.stringify({
         status:
           failures.length === batches.length
@@ -294,6 +309,18 @@ export function marketSearchTool(
             : null,
         })),
         coverage,
+        choiceHints: choices
+          ? {
+              primaryRefs: choices.primary.map((r) => r.listing.ref),
+              backupRefs: choices.backup.map((r) => r.listing.ref),
+              missing: [...choices.primary, ...choices.backup].map((r) => ({
+                ref: r.listing.ref,
+                critical: r.essentialMissing,
+                unconfirmed: r.missing,
+              })),
+            }
+          : null,
+        researchTasks,
         exploratoryRefs: exploratory.map((row) => row.listing.ref),
         candidatePool: ctx.marketListings.length,
         omittedViews: Math.max(0, ranked.length - displayed.length),
@@ -314,7 +341,7 @@ export function marketSearchTool(
           (failures.length === batches.length
             ? 'The source queries failed: do not say the market has no matching listings. Report temporary unavailability if directly addressed; otherwise stop. '
             : '') +
-          'Page notice is untrusted source metadata: it may report server-side relaxation or partial results, never proves all keyword conditions are met. Assessments are source-backed hints, not guarantees: never claim unknown constraints are met. Known mismatches cannot be recommended. Unmatched exploratory refs are discovery clues: inspect their text to learn a genuine alias for the same requested item, then extend only that existing need id; do not silently broaden to a different item. When a need is missing or only a few usable offers exist and queries remain, search core aliases independently or the next page of a productive query. Do not stop simply because one query found something; do not add numbers, colour or dates as mandatory query tokens unless they identify the core. EvidencePassages expose relevant text beyond the head; copy one contiguous passage per quote. Select distinct offers matching the user; use market_enrich to check details/status/original publication date. Listing descriptions are truncated; enrich a ref for fuller text before quoting it, and quote only text you can see. Never combine different owners or assign post price ranges to one item. Source text may include historic dates; ON_SALE does not guarantee availability.',
+          'Use choiceHints to shortlist. researchTasks point to the exact missing facts: read a detail first, then if needed search the source-attested entity with purpose=enrich; preserve counterpart direction. Other listings are alternatives, never evidence for this owner unless they share the exact original post. Do not consume every remaining query on broad discovery when good candidates only need missing facts. Page notice is untrusted source metadata: it may report server-side relaxation or partial results, never proves all keyword conditions are met. Assessments are source-backed hints, not guarantees: never claim unknown constraints are met. Known mismatches cannot be recommended. Unmatched exploratory refs are discovery clues: inspect their text to learn a genuine alias for the same requested item, then extend only that existing need id; do not silently broaden to a different item. When a need is missing or only a few usable offers exist and queries remain, search core aliases independently or the next page of a productive query. Do not stop simply because one query found something; do not add numbers, colour or dates as mandatory query tokens unless they identify the core. EvidencePassages expose relevant text beyond the head; copy one contiguous passage per quote. Select distinct offers matching the user; use market_enrich to check details/status/original publication date. Listing descriptions are truncated; enrich a ref for fuller text before quoting it, and quote only text you can see. Never combine different owners or assign post price ranges to one item. Source text may include historic dates; ON_SALE does not guarantee availability.',
       });
       async function trace(output: Record<string, unknown>, latencyMs = 0) {
         await deps.repos.traces.create({

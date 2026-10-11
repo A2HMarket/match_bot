@@ -82,6 +82,9 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
             intent: saved.marketPlan.intent,
             needs: saved.marketPlan.needs,
             preferences: saved.marketPlan.preferences,
+            ...(saved.marketPlan.essentialPreferences
+              ? { essentialPreferences: saved.marketPlan.essentialPreferences }
+              : {}),
             ...(saved.marketPlan.budget !== undefined ? { budget: saved.marketPlan.budget } : {}),
             ...(saved.marketPlan.requiredArea
               ? { requiredArea: saved.marketPlan.requiredArea }

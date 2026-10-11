@@ -4,6 +4,8 @@ import { marketListingForModel } from '../market-research.js';
 import { assessMarketListing } from '../market-strategy.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 import type { MarketCandidate } from '../market-research.js';
+import { buildMarketChoices, buildMarketResearchTasks } from '../market-choices.js';
+import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { groupReplyAddressing } from './addressing.js';
 import { makeOutboundTool } from './make-outbound-tool.js';
 const params = z.object({
@@ -135,7 +137,17 @@ function validateSelections(
             other.checks.some((check) => check.label === criterion && check.status === 'met')
           );
         });
-        if (alternatives.length)
+        const hasSelectedConfirmed = args.recommendations.some((selection) => {
+          const candidate = ctx.marketListings?.find((n) => n.ref === selection.ref);
+          if (!candidate || candidate.id === listing.id) return false;
+          const checked = assessMarketListing(candidate, ctx.marketPlan!, selection.name);
+          return (
+            !checked.checks.some((check) => check.status === 'mismatch') &&
+            checked.needs.some((id) => assessment.needs.includes(id)) &&
+            checked.checks.some((check) => check.label === criterion && check.status === 'met')
+          );
+        });
+        if (alternatives.length && !hasSelectedConfirmed)
           errors.push(
             `${path}.ref: prefer confirmed ${criterion} before unknown ${criterion}; usable refs: ${alternatives
               .slice(0, 6)
@@ -158,7 +170,19 @@ function validateSelections(
       errors.push(`${path}.ref: listing is on the wrong counterpart side`);
     if (!(listing.title + '\n' + listing.description).includes(item.name))
       errors.push(
-        `${path}.name: copy a literal title/item substring; do not append area or labels`,
+        `${path}.name: copy a literal source name; do not translate or append labels. Available exact names: ${JSON.stringify(
+          listing.description
+            .split('\n')
+            .filter((line) => /^\s*- /.test(line))
+            .map((line) =>
+              line
+                .replace(/^\s*- /, '')
+                .split('｜')[0]
+                ?.trim(),
+            )
+            .filter((name) => name && name.length >= 2 && name.length <= 100)
+            .slice(0, 6),
+        )}. Or use the exact title ${JSON.stringify(listing.title)}`,
       );
     if (!listing.description.includes(item.evidence))
       errors.push(
@@ -182,7 +206,52 @@ function validateSelections(
       error: `invalid recommendation: correct ALL listed fields in one repair, preserving valid entries. ${errors.join('; ')}`,
     };
 
+  const followup = requestFocusedFollowup(ctx, args, selected);
+  if (followup) return { error: followup };
   return selected;
+}
+function requestFocusedFollowup(
+  ctx: MatchContext,
+  args: z.infer<typeof params>,
+  selected: MarketCandidate[],
+): string | null {
+  const queries = ctx.marketQueries ?? [];
+  if (
+    !ctx.marketPlan ||
+    !queries.length ||
+    !ctx.marketDetailIds?.length ||
+    queries.length >= 8 ||
+    queries.some((q) => q.purpose === 'enrich')
+  )
+    return null;
+  const choices = buildMarketChoices({
+    candidates: selected,
+    plan: ctx.marketPlan,
+    names: Object.fromEntries(args.recommendations.map((item) => [item.ref, item.name])),
+  });
+  const task = buildMarketResearchTasks({
+    choices,
+    plan: ctx.marketPlan,
+    detailIds: ctx.marketDetailIds,
+    queries: queries.map((q) => q.keyword),
+    remainingDetails: 8 - ctx.marketDetailIds.length,
+    remainingQueries: 8 - queries.length,
+  }).find((step) => step.action === 'search');
+  if (!task) return null;
+  const search = {
+    plan: null,
+    intent: ctx.marketPlan.intent,
+    purpose: 'enrich',
+    queries: [
+      {
+        keyword: task.keyword,
+        entity: task.entity,
+        page: 1,
+        tradeType: ctx.marketTarget ?? (ctx.marketPlan.intent === 'companion' ? 'PEER' : 'SELL'),
+      },
+    ],
+  };
+  return `research incomplete: do one focused market_search before replying: ${JSON.stringify(search)}. It targets ${task.missing.join('/')}; never borrow another owner's facts. Then reply even if still unknown, using backups. Do not repeat broad discovery.`;
 }
 function renderListings(p: {
   args: z.infer<typeof params>;
@@ -294,22 +363,44 @@ export function replyWithMarketResultsTool(deps: AgentDeps) {
   return makeOutboundTool(deps, {
     name: 'reply_with_market_results',
     description:
-      'SENDS a grouped recommendation of 1-6 specific London A2H listings matching second-hand, housing, carry-on help or companion requests. Explain the actual item/room/route/activity and why it fits, not the post. With an adaptive plan, the final description uses ONLY your exact evidence quote, and fit/location/route/price come from code assessments; free summary/reason/facts are ignored. Choose an informative contiguous quote about this specific offer. Keep different owners/rooms/offers separate. Use market_enrich for selected refs first. The tool adds each listing own post-level price, original date and public links. Do not type monetary amounts or budget-fit claims in summary, reason or facts; prices are appended from structured source fields. Never assign a bundle price range to one item, claim a listing is within budget without item-level price evidence, invent contact details, publish or arrange a transaction. Reposts must be confirmed through their original link.',
+      'SENDS a grouped recommendation of 1-6 specific London A2H listings matching second-hand, housing, carry-on help or companion requests. Explain the actual item/room/route/activity and why it fits, not the post. With an adaptive plan, the tool sorts 1-3 evidenced priorities and up to 2 backups (or 3 leads when none is confirmed), deduplicates identical original posts, and explains budget/area/route/time fit from source checks. The final description uses ONLY your exact evidence quote, and fit/location/route/price come from code assessments; free summary/reason/facts are ignored. Choose an informative contiguous quote about this specific offer. Keep different owners/rooms/offers separate. Use market_enrich for selected refs first. The tool adds each listing own post-level price, original date and public links. Do not type monetary amounts or budget-fit claims in summary, reason or facts; prices are appended from structured source fields. Never assign a bundle price range to one item, claim a listing is within budget without item-level price evidence, invent contact details, publish or arrange a transaction. Reposts must be confirmed through their original link.',
     parameters: params,
-    toDraft: (ctx, args: z.infer<typeof params>) => {
+    toDraft: async (ctx, args: z.infer<typeof params>) => {
       const selected = validateSelections(ctx, args);
       if ('error' in selected) return Promise.resolve(selected);
-      let intro = singleLine(args.intro);
-      if (ctx.marketPlan)
-        intro = /\p{Script=Han}/u.test(intro)
-          ? '我按你的需求和原文信息选了这些公开帖子；标为“待确认”的信息还需要向贴主核实。'
-          : 'These public posts are relevant to your request; conditions marked unconfirmed still need checking with the poster.';
+      const intro = singleLine(args.intro);
       const zh = ctx.demand?.lang ? ctx.demand.lang === 'zh' : /\p{Script=Han}/u.test(intro);
-      const text =
-        `${intro}\n\n${renderListings({ args, listings: selected, zh, ctx })}`.replaceAll(
-          '有闲',
-          'A2H',
-        );
+      const presentation = ctx.marketPlan
+        ? renderMarketChoiceReply({
+            listings: selected,
+            selections: args.recommendations,
+            plan: ctx.marketPlan,
+            zh,
+          })
+        : null;
+      const rendered = presentation
+        ? [...presentation.choices.primary, ...presentation.choices.backup].map(
+            (row) => row.listing,
+          )
+        : selected;
+      const text = (
+        presentation?.text ?? `${intro}\n\n${renderListings({ args, listings: selected, zh, ctx })}`
+      ).replaceAll('有闲', 'A2H');
+      if (presentation)
+        await deps.repos.traces.create({
+          kind: 'gate',
+          inputRef: ctx.sourceMessageId,
+          phase: ctx.phase,
+          latencyMs: 0,
+          costMicro: 0,
+          output: {
+            gate: 'market_recommendation_selection',
+            decision: 'selected',
+            primaryRefs: presentation.choices.primary.map((row) => row.listing.ref),
+            backupRefs: presentation.choices.backup.map((row) => row.listing.ref),
+            omittedRefs: selected.filter((n) => !rendered.includes(n)).map((n) => n.ref),
+          },
+        });
       if (text.length > 3700)
         return Promise.resolve({
           error:
@@ -319,16 +410,18 @@ export function replyWithMarketResultsTool(deps: AgentDeps) {
         kind: 'recommendation' as const,
         target: ctx.chatId,
         text,
-        supplierSummaries: selected.map((n, index) =>
+        supplierSummaries: rendered.map((n) =>
           JSON.stringify({
             ...marketListingForModel(
               n,
               500,
               ctx.marketPlan?.needs.flatMap((need) => need.terms) ?? [],
             ),
-            selectedName: args.recommendations[index]?.name,
-            selectedEvidence: args.recommendations[index]?.evidence,
-            selectedFacts: ctx.marketPlan ? [] : args.recommendations[index]?.facts,
+            selectedName: args.recommendations.find((item) => item.ref === n.ref)?.name,
+            selectedEvidence: args.recommendations.find((item) => item.ref === n.ref)?.evidence,
+            selectedFacts: ctx.marketPlan
+              ? []
+              : args.recommendations.find((item) => item.ref === n.ref)?.facts,
           }),
         ),
         inputRef: ctx.sourceMessageId,

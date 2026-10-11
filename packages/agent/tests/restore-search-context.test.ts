@@ -45,6 +45,7 @@ describe('restoreSearchContext', () => {
       intent: 'second_hand',
       needs: [{ id: 'desk', terms: ['书桌', 'desk'] }],
       preferences: ['白色'],
+      essentialPreferences: ['白色'],
       requiredTerms: [],
       excludeTerms: [],
       requiredArea: ['E14'],
