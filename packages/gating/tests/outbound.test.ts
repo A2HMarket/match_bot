@@ -55,3 +55,52 @@ describe('decideOutbound with onUnsure = drop (无人值守)', () => {
     expect(decideOutbound({ phase: 1, verdict: good, rateOk: true, ...unattended })).toBe('review');
   });
 });
+
+describe('verified request status', () => {
+  it('can acknowledge a request even when recommendation scores are low', () => {
+    expect(
+      decideOutbound({
+        phase: 2,
+        verdict: { ...good, worthReplying: 0.1, mentionsUnverified: 0.9 },
+        rateOk: true,
+        t,
+        isVerifiedRequestStatus: true,
+      }),
+    ).toBe('auto');
+    expect(
+      decideOutbound({
+        phase: 2,
+        verdict: { ...good, worthReplying: 0.1, mentionsUnverified: 0.9 },
+        rateOk: true,
+        t,
+      }),
+    ).toBe('drop');
+  });
+  it.each([0, 1, 2] as const)(
+    'retains phase %i and never auto-sends if Jev is unavailable',
+    (phase) => {
+      expect(
+        decideOutbound({
+          phase,
+          verdict: null,
+          rateOk: true,
+          t,
+          onUnsure: 'drop',
+          isVerifiedRequestStatus: true,
+        }),
+      ).toBe(phase === 0 ? 'dry_run' : phase === 1 ? 'review' : 'drop');
+    },
+  );
+  it('does not bypass a rate refusal', () => {
+    expect(
+      decideOutbound({
+        phase: 2,
+        verdict: good,
+        rateOk: false,
+        t,
+        onUnsure: 'drop',
+        isVerifiedRequestStatus: true,
+      }),
+    ).toBe('drop');
+  });
+});

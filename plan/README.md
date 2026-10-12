@@ -39,6 +39,7 @@
 | P21 | 伦敦华人日常需求 A/B 实测 | [P21-london-daily-needs-ab-evaluation.md](./P21-london-daily-needs-ab-evaluation.md) | P20 | 5 | codex | 完成 | 24例A/B：B13sent/11静默；同源与逐例评分/证据报告；策略冻结0.13.2 | 2026-10-12 |
 
 | P22 | 本轮需求与回答Agent改造 | [P22-request-answer-agent.md](./P22-request-answer-agent.md) | P21 | 5 | codex | 完成 | 0.14.2；580测试；原24题两轮18sent；失败子集7/8；证据与剩余问题已记录 | 2026-10-12 |
+| P23 | Jev请求状态回复 | [P23-jev-request-status.md](./P23-jev-request-status.md) | P22 | 5 | codex | 完成 | 0.15.1；594测试；6/6真实sent；Jev正反例8/8；固定状态/审批/缓存回归 | 2026-10-12 |
 
 ## 波次与并行
 

@@ -24,11 +24,14 @@ export function decideOutbound(p: {
   rateOk: boolean;
   t: Thresholds;
   onUnsure?: 'review' | 'drop';
+  /** Server-verified fixed status, never free-form recommendation text. */
+  isVerifiedRequestStatus?: boolean;
 }): OutboundDecision {
   if (p.phase === 0) return 'dry_run';
   if (p.phase === 1) return 'review';
   const unsure = p.onUnsure ?? 'review';
   if (!p.verdict) return unsure;
+  if (p.isVerifiedRequestStatus) return p.rateOk ? 'auto' : unsure;
   if (p.verdict.mentionsUnverified >= p.t.T_MENTIONS_UNVERIFIED_DROP) return 'drop';
   if (p.verdict.worthReplying < p.t.T_WORTH_REPLYING_DROP) return 'drop';
   if (!p.rateOk) return unsure;

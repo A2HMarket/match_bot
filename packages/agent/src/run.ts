@@ -1,3 +1,4 @@
+import { replyRequestStatusTool } from './tools/reply-request-status.js';
 import { bindCurrentRequest } from './current-request.js';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -76,8 +77,7 @@ export async function runInbound(p: {
     if (
       !p.deps.answerRequests ||
       !(error instanceof Error) ||
-      error.name !== 'MaxTurnsExceededError' ||
-      p.ctx.outboundBlocked
+      error.name !== 'MaxTurnsExceededError'
     )
       throw error;
     p.ctx.sourceFailures ??= [];
@@ -90,7 +90,7 @@ export async function runInbound(p: {
       latencyMs: 0,
       costMicro: 0,
     });
-    return finalizeRequest(p, session);
+    return respondRequestStatus(p, session);
   }
   if (
     p.deps.answerRequests &&
@@ -112,11 +112,12 @@ export async function runInbound(p: {
     p.deps.answerRequests &&
     !result.interruptions.length &&
     !p.ctx.answerRecorded &&
-    !p.ctx.outboundBlocked &&
     p.ctx.currentRequest?.isActionable &&
     p.ctx.currentRequest.demand.category !== 'job'
   )
-    return finalizeRequest(p, session);
+    return p.ctx.outboundBlocked || p.ctx.answerInputExhausted
+      ? respondRequestStatus(p, session)
+      : finalizeRequest(p, session);
   return settle(p.deps, p.ctx, result);
 }
 
@@ -143,9 +144,60 @@ async function finalizeRequest(
     input: p.input,
     finalAnswerOnly: true,
   });
-  const result = await runner.run(agent, p.input, { context: p.ctx, session, maxTurns: 3 });
-  if (result.interruptions.some((item) => !hasValidArguments(item.arguments)))
-    throw new Error('Final answer has malformed tool input; no approval snapshot created');
+  try {
+    const result = await runner.run(agent, p.input, { context: p.ctx, session, maxTurns: 3 });
+    if (result.interruptions.some((item) => !hasValidArguments(item.arguments)))
+      return respondRequestStatus(p, session);
+    if (!result.interruptions.length && !p.ctx.answerRecorded)
+      return respondRequestStatus(p, session);
+    return settle(p.deps, p.ctx, result);
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'MaxTurnsExceededError') throw error;
+    return respondRequestStatus(p, session);
+  }
+}
+
+async function respondRequestStatus(
+  p: { deps: AgentDeps; ctx: MatchContext; input: string },
+  session: ReturnType<typeof createPgSession>,
+): Promise<RunOutcome> {
+  if (
+    !p.ctx.currentRequest?.isActionable ||
+    p.ctx.currentRequest.demand.category === 'job' ||
+    p.ctx.answerRecorded
+  )
+    return { kind: 'completed', toolsCalled: [] };
+  p.ctx.isRequestStatusRun = true;
+  await p.deps.repos.traces.create({
+    kind: 'gate',
+    inputRef: p.ctx.sourceMessageId,
+    phase: p.ctx.phase,
+    latencyMs: 0,
+    costMicro: 0,
+    output: {
+      gate: 'request_status',
+      reason:
+        p.ctx.outboundDeclineReason ??
+        (p.ctx.answerInputExhausted ? 'invalid_evidence' : 'no_answer'),
+    },
+  });
+  const status = replyRequestStatusTool(p.deps);
+  const context = new RunContext(p.ctx);
+  // No generation model is needed for a fixed acknowledgement. Approval-required phases still use the SDK snapshot path.
+  if (!(await status.needsApproval(context, {}, 'request-status:' + p.ctx.sourceMessageId))) {
+    await status.invoke(context, '{}');
+    return { kind: 'completed', toolsCalled: ['reply_request_status'] };
+  }
+  const { agent, runner } = createMatchAgent(p.deps, {
+    phase: p.ctx.phase,
+    input: p.input,
+    requestStatusOnly: true,
+  });
+  const result = await runner.run(agent, 'Call reply_request_status with {} exactly once.', {
+    context: p.ctx,
+    session,
+    maxTurns: 2,
+  });
   return settle(p.deps, p.ctx, result);
 }
 
@@ -161,7 +213,10 @@ export async function resumeRun(p: {
 }): Promise<RunOutcome> {
   const snapshot = decrypt(p.runState.snapshot, snapshotKey(p.deps));
   const ctx = restoreSearchContext(await rebuildContext(p.deps, p.runState), snapshot);
-  const { agent, runner } = createMatchAgent(p.deps, { phase: ctx.phase });
+  const { agent, runner } = createMatchAgent(p.deps, {
+    phase: ctx.phase,
+    requestStatusOnly: !!ctx.isRequestStatusRun,
+  });
   // PoC V2：用 fromStringWithContext 才能还原自己的 RunContext
   const state = await SdkRunState.fromStringWithContext(agent, snapshot, new RunContext(ctx));
   for (const item of state.getInterruptions()) {

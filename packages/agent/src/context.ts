@@ -42,6 +42,8 @@ export interface MatchContext {
   informationQueries?: string[];
   sourceFailures?: string[];
   answerRecorded?: boolean;
+  isRequestStatusRun?: boolean;
+  outboundDeclineReason?: 'unverified_claims' | 'low_value' | 'jev_unavailable' | 'rate_limited';
   answerInputExhausted?: boolean;
   isAnswerFinalization?: boolean;
   demandId?: string;

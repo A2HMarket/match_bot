@@ -24,6 +24,8 @@ const contextSchema = z.object({
   currentRequest: currentRequestSchema.optional(),
   answerInputExhausted: z.boolean().optional(),
   isAnswerFinalization: z.boolean().optional(),
+  isRequestStatusRun: z.boolean().optional(),
+  outboundBlocked: z.boolean().optional(),
   knowledgeSources: z.array(knowledgeSourceSchema).max(16).optional(),
   informationQueries: z.array(z.string()).max(4).optional(),
   sourceFailures: z.array(z.string()).optional(),
@@ -73,6 +75,10 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
   }
   return {
     ...ctx,
+    ...(saved.outboundBlocked !== undefined ? { outboundBlocked: saved.outboundBlocked } : {}),
+    ...(saved.isRequestStatusRun !== undefined
+      ? { isRequestStatusRun: saved.isRequestStatusRun }
+      : {}),
     ...(saved.answerInputExhausted !== undefined
       ? { answerInputExhausted: saved.answerInputExhausted }
       : {}),

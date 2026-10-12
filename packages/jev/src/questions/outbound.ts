@@ -2,14 +2,13 @@ import type { DemandDraft, OutboundQuestionId, Phase } from '@matchbot/domain';
 import type { JevClient } from '../client.js';
 import type { JevQuestion } from '../types.js';
 
-/** NOTE: unlike inboundQuestions(), this text is NOT PoC-calibrated — PoC V4 covered only
- * the inbound question set (scripts/poc/v4-jev-inbound/). Treat this as a first draft. */
+/** P23: calibrated on frozen source-grounded positive/negative pairs; see the Jev request-status evaluation. */
 export function outboundQuestions(): Record<OutboundQuestionId, JevQuestion> {
   return {
     worth_replying: {
       type: 'score',
       instructions:
-        'Given the demand and the draft reply, how valuable is posting this reply in the group?',
+        'Evaluate usefulness for THIS request. A relevant explanation of why no exact match was confirmed, a practical alternative, or one necessary clarification is useful even without a perfect match. Explicit unknowns and failed searches are not off-topic. Penalize unrelated, empty boilerplate and needless repetition, not honest uncertainty.',
       criteria: ['Not useful or off-topic', 'Marginal', 'Useful', 'Clearly useful and specific'],
     },
     language_ok: {
@@ -19,7 +18,7 @@ export function outboundQuestions(): Record<OutboundQuestionId, JevQuestion> {
     mentions_unverified: {
       type: 'noul',
       instructions:
-        'Does the draft mention any supplier not present in the provided supplier list?',
+        'Does the draft assert a provider/entity, price, date, capability, availability or fit not supported by the supplied source_evidence (legacy suppliers field)? Public listings/pages are evidence of what their text says, not independently verified real-world availability. Explicitly describing a missing condition or an unverified lead as unknown is NOT an unsupported claim. Reject inferred guarantees, wrong roles/dates, stale prices stated as current, and treating new students as beginner players. Do not require supplier-catalogue membership for official procedures, exhibitions or peer listings. For request_status, assess the fixed acknowledgement/next step, not the rejected recommendation.',
     },
   };
 }
@@ -40,13 +39,15 @@ export async function evaluateOutbound(
     recentReplies: string[];
     inputRef: string;
     phase: Phase;
+    replyPurpose?: 'answer' | 'request_status';
   },
 ): Promise<OutboundVerdict | { ok: false; reason: string }> {
   const r = await client.evaluate({
     state: {
       draft: p.draft,
       demand: p.demand,
-      suppliers: p.supplierSummaries,
+      source_evidence: p.supplierSummaries,
+      reply_purpose: p.replyPurpose ?? 'answer',
       recent_group_replies: p.recentReplies,
     },
     questions: outboundQuestions(),

@@ -938,3 +938,71 @@ describe('runInbound', () => {
     expect(repos.outbound.create).not.toHaveBeenCalled();
   });
 });
+
+describe('request status after recommendation decline', () => {
+  it('posts a fixed next step once without rewriting the rejected answer', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'reply_to_request',
+          {
+            kind: 'no_match',
+            text: '尚未找到确认匹配的线索。',
+            refs: [],
+          },
+          { callId: 'declined-answer' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 0.2,
+      mentionsUnverified: 0.9,
+      languageOk: 1,
+    });
+    const result = await runInbound({
+      deps: { ...deps, answerRequests: true } as never,
+      ctx: ctx(2),
+      input: 'E14找周末新手羽毛球搭子',
+    });
+    expect(result.kind).toBe('completed');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    const draft = repos.outbound.create.mock.calls[0]?.[0] as { kind: string; text: string };
+    expect(draft.kind).toBe('notification');
+    expect(draft.text).toContain('单程通勤');
+    expect(deps.evaluateOutbound).toHaveBeenCalledTimes(2);
+    expect(deps.evaluateOutbound.mock.calls[1]?.[1]).toMatchObject({
+      replyPurpose: 'request_status',
+    });
+  });
+});
+
+it('persists and resumes a phase 1 request-status approval through the SDK', async () => {
+  const model = new ScriptedModel([
+    [assistantMessage('No answer')],
+    [assistantMessage('Still no answer')],
+    [functionCall('reply_request_status', {}, { callId: 'status-approval' })],
+    [assistantMessage('Done')],
+  ]);
+  const { deps, repos, runStates } = makeDeps(model);
+  const modern = { ...deps, answerRequests: true };
+  const result = await runInbound({
+    deps: modern as never,
+    ctx: ctx(1),
+    input: 'E14找周末新手羽毛球搭子',
+  });
+  expect(result.kind).toBe('interrupted');
+  expect(repos.outbound.create).not.toHaveBeenCalled();
+  const row = runStates[0];
+  if (!row) throw new Error('missing approval snapshot');
+  const resumed = await resumeRun({
+    deps: modern as never,
+    runState: row as never,
+    approval: { decision: 'approve' } as never,
+  });
+  expect(resumed.kind).toBe('completed');
+  expect(repos.outbound.create).toHaveBeenCalledOnce();
+  const draft = repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+  expect(draft.text).toContain('单程通勤');
+});

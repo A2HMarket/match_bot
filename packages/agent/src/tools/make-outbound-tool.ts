@@ -19,6 +19,7 @@ export function makeOutboundTool<A>(
   deps: AgentDeps,
   cfg: {
     name: string;
+    isRequestStatus?: boolean;
     description: string;
     parameters: z.ZodObject<z.ZodRawShape>;
     toDraft: (ctx: MatchContext, args: A) => Promise<DraftResult>;
@@ -46,7 +47,10 @@ export function makeOutboundTool<A>(
     },
     needsApproval: async (rc, args, callId) => {
       const ctx = rc.context as MatchContext;
-      if (ctx.outboundBlocked || (ctx.answerInputExhausted && !ctx.isAnswerFinalization))
+      if (
+        (!cfg.isRequestStatus && ctx.outboundBlocked) ||
+        (!cfg.isRequestStatus && ctx.answerInputExhausted && !ctx.isAnswerFinalization)
+      )
         return false;
       // needsApproval 在 SDK 的工具入参校验前调用；格式错误只交给该校验返回，不让整轮崩掉。
       const parsed = cfg.parameters.safeParse(args);
@@ -87,8 +91,9 @@ export function makeOutboundTool<A>(
     execute: async (args, rc, details) => {
       if (!rc) return 'internal error: missing run context';
       const ctx = (rc as RunContext<MatchContext>).context;
-      if (ctx.answerInputExhausted && !ctx.isAnswerFinalization) return retryLimitMessage;
-      if (ctx.outboundBlocked) {
+      if (!cfg.isRequestStatus && ctx.answerInputExhausted && !ctx.isAnswerFinalization)
+        return retryLimitMessage;
+      if (!cfg.isRequestStatus && ctx.outboundBlocked) {
         return ctx.outboundInputFailures?.count === 3
           ? retryLimitMessage
           : 'not sent: this run was already declined by the outbound gate. Stop; do not retry.';

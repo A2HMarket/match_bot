@@ -72,6 +72,8 @@ packages/eval         回放与指标
 8. **`process.env` 只在 `packages/shared` 的 `loadEnv()` 里读一次**，其他地方通过传入的 `Env` 对象取值。
 9. **禁止 Agents SDK 默认 tracing 导出**。`packages/agent` 初始化时必须禁用默认 exporter 并注册写 `decision_traces` 的 processor。
 10. **不处理支付、不做担保、不代收款**，代码里不得出现相关分支。招聘品类只打标签，不进撮合。2026-10-10 用户授权：二手交易、租房、帮带、搭子需求可经A2H公开 API 做只读搜索与推荐，不代发帖、不联系贴主、不经手交易。
+    2026-10-12 用户授权的请求状态补充：精准匹配失败或推荐被拒绝时，应给解释、替代搜索方向或必要追问。仅代码固定、无实体/价格/日期/联系人/链接断言的reply_request_status可在Jev可用时按状态规则放行，Jev语义分仍留痕；不得用自由文本伪装成状态，不得重写原推荐绕过拒绝。仍为tool/needsApproval/出站表路径，Phase0不发，Phase1审批，Jev不可用不自动发，每个请求最多一条状态。
+
 11. **PII 不进日志**。pino 的 redact 已配 `text`、`phone`，新增含个人信息的字段必须加到 redact 列表。
 
 ## 4. 命名契约

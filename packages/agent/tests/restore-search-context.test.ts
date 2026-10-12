@@ -51,6 +51,8 @@ describe('restoreSearchContext', () => {
       snapshot({
         currentRequest,
         answerInputExhausted: true,
+        isRequestStatusRun: true,
+        outboundBlocked: true,
         isAnswerFinalization: true,
         sourceFailures: ['processing:invalid_evidence'],
       }),
@@ -58,6 +60,8 @@ describe('restoreSearchContext', () => {
     expect(restored.currentRequest).toEqual(currentRequest);
     expect(restored.demand).toEqual(currentRequest.demand);
     expect(restored.answerInputExhausted).toBe(true);
+    expect(restored.isRequestStatusRun).toBe(true);
+    expect(restored.outboundBlocked).toBe(true);
     expect(restored.isAnswerFinalization).toBe(true);
   });
   it('keeps normalized requirements through encrypted approval snapshot reconstruction', () => {

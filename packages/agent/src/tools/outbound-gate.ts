@@ -1,5 +1,6 @@
 import { createRateLimiter, decideOutbound, type OutboundDecision } from '@matchbot/gating';
 import type { DemandDraft, OutboundKind } from '@matchbot/domain';
+import { renderRequestStatus } from '../request-status.js';
 import { hashText } from '@matchbot/shared';
 import type { RunContext } from '@openai/agents';
 import type { AgentDeps, MatchContext } from '../context.js';
@@ -7,6 +8,7 @@ import type { AgentDeps, MatchContext } from '../context.js';
 export interface OutboundDraftInput {
   /** 用途；决定是否计入频控。每个出站工具必须显式给出。 */
   kind: OutboundKind;
+  replyPurpose?: 'answer' | 'request_status';
   /** P20: 本轮来源核对的搜索需求，不复用建档失败时残留的上一条需求。 */
   evaluationDemand?: DemandDraft;
   target: string;
@@ -95,7 +97,32 @@ export async function decideForOutbound(
   ctx: MatchContext,
   d: OutboundDraftInput,
 ): Promise<OutboundDecision> {
-  const key = hashText(`${d.target}${d.text}`);
+  const isVerifiedRequestStatus =
+    d.replyPurpose === 'request_status' &&
+    d.kind === 'notification' &&
+    d.target === ctx.chatId &&
+    d.inputRef === ctx.sourceMessageId &&
+    d.supplierSummaries.length === 0 &&
+    !d.disclaimer &&
+    d.text === renderRequestStatus(ctx);
+  if (d.replyPurpose === 'request_status' && !isVerifiedRequestStatus) {
+    await deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: ctx.sourceMessageId,
+      phase: ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+      output: {
+        gate: 'request_status_validation',
+        decision: 'deny',
+        reason: 'invalid_fixed_status',
+      },
+    });
+    return 'drop';
+  }
+  const key = hashText(
+    JSON.stringify([ctx.phase, d.kind, d.target, d.text, d.replyPurpose ?? 'answer']),
+  );
   const cached = decisionCache.get(ctx)?.get(key);
   if (cached) return cached;
 
@@ -125,6 +152,7 @@ export async function decideForOutbound(
           recentReplies: ctx.recentReplies,
           inputRef: d.inputRef,
           phase: ctx.phase,
+          ...(d.replyPurpose ? { replyPurpose: d.replyPurpose } : {}),
         })
       : null;
     verdict = v && v.ok ? v : null;
@@ -146,16 +174,32 @@ export async function decideForOutbound(
     rateOk,
     t: deps.thresholds,
     onUnsure: deps.env.OUTBOUND_UNSURE_ACTION,
+    isVerifiedRequestStatus,
   });
   await deps.repos.traces.create({
     kind: 'gate',
     inputRef: d.inputRef,
-    output: { gate: 'outbound', decision, verdict, rateOk },
+    output: {
+      gate: 'outbound',
+      decision,
+      verdict,
+      rateOk,
+      isVerifiedRequestStatus,
+      ...(d.replyPurpose ? { replyPurpose: d.replyPurpose } : {}),
+    },
     phase: ctx.phase,
     latencyMs: 0,
     costMicro: 0,
   });
 
+  if (decision === 'drop' && !isVerifiedRequestStatus)
+    ctx.outboundDeclineReason = !verdict
+      ? 'jev_unavailable'
+      : verdict.mentionsUnverified >= deps.thresholds.T_MENTIONS_UNVERIFIED_DROP
+        ? 'unverified_claims'
+        : verdict.worthReplying < deps.thresholds.T_WORTH_REPLYING_DROP
+          ? 'low_value'
+          : 'rate_limited';
   let byKey = decisionCache.get(ctx);
   if (!byKey) {
     byKey = new Map();
