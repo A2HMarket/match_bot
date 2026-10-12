@@ -36,6 +36,8 @@
 
 | P20 | 修复真实请求漏回复 | [P20-fix-missing-market-replies.md](./P20-fix-missing-market-replies.md) | P19 | 5 | codex | 完成 | 0.13.2：539测试、实际Telegram打印机/桌椅sent，帮带补修后复测sent；本地发布 | 2026-10-12 |
 
+| P21 | 伦敦华人日常需求 A/B 实测 | [P21-london-daily-needs-ab-evaluation.md](./P21-london-daily-needs-ab-evaluation.md) | P20 | 5 | codex | 完成 | 24例A/B：B13sent/11静默；同源与逐例评分/证据报告；策略冻结0.13.2 | 2026-10-12 |
+
 ## 波次与并行
 
 ```

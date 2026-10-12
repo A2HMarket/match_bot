@@ -1,0 +1,1332 @@
+[
+  {
+    "case": "G1",
+    "query": "伦敦想收一个小绿锅，预算20镑，最好Camberwell方便自取。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:51:57.000Z",
+    "queueDelayMs": 6417,
+    "processingMs": 11546,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "reason": "timeout",
+        "outcome": "dropped_by_jev"
+      }
+    ]
+  },
+  {
+    "case": "G2",
+    "query": "伦敦收激光打印机，预算60镑，必须支持无线打印。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:54:22.000Z",
+    "queueDelayMs": 1216,
+    "processingMs": 26472,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "second_hand"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "do not switch marketplace intent within this run",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "gate": "outbound_research",
+        "tool": "reply_with_market_results",
+        "reason": "research_required",
+        "decision": "continue"
+      },
+      {
+        "gate": "market_search",
+        "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+        "decision": "deny"
+      },
+      {
+        "error": "MaxTurnsExceededError",
+        "outcome": "agent_failed"
+      }
+    ]
+  },
+  {
+    "case": "G3",
+    "query": "E14想收书桌和办公椅，每件50镑以内，能自提。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:51:57.000Z",
+    "queueDelayMs": 18108,
+    "processingMs": 35690,
+    "elapsedToSentMs": 52673,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. 低价出桌椅一套\n可作备选：原文提供了你要找的这类供给\n出售：出桌椅一套，可打包50镑或单卖（椅子45镑/桌子10镑）\n单品报价：待确认\n地点原文：地点：伦敦 Canning Town (E14)\n待确认：价格/计价单位 / E14 / 自提\n原帖 2026-10-06 · [A2H详情](https://a2hmarket.ai/listings/listing_01M47GQCMNSF5EC6DYPMTA2KCG) · [原帖](https://www.xiaohongshu.com/explore/6ac43c140000000014013ef5?xsec_token=YBdIvpbUhtL_ad6QN87p4B8JkrN6N0SS52emaptME7qd0%3D&xsec_source=pc_search)\n\n2. 二手工学办公椅\n可作备选：单品报价符合预算\n出售：伦敦东南闲置二手工学办公椅，功能正常，10镑出。\n单品报价：£10\n地点原文：地点：伦敦东南（London SE）。\n待确认：E14 / 自提\n原帖日期未确认 · [A2H详情](https://a2hmarket.ai/listings/listing_01M20EZ9KCRDP5V86HK8CGTS90) · [原帖](https://www.xiaohongshu.com/explore/6a9ef5280000000012027214?xsec_token=YBpeoSA1QCb2zM9BG9aaRXN5PrUszzn5zld6RyP3doDlY%3D&xsec_source=pc_search)\n\n3. IKEA LINNMON/ADILS 白色桌子\n可作备选：单品报价符合预算\n出售：出 IKEA LINNMON/ADILS 白色桌子，100x60cm，£10\n单品报价：出售：出 IKEA LINNMON/ADILS 白色桌子，100x60cm，£10\n地点原文：地点：E14\n待确认：E14 / 自提\n原帖 2026-09-08 · [A2H详情](https://a2hmarket.ai/listings/listing_01M222R1M0WCPEN57X8PFH73FS) · [原帖](https://www.xiaohongshu.com/explore/6aa04fba000000002900ed4d?xsec_token=YBCO9u-uDtrZI-AQrw2e4FvmGgUS812nYYkSs5lYD4NwE%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:52:49.673Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "second_hand"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "reason": "enrichment needs a name from discovered listing text, included in keyword",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "reason": "enrichment needs a name from discovered listing text, included in keyword",
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m4", "m2", "m3"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m4", "m2", "m3"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_demand",
+          "market_search",
+          "market_enrich",
+          "market_search",
+          "market_search",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "G4",
+    "query": "伦敦想买27寸二手显示器，预算80镑，最好有USB-C。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:51:57.000Z",
+    "queueDelayMs": 50878,
+    "processingMs": 23232,
+    "elapsedToSentMs": 76040,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. Samsung 27\" M50A Full HD Smart Monitor\n可作备选：单品报价符合预算\n出售：出2台Samsung 27寸智能显示器，单台£40可小刀，两台打包送无线键鼠\n单品报价：价格：£40/个（可小刀），两台打包赠送无线键盘和鼠标\n待确认：USB-C / 伦敦 / 有USB\n原帖 2026-09-20 · [A2H详情](https://a2hmarket.ai/listings/listing_01M313KYWE8FB3V254YHWK1VB7) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab00859000000001401c02e?xsec_token=YBxSJvIx9uYtS2o2zx_jO-VNIoCdPnLlB4l9pTLH2jc6Q%3D&xsec_source=pc_search)\n\n2. Dell 27寸显示器\n可作备选：单品报价符合预算\n出售：出一台几乎全新的Dell 27寸显示器\n单品报价：£50\n待确认：USB-C / 伦敦 / 有USB\n原帖日期未确认 · [A2H详情](https://a2hmarket.ai/listings/listing_01M44ZSADKGVVS5DRCT9GHQV1N) · [原帖](https://www.xiaohongshu.com/explore/6ac24708000000001b0335c4?xsec_token=YBaHj538IW1DFWBpkdk_SFtQaFc46veS1w4kjoopZOVB8%3D&xsec_source=pc_search)\n\n3. KOORUI 27E1QA\n可作备选：单品报价符合预算\n出售：帮人出售二手 KOORUI 27寸 2K 144Hz 显示器，功能正常\n单品报价：£70\n地点原文：地点：仅接受自提\n待确认：USB-C / 伦敦 / 有USB\n原帖日期未确认 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4CPG2YZQQNSE35B2F0G2TGH) · [原帖](https://www.xiaohongshu.com/explore/6ac6b6a2000000001a021233?xsec_token=YB4ZpK3CRnRtYxJhZzO4207fs4XXheYfV6GVnfISr9wF0%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:53:13.040Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "second_hand"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "outbound_research",
+        "tool": "reply_with_market_results",
+        "reason": "research_required",
+        "decision": "continue"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m4", "m15", "m8"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m4", "m15", "m8"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_demand",
+          "market_search",
+          "market_enrich",
+          "market_enrich",
+          "reply_with_market_results",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "G5",
+    "query": "我在E14有一张宜家书桌想卖30镑，帮我找正在求购书桌的买家。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:51:57.000Z",
+    "queueDelayMs": 74110,
+    "processingMs": 17002,
+    "elapsedToSentMs": 92127,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. Old street附近收书桌，宜家小推车，置物架（类似的均可）。小推车和置物架大概是能放在厕所的大小。old stre\n可作备选：原文提供了你要找的这类供给\nOld street附近收书桌，宜家小推车，置物架（类似的均可）。小推车和置物架大概是能放在厕所的大小。old street地铁站附近可立即上门自提，远的不考虑～\n买家报价：待确认\n地点原文：地点：Old Street地铁站附近 (N1)\n待确认：价格/计价单位 / E14\n原帖 2026-09-27 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3K2CPR15P2DYQF1NDA1G6S4) · [原帖](https://www.xiaohongshu.com/explore/6ab8e399000000000f03ba19?xsec_token=YBd5GSCIqqrnUmRVsvKcPgQ2RMG9PMhL2KSxdS_bUBDCk%3D&xsec_source=pc_search)\n\n2. 二手书桌（求购）\n可作备选：原文提供了你要找的这类供给\n有无在East Village出二手书桌的uu 从今天开始可自取\n买家报价：待确认\n地点原文：地点：East Village\n待确认：价格/计价单位 / E14\n原帖 2026-09-14 · [A2H详情](https://a2hmarket.ai/listings/listing_01M2HM3CREHCQDA97W6CYG63DZ) · [原帖](https://www.xiaohongshu.com/explore/6aa7e84500000000110318ef?xsec_token=YBGd3o7Df3-G3twmKTFhaTwtvfVk1TzkJsLNq5uWllejE%3D&xsec_source=pc_search)\n\n3. 收收\n可作备选：原文提供了你要找的这类供给\n求购：在伦敦象堡求收书桌和靠枕\n买家报价：待确认\n地点原文：地点：伦敦象堡\n待确认：价格/计价单位 / E14\n原帖 2026-09-19 · [A2H详情](https://a2hmarket.ai/listings/listing_01M2YG0F474ADYKQF5487ZB9J5) · [原帖](https://www.xiaohongshu.com/discovery/item/6aae4a72000000002901bc0e?xsec_token=YBnlS8F9bGygPtFlm277N8Nc3QgORcZE5UhsOA7RaDBRU%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:53:29.127Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "second_hand"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "outbound_research",
+        "tool": "reply_with_market_results",
+        "reason": "research_required",
+        "decision": "continue"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m22", "m3", "m24"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m22", "m3", "m24"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_supply",
+          "market_search",
+          "market_enrich",
+          "reply_with_market_results",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "H1",
+    "query": "E14找长租单间，2026年11月初入住，月租1200镑以内。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:51:58.000Z",
+    "queueDelayMs": 90117,
+    "processingMs": 11,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "housing"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "reason": "duplicate_delivery",
+        "outcome": "dropped_by_rule"
+      }
+    ]
+  },
+  {
+    "case": "H2",
+    "query": "Stratford想找允许养猫的一居室整租，月租1600镑以内，11月入住。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:54:28.000Z",
+    "queueDelayMs": 21708,
+    "processingMs": 17097,
+    "elapsedToSentMs": 40935,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. Stratford One 精装一居室 (Studio)\n可作备选：地点符合你指定的范围\n户型：Studio/一居室，朝南高层，大窗户采光好，卫生间大且干净\n原文信息：户型：Studio/一居室，朝南高层，大窗户采光好，卫生间大且干净\n月租：待确认\n地点原文：转租：因个人原因紧急回国，急转Stratford One精装Studio\n待确认：租金/计价单位 / 养猫 / 11月入住\n原帖 2026-09-23 · [A2H详情](https://a2hmarket.ai/listings/listing_01M393RB38CPZT2STGCAQ7FEPC) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab3a6f9000000001a032ce9?xsec_token=YBgbRQ7Qw9ab9iC8Mx56ARJrUrIh1fDeRSNKt2mbex4cY%3D&xsec_source=pc_search)\n\n2. 伦敦Stratford复式loft一居室\n可作备选：地点符合你指定的范围\n复式loft一居室 (1b1b)｜独立全套厨卫，家电齐全\n原文信息：时间：近期可入住\n原文信息：户型：复式loft一居室(1b1b)，独立全套厨卫，家电齐全，卧室私密隔开，无合租\n月租：待确认\n地点原文：出租：提供Stratford复式loft一居室(1b1b)出租，适合UCL东、LCF同学，近期可入住\n待确认：租金/计价单位 / 养猫 / 11月入住\n原帖日期未确认 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3KG26Z97WKEEHX7J7T1SFBR) · [原帖](https://www.xiaohongshu.com/explore/6ab9de4b0000000018010b47?xsec_token=YBoIfgtfW1NCqUGUWIowUPjjbxPUaBHfVqxx6nECF7azM%3D&xsec_source=pc_search)\n\n3. 伦敦Stratford一居室公寓转租\n可作备选：地点符合你指定的范围\n伦敦转租一套Stratford的1b1b户型🏠，整体空间挺大的不压抑。卧室空间还挺大的☀️\n原文信息：户型：1b1b，卧室大采光好，客厅有冰箱/洗衣机/微波炉\n月租：待确认\n地点原文：转租：在伦敦Stratford转租一套1b1b公寓\n待确认：租金/计价单位 / 养猫 / 11月入住\n原帖 2026-10-05 · [A2H详情](https://a2hmarket.ai/listings/listing_01M47WE3DMXCAFSDCYVEPB58HR) · [原帖](https://www.xiaohongshu.com/explore/6ac3990700000000150049f6?xsec_token=YBI_AB6mZrMx0gcj_HRB49HktpO2-tFRBeZoIK2ijlF8U%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:55:08.935Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "housing"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m24", "m41", "m1"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m24", "m41", "m1"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_demand",
+          "market_search",
+          "market_enrich",
+          "market_search",
+          "market_enrich",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "H3",
+    "query": "刚到KCL读书，想找室友一起合租，Waterloo通勤30分钟内，预算每人1100镑一个月。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:54:29.000Z",
+    "queueDelayMs": 37797,
+    "processingMs": 15624,
+    "elapsedToSentMs": 56276,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. iQ Vega 五人 ensuite 合租单间\n可作备选：原文提供了你要找的这类供给\n找室友：iQ Vega 5人公寓已有4名中国室友(2男2女)，寻找第5位室友，42周租期，本科生友好\n原文信息：户型：5人公寓中的ensuite单间，朝北，32层，可看金融城与大本钟景观\n原文信息：要求：仅限中国室友，接受本科生\n月租：待确认\n待确认：租金/计价单位 / 路线 / Waterloo / KCL\n原帖 2026-09-24 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3CHCGAFH5CWBKGC7Q9MMX6R) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab506220000000014002f08?xsec_token=YBa48aR1c9Yi7M8ehvojeZHzyxVBisa9503IeYIXPkZ94%3D&xsec_source=pc_search)\n\n2. 还有人拼 KCL 步行到校2b2b 吗？\n可作备选：原文提供了你要找的这类供给\n找室友：寻找 KCL Whitehouse 2b2b 公寓的拼室友或整租伙伴，租期44周起，随时入住。 地点：Whitehouse 公寓，步行至 Strand 15分钟，Waterloo 校区 3分钟。\n原文信息：户型：2b2b (两卧两卫)。\n原文信息：要求：不介意公寓偏旧。\n月租：待确认\n地点原文：地点：Whitehouse 公寓，步行至 Strand 15分钟，Waterloo 校区 3分钟。\n待确认：租金/计价单位 / 路线\n原帖 2026-10-09 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4FY7KEC037YJT57GBDV2T48) · [原帖](https://www.xiaohongshu.com/explore/6ac898d50000000018039b71?xsec_token=YBbAhkhniU-Qka_-d7QIZMCbQg8za7VlNcC7K37tURPu8%3D&xsec_source=pc_search)\n\n3. #找房 #留学生租房 #找合租室友 #伦敦 #英国\n可作备选：原文提供了你要找的这类供给\n找室友：UCL大二男生求伦敦合租室友，希望房子距离学校30分钟以内，优先考虑Vauxhall/Waterloo附近。\n月租：待确认\n待确认：租金/计价单位 / 路线 / KCL\n原帖日期未确认 · [A2H详情](https://a2hmarket.ai/listings/listing_01M34CWYKXA8XCMSH6SQTDQ2B2) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab1602e0000000038036637?xsec_token=YBrt6EqK2FGchJGdiDoFqtjEjin4i_BTgtmMTbSCHrIBw%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:55:25.276Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "housing"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m2", "m16", "m12"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m2", "m16", "m12"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_demand",
+          "market_search",
+          "market_enrich",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "C1",
+    "query": "找2026年11月上海飞伦敦的帮带，想带2公斤衣服。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:54:29.000Z",
+    "queueDelayMs": 53424,
+    "processingMs": 25920,
+    "elapsedToSentMs": 82040,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面2条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. 布里斯托往返帮带服务\n可作备选：路线方向与你一致\n回程：上海飞伦敦 -> 布里斯托\n原文信息：时间：去程10月27日，回程11月4日\n费用：待确认\n待确认：日期/年份 / 行程与可用期冲突 / 衣服 / 2公斤 / 伦敦\n原帖 2026-10-01 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3XHMVD28MS633DE4DK8FH27) · [原帖](https://www.xiaohongshu.com/explore/6abe709f000000000d00896f?xsec_token=YBgbZKFHfZf4EO7IM4_0eSdsFKpMbgu4Cn0fu1gKkhpIk%3D&xsec_source=pc_search)\n\n2. 国际航班行李代运服务（上海至伦敦）\n可作备选：路线方向与你一致\n帮带：提供从上海到伦敦的航班帮带服务，拥有96kg行李额度\n原文信息：时间：10月17日\n费用：待确认\n待确认：日期/年份 / 行程与可用期冲突 / 衣服 / 2公斤\n原帖 2026-09-27 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3K5AAYRAVP6DZY8S45WJZVW) · [原帖](https://www.xiaohongshu.com/explore/6ab913bc000000001901f560?xsec_token=YBoIfgtfW1NCqUGUWIowUPjkrYaoKYOTO8G3K0Ij2XoW8%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:55:51.040Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_search",
+        "decision": "aliases_extended"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "outbound_input",
+        "tool": "reply_with_market_results",
+        "reason": "invalid_evidence",
+        "attempt": 1,
+        "decision": "deny"
+      },
+      {
+        "gate": "outbound_research",
+        "tool": "reply_with_market_results",
+        "reason": "research_required",
+        "decision": "continue"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m54", "m40"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m54", "m40"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_demand",
+          "market_search",
+          "market_search",
+          "market_enrich",
+          "market_search",
+          "reply_with_market_results",
+          "reply_with_market_results",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "C2",
+    "query": "我2026年11月1日伦敦飞上海，有2公斤空余行李，帮我找需要帮带的人。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:54:30.000Z",
+    "queueDelayMs": 78352,
+    "processingMs": 16456,
+    "elapsedToSentMs": 96958,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面1条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. 英国回国人肉有无\n可作备选：路线方向与你一致\n帮带：提供11月8日伦敦飞上海的行李额代带服务\n原文信息：时间：11月8日\n费用：待确认\n待确认：日期/年份 / 2公斤\n原帖 2026-10-09 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4G6M73EVQ984MR64YGCKE45) · [原帖](https://www.xiaohongshu.com/explore/6ac899890000000014010f7d?xsec_token=YBbAhkhniU-Qka_-d7QIZMCZgJre4Uyc8-3UFCa2xkJeU%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:56:06.958Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "outbound_research",
+        "tool": "reply_with_market_results",
+        "reason": "research_required",
+        "decision": "continue"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m12"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m12"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "upsert_supply",
+          "market_search",
+          "market_search",
+          "market_enrich",
+          "reply_with_market_results",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "P1",
+    "query": "E14想找周末羽毛球搭子，我是初学者，有适合新手的吗？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:54:31.000Z",
+    "queueDelayMs": 93809,
+    "processingMs": 15389,
+    "elapsedToSentMs": 112185,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. Uxbridge附近有羽毛球搭子吗 远一点也OK 本人2级水平 娱乐为主#羽球会友 #羽毛球搭子 #伦敦留学 #英\n可作备选：原文是在找同类活动的伙伴\nUxbridge附近有羽毛球搭子吗\n地点原文：地点：Uxbridge附近，远一点也可以\n待确认：初学者 / E14 / 周末 / 新手\n原帖 2026-09-25 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3CA3DV36FYMSD3KHHDAZ1JQ) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab5fed20000000002011e40?xsec_token=YBGcTDiKbuo7kQqpLf6TxZDToDogvwr6Qa7sNOERN-89U%3D&xsec_source=pc_search)\n\n2. #伦敦 #羽毛球 #搭子 #羽毛球搭子\n可作备选：原文是在找同类活动的伙伴\n#伦敦[话题]# #羽毛球[话题]# #搭子[话题]# #羽毛球搭子[话题]#\n待确认：初学者 / E14 / 周末 / 新手\n原帖 2026-10-09 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4GB8B20M6PZV45BTYFJEHMH) · [原帖](https://www.xiaohongshu.com/explore/6ac838050000000015010cf8?xsec_token=YBbAhkhniU-Qka_-d7QIZMCXg_62_7kvxSEKe710j-8RA%3D&xsec_source=pc_search)\n\n3. UCL 26fall找打球搭子\n可作备选：原文是在找同类活动的伙伴\n组织里新生老手都有#26fall[话题]# #UCL[话题]# #羽毛球搭子[话题]#\n地点原文：地点：伦敦 UCL\n待确认：初学者 / E14 / 周末 / 新手\n原帖 2026-09-30 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3S6R9FW58CTF94DQ4GGMJN9) · [原帖](https://www.xiaohongshu.com/explore/6abc7cd9000000001a022980?xsec_token=YBBMLa3H_LA7VEAWtwW8kjFpXwG3JzNKoJnKcTVZ_lWt4%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:56:23.185Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "outbound_input",
+        "tool": "reply_with_market_results",
+        "reason": "invalid_evidence",
+        "attempt": 1,
+        "decision": "deny"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m3", "m1", "m9"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m3", "m1", "m9"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "market_search",
+          "market_search",
+          "market_enrich",
+          "market_search",
+          "reply_with_market_results",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "P2",
+    "query": "10月17日想在Greenwich散步两小时，找个一起走走聊天的搭子。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:57:16.000Z",
+    "queueDelayMs": 1083,
+    "processingMs": 14760,
+    "elapsedToSentMs": 17333,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. 伦敦招散步搭子\n可作备选：原文是在找同类活动的伙伴\n找搭子：伦敦求散步搭子，白天晚上均可，求推荐路线\n待确认：日期/年份 / Greenwich / 10月17日 / 两小时 / 聊天\n原帖 2026-09-22 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3709JHPVYFA1NFQQR91MF2W) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab3074b000000000d02973f?xsec_token=YB05_PMxHQCDEKezuVQYjyJB327ZQlCpjw8bKnI7JY3m8%3D&xsec_source=pc_search)\n\n2. 🇬🇧伦敦找塔桥散步搭子/自习搭子\n可作备选：原文是在找同类活动的伙伴\n路线：st Katherine’s dock—塔桥—伦敦桥\n地点原文：地点：E1区域\n待确认：日期/年份 / Greenwich / 10月17日 / 两小时 / 聊天\n原帖 2026-09-27 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3KP354K9FYAFQ4J6W2TWRWB) · [原帖](https://www.xiaohongshu.com/explore/6ab94f41000000001203ea7f?xsec_token=YBoIfgtfW1NCqUGUWIowUPjnw6T2S7ReItZ1b-B2LAdFs%3D&xsec_source=pc_search)\n\n3. 倫敦找搭子\n可作备选：原文是在找同类活动的伙伴\ngreenwich有一起走走的嗎？\n地点原文：地点：伦敦格林威治 (Greenwich)\n待确认：日期/年份 / 10月17日 / 两小时 / 聊天\n原帖 2026-10-07 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4D2YQTWFKZ16R86MQE0K6CC) · [原帖](https://www.xiaohongshu.com/explore/6ac62a4a000000000a023688?xsec_token=YB4ZpK3CRnRtYxJhZzO4207R8dcFvmXb8zbn9s-nFKh6s%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:57:33.333Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "outbound_research",
+        "tool": "reply_with_market_results",
+        "reason": "research_required",
+        "decision": "continue"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m1", "m3", "m2"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m1", "m3", "m2"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "market_search",
+          "market_enrich",
+          "reply_with_market_results",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "P3",
+    "query": "想在伦敦找英语口语练习搭子，工作日晚上，Soho附近最好。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:57:17.000Z",
+    "queueDelayMs": 14776,
+    "processingMs": 12937,
+    "elapsedToSentMs": 30098,
+    "outbound": [
+      {
+        "text": "这次搜索还没找到关键条件都能确认的供给。下面3条可作备选，先核实标出的信息。\n\n【备选 · 需要确认】\n\n1. Chinese-English Language Exchange\n可作备选：原文是在找同类活动的伙伴\nHi, I’m Noah! I work near London and I’m looking for someone to do a language exchange with. I can help you with Chinese, and you can help me improve my English 😊\n待确认：Soho / 工作日晚上 / 伦敦\n原帖 2026-10-07 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4DNVA7M99EZFBPZG9YJ6GM0) · [原帖](https://www.xiaohongshu.com/explore/6ac6bd8d00000000180074a5?xsec_token=YB4ZpK3CRnRtYxJhZzO4207VEGzT1dO5zT7PTe2YzbA7g%3D&xsec_source=pc_search)\n\n2. Language Exchange\n可作备选：原文是在找同类活动的伙伴\n母语中文，目前人在伦敦。在英国学习、工作了几年，但还是希望进一步提高英语口语，让表达更自然。\n待确认：Soho / 工作日晚上 / 伦敦\n原帖 2026-10-09 · [A2H详情](https://a2hmarket.ai/listings/listing_01M4GCZGZM4C3T0K76Y53SPH57) · [原帖](https://www.xiaohongshu.com/explore/6ac8b19000000000150079cf?xsec_token=YBbAhkhniU-Qka_-d7QIZMCV3m3D6wT_XVAMglZWCqo4w%3D&xsec_source=pc_search)\n\n3. 想交一个外国朋友\n可作备选：原文是在找同类活动的伙伴\n想交一个外国朋友，互相学习对方的语言了解文化。如果是英国的最好啦，看过很多英剧，尤其对伦敦很向往呢。\n待确认：Soho / 工作日晚上\n原帖 2026-09-25 · [A2H详情](https://a2hmarket.ai/listings/listing_01M3EGCZKDTP5X5Q1M6EEPG4MJ) · [原帖](https://www.xiaohongshu.com/discovery/item/6ab6235e0000000015002efd?xsec_token=YBzOd2GdtU0dNorCDddFZbU0oMiQtRDb-RHKkKlBUDAGE%3D&xsec_source=pc_search)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T03:57:47.098Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "market_search_input",
+        "reason": "invalid_schema",
+        "attempt": 1,
+        "decision": "deny"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_enrich"
+      },
+      {
+        "gate": "market_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m4", "m1", "m5"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "gate": "market_recommendation_selection",
+        "decision": "selected",
+        "backupRefs": ["m4", "m1", "m5"],
+        "primaryRefs": [],
+        "rejectedRefs": []
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": [
+          "market_search",
+          "market_search",
+          "market_enrich",
+          "market_search",
+          "reply_with_market_results"
+        ]
+      }
+    ]
+  },
+  {
+    "case": "L1",
+    "query": "伦敦这个月有什么值得看的展？帮我按艺术、摄影、沉浸式分一分。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:57:18.000Z",
+    "queueDelayMs": 26720,
+    "processingMs": 19848,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "xhs_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "xhs_search",
+        "reason": "discovery_budget",
+        "decision": "deny"
+      },
+      {
+        "gate": "xhs_search",
+        "decision": "deny_queries"
+      },
+      {
+        "gate": "agent_noop",
+        "reason": "本次 XHS 检索没返回任何笔记（发现额度已用完，无已发现实体可做补充检索），没有可引用的展会实体，因此不发推荐。"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["xhs_search", "xhs_search", "xhs_search", "do_nothing"]
+      }
+    ]
+  },
+  {
+    "case": "L2",
+    "query": "2026年10月17到18日伦敦有什么免费活动，白天可以去的？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:57:19.000Z",
+    "queueDelayMs": 45574,
+    "processingMs": 20478,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "xhs_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "xhs_search",
+        "decision": "searched"
+      },
+      {
+        "gate": "agent_noop",
+        "reason": "小红书四次发现检索都返回 0 条笔记，没有可引用的具体活动实体，无法给出有来源支撑的免费活动推荐。"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["xhs_search", "xhs_search", "do_nothing"]
+      }
+    ]
+  },
+  {
+    "case": "L3",
+    "query": "四个人想在伦敦唐人街吃火锅，人均30镑左右，有什么推荐？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:57:20.000Z",
+    "queueDelayMs": 65056,
+    "processingMs": 12347,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "web_search"
+      },
+      {
+        "gate": "outbound",
+        "decision": "drop"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["find_suppliers", "web_search", "reply_with_search_results"]
+      }
+    ]
+  },
+  {
+    "case": "L4",
+    "query": "Liverpool Street附近想吃早茶点心，人均25镑左右，推荐两三家。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:59:56.000Z",
+    "queueDelayMs": 460,
+    "processingMs": 10035,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "web_search"
+      },
+      {
+        "gate": "outbound",
+        "decision": "drop"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["find_suppliers", "web_search", "reply_with_search_results"]
+      }
+    ]
+  },
+  {
+    "case": "L5",
+    "query": "伦敦周末下雨，想带5岁小朋友去室内玩，免费或每人15镑以内。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:59:56.000Z",
+    "queueDelayMs": 10471,
+    "processingMs": 17023,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "web_search"
+      },
+      {
+        "gate": "outbound",
+        "decision": "drop"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["find_suppliers", "web_search", "web_search", "reply_with_search_results"]
+      }
+    ]
+  },
+  {
+    "case": "S1",
+    "query": "10月24日从E14搬到SE1，8箱加一张书桌，预算120镑，想找能中文沟通的man and van。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:59:57.000Z",
+    "queueDelayMs": 26500,
+    "processingMs": 7032,
+    "elapsedToSentMs": 34437,
+    "outbound": [
+      {
+        "text": "10月24日 E14 到 SE1，8箱加一张书桌这个量不大，我找到三家周末也做的：The London Man And Van（1人+Van £40/h，2人 £68/h，[联系方式已隐藏]）、The Man With Van（1人 £50/h、2人 £75/h，两小时起，[联系方式已隐藏]）、A Man With A Van London（小Van 1人 £55/h，2人 £80/h，[联系方式已隐藏]）。120 镑预算按一两小时算基本能覆盖，具体几点、中文沟通和最终报价你直接问一下他们。\n\n价格和档期直接找商家确认就好，我只是帮忙牵个线，不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T04:00:31.437Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "man_and_van"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["upsert_demand", "find_suppliers", "reply_in_group"]
+      }
+    ]
+  },
+  {
+    "case": "S2",
+    "query": "10月31日E14一居室退租清洁，需要invoice，预算180镑，有推荐吗？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T03:59:58.000Z",
+    "queueDelayMs": 32540,
+    "processingMs": 6975,
+    "elapsedToSentMs": 39177,
+    "outbound": [
+      {
+        "text": "10月31日 E14 一居室退租清洁，这三家周末都做：Good Old Clean（1-bed £180，[联系方式已隐藏] / WhatsApp [联系方式已隐藏]）刚好压在你预算上；Busy Bee（£99 起，[联系方式已隐藏]）便宜些，具体看你房子情况；Top Cleaning GB（1-bed £210，[联系方式已隐藏]）稍超预算。开 invoice 和最终报价你直接跟他们说，另外值得问一下退租清洁有没有质保期。\n\n价格和档期直接找商家确认就好，我只是帮忙牵个线，不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T04:00:37.177Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "eot_cleaning"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["upsert_demand", "find_suppliers", "reply_in_group"]
+      }
+    ]
+  },
+  {
+    "case": "S3",
+    "query": "SE16想找人安装IKEA PAX衣柜，预算100镑，有推荐吗？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T04:01:24.000Z",
+    "queueDelayMs": 1131,
+    "processingMs": 7855,
+    "elapsedToSentMs": 9193,
+    "outbound": [
+      {
+        "text": "SE16 装 IKEA PAX 衣柜，我名单里合适的这两家：The Italian Tasker（£65 起，把照片或 IKEA 链接发过去可以给固定报价，[联系方式已隐藏] / WhatsApp 同号）和 Flatout Home Services（报价制，[联系方式已隐藏]）。100 镑这个预算装一个 PAX 应该够，具体门数、有没有加装灯和上墙固定你直接跟他们说清楚。\n\n价格和档期直接找商家确认就好，我只是帮忙牵个线，不经手交易。",
+        "status": "sent",
+        "kind": "recommendation",
+        "error": null,
+        "sentAt": "2026-10-12T04:01:33.193Z"
+      }
+    ],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "furniture_service"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "outbound",
+        "decision": "auto"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["upsert_demand", "find_suppliers", "reply_in_group"]
+      }
+    ]
+  },
+  {
+    "case": "A1",
+    "query": "刚搬到SE1，附近有能买豆腐、火锅底料和青菜的中国超市吗？想线下买。",
+    "state": "finished",
+    "receivedAt": "2026-10-12T04:01:25.000Z",
+    "queueDelayMs": 7971,
+    "processingMs": 8379,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "web_search"
+      },
+      {
+        "gate": "outbound",
+        "decision": "drop"
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["web_search", "reply_with_search_results"]
+      }
+    ]
+  },
+  {
+    "case": "A2",
+    "query": "刚到伦敦住E14，还没有NHS number，怎么注册GP？需要带什么，附近哪里能注册？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T04:01:26.000Z",
+    "queueDelayMs": 15351,
+    "processingMs": 3769,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "agent_noop",
+        "reason": "GP registration is a healthcare/administrative question, outside the supported service categories (moving, cleaning, furniture, marketplace and lifestyle research)."
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["do_nothing"]
+      }
+    ]
+  },
+  {
+    "case": "A3",
+    "query": "住E14，10月17日早上8点希思罗T2的航班，两件大行李，怎么去机场合适？",
+    "state": "finished",
+    "receivedAt": "2026-10-12T04:01:27.000Z",
+    "queueDelayMs": 18134,
+    "processingMs": 5281,
+    "elapsedToSentMs": null,
+    "outbound": [],
+    "traces": [
+      {
+        "outcome": "entered_agent",
+        "decision": {
+          "kind": "demand",
+          "action": "enter_agent",
+          "category": "other"
+        }
+      },
+      {
+        "gate": "market_trade_direction"
+      },
+      {
+        "gate": "agent_noop",
+        "reason": "User asks for airport transfer advice (Heathrow T2) with luggage; this is travel help, not one of the supported supply categories, and no matching demand category applies."
+      },
+      {
+        "outcome": "agent_completed",
+        "toolsCalled": ["do_nothing", "find_suppliers"]
+      }
+    ]
+  }
+]
