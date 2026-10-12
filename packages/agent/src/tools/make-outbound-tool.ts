@@ -46,7 +46,8 @@ export function makeOutboundTool<A>(
     },
     needsApproval: async (rc, args, callId) => {
       const ctx = rc.context as MatchContext;
-      if (ctx.outboundBlocked) return false;
+      if (ctx.outboundBlocked || (ctx.answerInputExhausted && !ctx.isAnswerFinalization))
+        return false;
       // needsApproval 在 SDK 的工具入参校验前调用；格式错误只交给该校验返回，不让整轮崩掉。
       const parsed = cfg.parameters.safeParse(args);
       if (!parsed.success) {
@@ -86,6 +87,7 @@ export function makeOutboundTool<A>(
     execute: async (args, rc, details) => {
       if (!rc) return 'internal error: missing run context';
       const ctx = (rc as RunContext<MatchContext>).context;
+      if (ctx.answerInputExhausted && !ctx.isAnswerFinalization) return retryLimitMessage;
       if (ctx.outboundBlocked) {
         return ctx.outboundInputFailures?.count === 3
           ? retryLimitMessage
@@ -162,7 +164,8 @@ export function makeOutboundTool<A>(
       costMicro: 0,
     });
     if (count >= 3) {
-      ctx.outboundBlocked = true;
+      if (deps.answerRequests) ctx.answerInputExhausted = true;
+      else ctx.outboundBlocked = true;
       await deps.repos.traces.create({
         kind: 'gate',
         inputRef: ctx.sourceMessageId,

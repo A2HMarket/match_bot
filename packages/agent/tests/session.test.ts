@@ -24,6 +24,16 @@ function repos() {
 }
 
 describe('createPgSession', () => {
+  it('keeps user storage but excludes earlier independent turns from model input', async () => {
+    const r = repos();
+    r.store.push({ role: 'user', content: 'Four people want hotpot' });
+    const s = createPgSession({ repos: r as never, userId: 'u1', isolatePreviousTurns: true });
+    expect(await s.getItems()).toEqual([]);
+    await s.addItems([{ role: 'user', content: 'Nearby dim sum' }] as never);
+    expect(await s.getItems()).toEqual([{ role: 'user', content: 'Nearby dim sum' }]);
+    expect(r.store).toHaveLength(2);
+    expect(await s.getSessionId()).toBe('u1');
+  });
   it('delegates to sessionItems repo with the user id', async () => {
     const r = repos();
     const s = createPgSession({ repos: r as never, userId: 'u1' });
@@ -203,16 +213,20 @@ describe('archiving ephemeral search results on replay', () => {
     expect(out.output.text.length).toBeLessThan(200);
   });
 
-  it.each(['xhs_search', 'xhs_read_notes', 'market_enrich', 'web_search', 'xhs_legacy_search'])(
-    'archives %s too',
-    (name) => {
-      const s = createPgSession({ repos: repos() as never, userId: 'u1' });
-      const out = s.prepareHistoryItemForModelInput?.(big('c1', name)) as {
-        output: { text: string };
-      };
-      expect(out.output.text).toContain(`archived ${name} result`);
-    },
-  );
+  it.each([
+    'xhs_search',
+    'xhs_read_notes',
+    'market_enrich',
+    'web_search',
+    'xhs_legacy_search',
+    'search_information',
+  ])('archives %s too', (name) => {
+    const s = createPgSession({ repos: repos() as never, userId: 'u1' });
+    const out = s.prepareHistoryItemForModelInput?.(big('c1', name)) as {
+      output: { text: string };
+    };
+    expect(out.output.text).toContain(`archived ${name} result`);
+  });
 
   it('leaves non-search tool results and messages untouched', () => {
     const s = createPgSession({ repos: repos() as never, userId: 'u1' });

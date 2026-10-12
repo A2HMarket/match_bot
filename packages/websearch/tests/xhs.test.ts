@@ -66,6 +66,22 @@ function stubFetch(handlers: {
 }
 
 describe('createXhsSearch', () => {
+  it('reports 429 explicitly for the answering agent, retaining the legacy empty-array contract', async () => {
+    const modern = stubFetch({ search: jsonResponse({}, 429) });
+    await expect(
+      createXhsSearch({ apiKey: 'k', logger, fetchImpl: modern.f, requestIntervalMs: 0 }).find({
+        keyword: '伦敦展览',
+        reportErrors: true,
+      }),
+    ).rejects.toMatchObject({ reason: 'rate_limited' });
+    const legacy = stubFetch({ search: jsonResponse({}, 429) });
+    await expect(
+      createXhsSearch({ apiKey: 'k', logger, fetchImpl: legacy.f, requestIntervalMs: 0 }).find({
+        keyword: '伦敦展览',
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it('discovers cards without fetching all details, then hydrates only selected notes with stable refs', async () => {
     const { f, calls } = stubFetch({
       search: jsonResponse(searchBody([note(), note({ id: 'n2', title: '候选乙' })])),

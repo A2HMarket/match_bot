@@ -86,6 +86,135 @@ const replyCall = (callId = 'c1') =>
   );
 
 describe('runInbound', () => {
+  it('binds current food instead of the old carry request during information answering', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'search_information',
+          { queries: [{ query: 'Chinatown London hotpot menu', domains: null }] },
+          { callId: 'info' },
+        ),
+      ],
+      [
+        functionCall(
+          'reply_to_request',
+          {
+            kind: 'answer',
+            text: '这家在唐人街提供火锅，先看菜单再核对四个人的总预算。',
+            refs: ['k1'],
+          },
+          { callId: 'answer' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    const result = await runInbound({
+      deps: {
+        ...deps,
+        answerRequests: true,
+        webSearch: {
+          find: () => Promise.resolve([]),
+          research: () =>
+            Promise.resolve({
+              status: 'ok',
+              sources: [
+                {
+                  title: 'Hotpot menu',
+                  url: 'https://example.com/menu',
+                  text: 'Our Chinatown London restaurant serves hotpot. Check current menus and bookings.',
+                },
+              ],
+            }),
+        },
+      } as never,
+      ctx: {
+        ...ctx(2),
+        demand: {
+          category: 'other',
+          need: 'carry-on help Shanghai to London',
+          budgetPence: 6000,
+          confidence: 1,
+        },
+      },
+      input: '四个人想在伦敦唐人街吃火锅，有什么推荐？',
+    });
+    expect(result.kind).toBe('completed');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    const call = deps.evaluateOutbound.mock.calls[0] as unknown as [
+      unknown,
+      { demand: { need: string; budgetPence?: number } },
+    ];
+    expect(call[1].demand.need).toContain('火锅');
+    expect(call[1].demand.budgetPence).toBeUndefined();
+    model.assertComplete();
+  });
+  it.each([0, 1] as const)(
+    'finalizes an unblocked request through SDK approval semantics, phase %s',
+    async (phase) => {
+      const model = new ScriptedModel([
+        [functionCall('do_nothing', { reason: 'no exact match' }, { callId: 'noop' })],
+        [assistantMessage('done')],
+        [
+          functionCall(
+            'reply_to_request',
+            { kind: 'no_match', text: '没有确认无线功能，可以先核对具体型号。', refs: [] },
+            { callId: 'final-answer' },
+          ),
+        ],
+      ]);
+      const { deps, repos, runStates } = makeDeps(model);
+      const result = await runInbound({
+        deps: { ...deps, answerRequests: true } as never,
+        ctx: ctx(phase),
+        input: '伦敦想收无线激光打印机，预算60镑',
+      });
+      expect(result.kind).toBe(phase === 1 ? 'interrupted' : 'completed');
+      if (phase === 1) {
+        expect(runStates).toHaveLength(1);
+        expect(repos.outbound.create).not.toHaveBeenCalled();
+      } else expect(repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'dry_run');
+      model.assertComplete();
+    },
+  );
+  it('returns malformed readonly market JSON as a repair instead of creating a bad approval snapshot', async () => {
+    const bad = {
+      ...functionCall('market_search', {}, { callId: 'bad-json' }),
+      arguments: '{"intent":"housing","plan":invalid}',
+    };
+    const model = new ScriptedModel([
+      [bad],
+      [
+        functionCall(
+          'reply_to_request',
+          { kind: 'no_match', text: '入住时间和租金尚未确认，可以先核对房源条件。', refs: [] },
+          { callId: 'reply' },
+        ),
+      ],
+    ]);
+    const { deps, repos, runStates } = makeDeps(model);
+    const result = await runInbound({
+      deps: {
+        ...deps,
+        answerRequests: true,
+        marketSearch: {
+          find: () => Promise.resolve({ items: [], hasNext: false, total: 0 }),
+          detail: vi.fn(),
+        },
+      } as never,
+      ctx: ctx(0),
+      input: 'E14找长租单间，11月初入住，月租1200镑以内',
+    });
+    expect(result.kind).toBe('completed');
+    expect(runStates).toHaveLength(0);
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    model.assertComplete();
+  });
   it('returns all missing demand fields so a failed update can be repaired in one call', async () => {
     const valid = {
       category: 'second_hand',

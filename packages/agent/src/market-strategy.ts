@@ -13,6 +13,7 @@ export type MarketPlan = {
   dateRange?: { from: string; to: string };
   requiredArea?: string[];
   route?: { from: string[]; to: string[] };
+  capacityKg?: number;
 };
 export type MarketCheck = {
   label: string;
@@ -44,6 +45,11 @@ function subjectText(n: MarketListing, p: MarketPlan): string {
     p.intent === 'housing' &&
     !isHousing &&
     !/租房|转租|出租|合租|室友|房源|apartment|room for rent/i.test(n.title)
+  )
+    return '';
+  if (
+    p.intent === 'carry' &&
+    !/行李|衣物|衣服|航班|飞|飞机|回国|公斤|kg|带货|托运|帮带服务/i.test(n.title + n.description)
   )
     return '';
   if (p.intent !== 'companion') return n.title + '\n' + n.description;
@@ -155,8 +161,21 @@ export function assessMarketListing(
   );
   const isSold =
     matchedItems.length > 0 && matchedItems.every((line) => /已出|已售|sold|❌/i.test(line));
-  const needs = p.needs.filter((need) => contains(subject, need.terms)).map((need) => need.id);
+  const needs = p.needs
+    .filter((need) => {
+      if (!contains(subject, need.terms)) return false;
+      const own = matchedItems.filter((line) => contains(line, need.terms));
+      return !own.length || !own.every((line) => /已出|已售|sold|❌/i.test(line));
+    })
+    .map((need) => need.id);
   const checks: MarketCheck[] = [];
+  if (
+    p.intent === 'housing' &&
+    p.needs.some((need) => need.terms.some((term) => /一居室|1b1b|one.bedroom/i.test(term))) &&
+    /studio/i.test(n.title) &&
+    !/1b1b|独立卧室|one.bedroom/i.test(n.description)
+  )
+    checks.push({ label: 'room_type', status: 'mismatch', evidence: n.title });
   if (n.availableUntil && !isActiveMarketListing(n)) {
     const dates = [
       ...n.description.matchAll(/(?:(20\d{2})[年/-])?(1[0-2]|[1-9])[月./-](3[01]|[12]\d|[1-9])/g),
@@ -178,14 +197,29 @@ export function assessMarketListing(
     checks.push({ label: 'availability', status: 'mismatch', evidence: matchedItems[0] ?? null });
   if (p.intent === 'companion' && p.preferences.some((term) => /初学|新手|beginner/i.test(term))) {
     const incompatible = lines(n.title + '\n' + n.description).find((line) =>
-      /非新手|不收新手|不适合(?:初学|新手)|(?:建议|建議)(?:中阶|中階)以上|中高级|中高級|no beginners|intermediate (?:or|and) above/i.test(
+      /非新手|不收新手|不适合(?:初学|新手)|(?:建议|建議)(?:中阶|中階)以上|中高级|中高級|no beginners|exclude beginners|not for beginners|beginners not accepted|intermediate (?:or|and) above/i.test(
         line,
       ),
     );
     if (incompatible) checks.push({ label: 'skill', status: 'mismatch', evidence: incompatible });
   }
+  if (p.capacityKg !== undefined) {
+    const weight = n.description.match(
+      /^(?:求帮带|求带|需求)[：:][^\n。]{0,80}?(\d+(?:\.\d+)?)\s*(?:公斤|kg|千克)/im,
+    );
+    if (weight && Number(weight[1]) > p.capacityKg)
+      checks.push({ label: 'capacity', status: 'mismatch', evidence: weight[0] });
+  }
   if (p.requiredTerms?.length) {
-    const evidence = lines(subject).find((line) => contains(line, p.requiredTerms!));
+    const requiredSubject = matchedItems.length
+      ? matchedItems.join(String.fromCharCode(10))
+      : subject;
+    const requiredEvidence = p.requiredTerms.map((term) =>
+      lines(requiredSubject).find(
+        (line) => contains(line, [term]) && !/不支持|没有|无无线|不含/.test(line),
+      ),
+    );
+    const evidence = requiredEvidence.every(Boolean) ? requiredEvidence.join('；') : undefined;
     checks.push({
       label: 'required',
       status: evidence ? 'met' : 'unknown',
@@ -261,7 +295,7 @@ export function assessMarketListing(
           : d.md >= wantedFrom || d.md <= wantedTo,
     );
     const months = dateLines.flatMap((line) =>
-      [...line.matchAll(/(\d{1,2})月(?:初|底|末|上旬|中旬|下旬)/g)].map((m) => Number(m[1])),
+      [...line.matchAll(/(\d{1,2})月(?:初|底|末|[上中下]{1,2}旬)/g)].map((m) => Number(m[1])),
     );
     const fromMonth = Number(wantedFrom.slice(0, 2)),
       toMonth = Number(wantedTo.slice(0, 2));
@@ -324,12 +358,25 @@ export function assessMarketListing(
       evidence: actual ?? locations[0] ?? null,
     });
   }
-  const price = priceEvidence(n, p, focusName);
+  let price = priceEvidence(n, p, focusName);
+  if (!focusName && p.intent === 'second_hand' && needs.length > 1) {
+    const parts = p.needs
+      .filter((need) => needs.includes(need.id))
+      .map((need) => priceEvidence(n, { ...p, needs: [need] }));
+    if (parts.every((part) => part !== null))
+      price = {
+        text: parts.map((part) => part.text).join(String.fromCharCode(10)),
+        min: Math.min(...parts.map((part) => part.min)),
+        max: Math.max(...parts.map((part) => part.max)),
+      };
+  }
   if (p.budget !== undefined)
     checks.push({
       label: 'budget',
       status: price
-        ? /左右|大约|约(?:£|\d)|起价|起步|起$|approx|around/i.test(price.text)
+        ? /左右|大约|约(?:£|\d)|估计|估算|以上|至少|起价|起步|起(?:$|[\s/])|approx|around|starting|from\s*£/i.test(
+            price.text,
+          )
           ? 'unknown'
           : n.tradeType === 'BUY'
             ? price.min >= p.budget
@@ -447,13 +494,16 @@ export const marketPlanSchema = marketPlanInputSchema.extend({
   budget: z.number().finite().nonnegative().max(100000).optional(),
   route: z.object({ from: terms.min(1), to: terms.min(1) }).optional(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).optional(),
+  capacityKg: z.number().finite().nonnegative().optional(),
   essentialPreferences: terms.optional(),
   requiredTerms: terms.optional(),
   excludeTerms: terms.optional(),
   requiredArea: terms.optional(),
 });
 function carryMonthRange(requestText: string | undefined): MarketPlan['dateRange'] {
-  const match = requestText?.match(/(?:(20\d{2})年)?(1[0-2]|[1-9])月(初|底|末|上旬|中旬|下旬)?/);
+  const match = requestText?.match(
+    /(?:(20\d{2})年)?(1[0-2]|[1-9])月(?:(\d{1,2})日?)?(初|底|末|上旬|中旬|下旬)?/,
+  );
   if (!match) return undefined;
   const now = new Date(),
     month = Number(match[2]);
@@ -461,8 +511,15 @@ function carryMonthRange(requestText: string | undefined): MarketPlan['dateRange
     ? Number(match[1])
     : now.getUTCFullYear() + (month < now.getUTCMonth() + 1 ? 1 : 0);
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const start = /底|末|下旬/.test(match[3] ?? '') ? 20 : match[3] === '中旬' ? 11 : 1;
-  const end = /初|上旬/.test(match[3] ?? '') ? 10 : match[3] === '中旬' ? 20 : last;
+  if (match[3]) {
+    const day = Number(match[3]);
+    if (day >= 1 && day <= last) {
+      const date = new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10);
+      return { from: date, to: date };
+    }
+  }
+  const start = /底|末|下旬/.test(match[4] ?? '') ? 20 : match[4] === '中旬' ? 11 : 1;
+  const end = /初|上旬/.test(match[4] ?? '') ? 10 : match[4] === '中旬' ? 20 : last;
   return {
     from: new Date(Date.UTC(year, month - 1, start)).toISOString().slice(0, 10),
     to: new Date(Date.UTC(year, month - 1, end)).toISOString().slice(0, 10),
@@ -474,7 +531,7 @@ export function toMarketPlan(
 ): MarketPlan {
   const requested = requestText === undefined ? null : norm(requestText);
   const dateRange =
-    input.dateRange ?? (input.intent === 'carry' ? carryMonthRange(requestText) : undefined);
+    (input.intent === 'carry' ? carryMonthRange(requestText) : undefined) ?? input.dateRange;
   const preferred = input.requiredTerms.filter(
     (term) =>
       requested !== null &&
@@ -498,6 +555,10 @@ export function toMarketPlan(
     !required.includes('激光')
   )
     required.push('激光');
+  for (const match of requestText?.matchAll(
+    /(?:必须|一定要|只要|不能没有)(?:要|支持|有|具备)?(无线|Wi-?Fi|USB-C|独立卧室|养猫)/gi,
+  ) ?? [])
+    if (!required.includes(match[1]!)) required.push(match[1]!);
   const excluded =
     requested === null
       ? input.excludeTerms
@@ -507,6 +568,21 @@ export function toMarketPlan(
             'i',
           ).test(requestText ?? ''),
         );
+  const routeMatch = requestText?.match(
+    /(伦敦|上海|北京|广州|London|Shanghai|Beijing|Heathrow|希思罗|浦东)\s*(?:飞|到|至|往|->|→|✈️?|to)\s*(伦敦|上海|北京|广州|London|Shanghai|Beijing|Heathrow|希思罗|浦东)/i,
+  );
+  const aliases = (city: string) =>
+    /伦敦|London|Heathrow|希思罗/i.test(city)
+      ? ['伦敦', 'London', '希思罗', 'Heathrow']
+      : /上海|Shanghai|浦东/i.test(city)
+        ? ['上海', 'Shanghai', '浦东', 'PVG']
+        : [city];
+  const route =
+    input.intent === 'carry' && routeMatch
+      ? { from: aliases(routeMatch[1]!), to: aliases(routeMatch[2]!) }
+      : input.intent === 'carry' || requested === null
+        ? input.route
+        : null;
   const preferences = [
     ...new Set(
       [
@@ -527,19 +603,42 @@ export function toMarketPlan(
   ]
     .filter((term) => requested === null || requested.includes(norm(term)))
     .slice(0, 12);
+  const requestedAreas = [
+    ...new Set([
+      ...(requestText?.match(/\b(?:SE|SW|NW|EC|WC|E|W|N)\d{1,2}[A-Z]?\b/gi) ?? []),
+      ...input.requiredArea.filter((term) => requested === null || requested.includes(norm(term))),
+    ]),
+  ];
   const essentialPreferences =
     requested === null
       ? []
       : preferences.filter(
           (term) =>
+            !requestedAreas.some((area) => norm(area) === norm(term)) &&
+            !/^(?:自提|自取)$/.test(term) &&
             !new RegExp(
               `(?:最好|希望|prefer|ideally)[^，,。]{0,12}${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
               'i',
             ).test(requestText ?? ''),
         );
+  const capacity = requestText?.match(
+    /我[^。！？]{0,50}有[^。\n]{0,10}?(\d+(?:\.\d+)?)\s*(?:公斤|kg|千克)\s*(?:空余|剩余|行李)/i,
+  );
+  const needs =
+    input.intent === 'second_hand' && /书桌(?:和|及|、|与)办公椅/.test(requestText ?? '')
+      ? [
+          { id: 'desk', terms: ['书桌', '办公桌', '学习桌', 'desk'] },
+          { id: 'office_chair', terms: ['办公椅', '电脑椅', 'office chair'] },
+        ]
+      : input.needs;
+  const requestBudget = requestText?.match(
+    /(?:预算|每件|每人|月租)\s*(?:不超过|最多|以内|£)?\s*(\d+(?:\.\d+)?)\s*(?:镑|磅|GBP|英镑)?/i,
+  );
+  const budget = requestBudget ? Number(requestBudget[1]) : input.budget;
   return {
     intent: input.intent,
-    needs: input.needs
+    ...(input.intent === 'carry' && capacity ? { capacityKg: Number(capacity[1]) } : {}),
+    needs: needs
       .filter((need) => !need.terms.every(isConditionTerm))
       .map((need) => {
         const separate = new Set([
@@ -561,11 +660,9 @@ export function toMarketPlan(
     essentialPreferences,
     requiredTerms: required,
     excludeTerms: excluded,
-    requiredArea: input.requiredArea.filter(
-      (term) => requested === null || requested.includes(norm(term)),
-    ),
-    ...(input.budget !== null ? { budget: input.budget } : {}),
-    ...(input.route ? { route: input.route } : {}),
+    requiredArea: requestedAreas,
+    ...(budget !== null ? { budget } : {}),
+    ...(route ? { route } : {}),
     ...(dateRange ? { dateRange } : {}),
   };
 }

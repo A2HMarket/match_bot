@@ -1,5 +1,5 @@
 import type { Repositories } from '@matchbot/db';
-import type { DemandDraft, Phase } from '@matchbot/domain';
+import type { DemandDraft, DemandCategory, Phase } from '@matchbot/domain';
 import type { Thresholds } from '@matchbot/gating';
 import type { evaluateOutbound, JevClient } from '@matchbot/jev';
 import type { Env, Logger } from '@matchbot/shared';
@@ -14,6 +14,8 @@ import type {
 import type { ModelProvider } from '@openai/agents';
 import type { XhsResearchQuery } from './xhs-research.js';
 import type { XhsRecommendation } from './xhs-recommendations.js';
+import type { CurrentRequest } from './current-request.js';
+import type { KnowledgeSource } from './knowledge-evidence.js';
 import type { MarketPlan } from './market-strategy.js';
 import type { MarketCandidate, MarketResearchQuery } from './market-research.js';
 
@@ -34,6 +36,14 @@ export interface MatchContext {
   /** 用户在对 bot 说话（回复 bot / @bot），以及被回复的那条 bot 消息原文。 */
   addressedToBot?: boolean;
   replyToBotText?: string;
+  requestCategory?: DemandCategory;
+  currentRequest?: CurrentRequest;
+  knowledgeSources?: KnowledgeSource[];
+  informationQueries?: string[];
+  sourceFailures?: string[];
+  answerRecorded?: boolean;
+  answerInputExhausted?: boolean;
+  isAnswerFinalization?: boolean;
   demandId?: string;
   demand?: DemandDraft;
   recentReplies: string[];
@@ -68,6 +78,8 @@ export interface MatchContext {
 }
 
 export interface AgentDeps {
+  /** P22 production enables request-bound answering; legacy injected callers remain compatible. */
+  answerRequests?: boolean;
   env: Env;
   repos: Repositories;
   jev: JevClient;

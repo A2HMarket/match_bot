@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { createKnowledgeResearch, type KnowledgeSearchResult } from './knowledge.js';
 import type { Logger } from '@matchbot/shared';
 import { extractContacts, looksLikeListicle, nameFromTitle } from './extract.js';
 import { buildSearchQuery } from './query.js';
@@ -13,6 +15,7 @@ export interface SearchCandidate {
 }
 
 export interface WebSearch {
+  research?(p: { query: string; domains?: string[] }): Promise<KnowledgeSearchResult>;
   find(p: { need: string; area?: string | undefined }): Promise<SearchCandidate[]>;
 }
 
@@ -91,7 +94,13 @@ export function createWebSearch(p: {
           signal: AbortSignal.timeout(10_000),
         });
         if (res.ok) {
-          const j = (await res.json()) as { results?: TavilyResult[] };
+          const j = z
+            .object({
+              results: z
+                .array(z.object({ url: z.string(), title: z.string(), content: z.string() }))
+                .optional(),
+            })
+            .parse(await res.json());
           if (j.results?.length) return j.results;
         } else {
           p.logger.warn({ status: res.status }, 'tavily search failed');
@@ -157,6 +166,7 @@ export function createWebSearch(p: {
   }
 
   return {
+    research: createKnowledgeResearch({ apiKey: p.apiKey, logger: p.logger, fetchImpl }),
     async find(q) {
       const query = buildSearchQuery(q);
       const results = await tavily(query);

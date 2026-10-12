@@ -316,3 +316,11 @@ handleApprovalCallback(p: { repos: Repositories; queues: Queues; reviewer: strin
 
 
 P20真实Telegram补充（0.13.2）：第三次证据纠错时，若部分条目独立合格，则移除不合格条目并对有效子集重新运行全部校验；正常补搜/phase/Jev/频控不变。全无效、schema及公开联系方式错误仍拒绝。market_recommendation_selection增加rejectedRefs，无文本或身份值。
+
+
+### P22 回答与查证契约
+
+MatchContext增加currentRequest（原输入及本轮评估DemandDraft）、knowledgeSources（公开来源和段落ID）、informationQueries/sourceFailures、answerRecorded。所有出站优先用currentRequest评估，旧开放需求只作接话背景。WebSearch增加可选research(query,domains)返回公开证据，不按商家联系人过滤；XhsSearch增加显式不可用错误，Agent可走官网信息补充。新增reply_to_request为出站tool，复用原needsApproval/gate/出站表，不直接发送。Telegram仅格式化代码生成来源行的https链接，不执行正文Markdown。原API find兼容保留；不新增DB字段/私信/交易路径。
+
+
+P22兼容与终点：AgentDeps.answerRequests由worker启用，旧注入调用保留原工具行为。新record_request从绑定的本轮需求建内部Demand，不复用其他独立请求的Demand ID。独立请求仍保留用户级session存储，但模型输入排除旧题；明确引用的公开bot回复作为待核实数据注入。现代输入失败达到上界标answerInputExhausted，由受限终点产生代码固定的失败说明，仍走原needsApproval/phase/Jev/频控；真实outboundBlocked永不清除。模糊租金下限/估计标unknown，精确机场出门时刻须由所引官方时刻表支持。

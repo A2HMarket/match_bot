@@ -19,6 +19,12 @@ export interface XhsNote {
   isDetailLoaded?: boolean;
 }
 
+export class XhsSearchError extends Error {
+  constructor(readonly reason: 'rate_limited' | 'http_error' | 'timeout' | 'invalid_response') {
+    super('XHS source unavailable: ' + reason);
+    this.name = 'XhsSearchError';
+  }
+}
 export interface XhsSearch {
   find(p: {
     keyword: string;
@@ -28,6 +34,7 @@ export interface XhsSearch {
     timeFilter?: '不限' | '半年内';
     excludeUrls?: string[];
     includeDetails?: boolean;
+    reportErrors?: boolean;
   }): Promise<XhsNote[]>;
   readNote?(note: XhsNote): Promise<XhsNote | null>;
 }
@@ -88,6 +95,7 @@ export function createXhsSearch(p: {
     path: string,
     params: Record<string, string | number>,
     deadlineAt: number,
+    onFailure?: (reason: 'rate_limited' | 'http_error' | 'timeout' | 'invalid_response') => void,
   ): Promise<unknown> {
     const previous = requestTail;
     let release: () => void = () => {};
@@ -97,13 +105,19 @@ export function createXhsSearch(p: {
     await previous;
     try {
       for (let attempt = 0; attempt < 2; attempt++) {
-        if (Date.now() >= deadlineAt) return null;
+        if (Date.now() >= deadlineAt) {
+          onFailure?.('timeout');
+          return null;
+        }
         const waitMs = Math.min(
           Math.max(0, nextRequestAt - Date.now()),
           Math.max(0, deadlineAt - Date.now()),
         );
         if (waitMs) await pause(waitMs);
-        if (Date.now() >= deadlineAt) return null;
+        if (Date.now() >= deadlineAt) {
+          onFailure?.('timeout');
+          return null;
+        }
         nextRequestAt = Date.now() + requestIntervalMs;
         try {
           const url = `${BASE}${path}`;
@@ -116,6 +130,7 @@ export function createXhsSearch(p: {
           if (res.ok) {
             const parsed = envelopeSchema.safeParse(await res.json());
             if (!parsed.success || parsed.data.status !== 'completed') {
+              onFailure?.('invalid_response');
               p.logger.warn(
                 { path, reason: parsed.success ? 'task_not_completed' : 'invalid_envelope' },
                 'sandbase response unavailable',
@@ -124,6 +139,7 @@ export function createXhsSearch(p: {
             }
             return parsed.data.outputs[0]!.data;
           }
+          onFailure?.(res.status === 429 ? 'rate_limited' : 'http_error');
           p.logger.warn({ status: res.status, path }, 'sandbase request failed');
           if (res.status >= 400 && res.status < 500 && res.status !== 429) return null;
           if (res.status === 429) {
@@ -133,6 +149,7 @@ export function createXhsSearch(p: {
             nextRequestAt = Math.max(nextRequestAt, Date.now() + backoff);
           }
         } catch (e) {
+          onFailure?.(e instanceof Error && e.name === 'TimeoutError' ? 'timeout' : 'http_error');
           p.logger.warn(
             { errorKind: e instanceof Error ? e.name : 'UnknownError', path },
             'sandbase error',
@@ -191,6 +208,7 @@ export function createXhsSearch(p: {
         );
         return [];
       }
+      let failure: XhsSearchError['reason'] = 'invalid_response';
       const raw = await call(
         '/search-notes',
         {
@@ -204,10 +222,17 @@ export function createXhsSearch(p: {
             : {}),
         },
         deadlineAt,
+        (reason) => {
+          failure = reason;
+        },
       );
-      if (!raw) return [];
+      if (!raw) {
+        if (q.reportErrors) throw new XhsSearchError(failure);
+        return [];
+      }
       const parsed = searchResponseSchema.safeParse(raw);
       if (!parsed.success) {
+        if (q.reportErrors) throw new XhsSearchError('invalid_response');
         p.logger.warn({ path: 'search-notes' }, 'sandbase response failed schema');
         return [];
       }

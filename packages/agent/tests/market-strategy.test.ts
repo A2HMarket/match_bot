@@ -26,6 +26,128 @@ const plan: MarketPlan = {
   requiredArea: ['E14'],
 };
 describe('source-grounded market strategy', () => {
+  it('does not declare an estimated rent lower bound within the monthly budget', () => {
+    const n = {
+      ...listing('转租：Stratford一居室公寓\n价格：租金预算估计在£400以上/月'),
+      title: 'Stratford转租1b1b',
+    };
+    const result = assessMarketListing(n, {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室', '1b1b'] }],
+      preferences: [],
+      budget: 1600,
+    });
+    expect(result.checks).toContainEqual({
+      label: 'budget',
+      status: 'unknown',
+      evidence: '价格：租金预算估计在£400以上/月',
+    });
+  });
+  it('retains both desk and chair from the current request if the model omits one', () => {
+    const p = toMarketPlan(
+      {
+        intent: 'second_hand',
+        needs: [{ id: 'chair', terms: ['办公椅'] }],
+        preferences: [],
+        requiredArea: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        budget: 500,
+        route: null,
+        dateRange: null,
+      },
+      'E14想收书桌和办公椅，每件50镑以内，能自提。',
+    );
+    expect(p.needs.flatMap((n) => n.terms)).toContain('书桌');
+    expect(p.needs.flatMap((n) => n.terms)).toContain('办公椅');
+    expect(p.needs.flatMap((n) => n.terms)).toContain('办公桌');
+    expect(p.budget).toBe(50);
+  });
+  it('keeps must-support-wireless even when the model omits it', () => {
+    const p = toMarketPlan(
+      {
+        intent: 'second_hand',
+        needs: [{ id: 'printer', terms: ['打印机'] }],
+        preferences: [],
+        requiredArea: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        budget: 60,
+        route: null,
+        dateRange: null,
+      },
+      '伦敦收激光打印机，预算60镑，必须支持无线打印。',
+    );
+    expect(p.requiredTerms).toContain('无线');
+    expect(assessMarketListing(listing('- HP激光打印机｜£50'), p).checks).toContainEqual({
+      label: 'required',
+      status: 'unknown',
+      evidence: null,
+    });
+  });
+  it('binds explicit day and outcode to the original request instead of model preferences/range', () => {
+    const p = toMarketPlan(
+      {
+        intent: 'carry',
+        needs: [{ id: 'carry', terms: ['帮带'] }],
+        preferences: ['E14'],
+        requiredArea: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        budget: null,
+        route: { from: ['伦敦'], to: ['上海'] },
+        dateRange: { from: '2026-10-25', to: '2026-11-08' },
+      },
+      '我2026年11月1日伦敦飞上海，有2公斤空余行李，帮我找需求方',
+    );
+    expect(p.dateRange).toEqual({ from: '2026-11-01', to: '2026-11-01' });
+    const area = toMarketPlan(
+      {
+        intent: 'second_hand',
+        needs: [{ id: 'desk', terms: ['书桌'] }],
+        preferences: ['E14', '自提'],
+        requiredArea: [],
+        requiredTerms: [],
+        excludeTerms: [],
+        budget: 50,
+        route: null,
+        dateRange: null,
+      },
+      'E14想收书桌，每件50镑以内，能自提',
+    );
+    expect(area.requiredArea).toContain('E14');
+    expect(area.essentialPreferences).not.toContain('E14');
+  });
+  it('does not borrow wireless from a sibling item, and rejects a known wrong month or excess load', () => {
+    const plan = {
+      intent: 'second_hand' as const,
+      needs: [{ id: 'printer', terms: ['激光打印机'] }],
+      preferences: [],
+      requiredTerms: ['激光', '无线'],
+      budget: 60,
+    };
+    const checked = assessMarketListing(listing('- HP激光打印机｜£50\n- 无线螺丝刀｜£15'), plan);
+    expect(checked.checks).toContainEqual(
+      expect.objectContaining({ label: 'required', status: 'unknown' }),
+    );
+    const carry = {
+      intent: 'carry' as const,
+      needs: [{ id: 'carry', terms: ['帮带'] }],
+      preferences: [],
+      capacityKg: 2,
+      dateRange: { from: '2026-11-01', to: '2026-11-01' },
+    };
+    const trip = assessMarketListing(
+      listing('求帮带：10月中下旬英国回国，求帮带约8kg行李回国\n时间：10月中下旬'),
+      carry,
+    );
+    expect(trip.checks).toContainEqual(
+      expect.objectContaining({ label: 'date', status: 'mismatch' }),
+    );
+    expect(trip.checks).toContainEqual(
+      expect.objectContaining({ label: 'capacity', status: 'mismatch' }),
+    );
+  });
   it('keeps route words out of the core rather than requiring a literal full query', () => {
     const p = toMarketPlan({
       intent: 'carry',

@@ -6,7 +6,7 @@ export function doNothingTool(deps: AgentDeps) {
   return tool({
     name: 'do_nothing',
     description:
-      'Explicitly take no action this turn, with a reason. Use for chit-chat, housing/job/second-hand messages, or anything outside the service categories.',
+      'Explicitly take no action for irrelevant chatter, acknowledgement, job recruitment or a declined gate. London daily-life, GP registration and airport advice ARE supported. No match or unavailable source needs reply_to_request.',
     parameters: z.object({
       reason: z.string().max(300),
     }),
@@ -20,7 +20,11 @@ export function doNothingTool(deps: AgentDeps) {
         latencyMs: 0,
         costMicro: 0,
       });
-      return 'ok';
+      return ctx.currentRequest?.isActionable &&
+        !ctx.outboundBlocked &&
+        ctx.currentRequest.demand.category !== 'job'
+        ? 'This is an actionable current request. Use reply_to_request for an answer or honest no-match/clarification/unavailable; do not silently stop.'
+        : 'ok';
     },
   });
 }

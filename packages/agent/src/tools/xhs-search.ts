@@ -1,4 +1,9 @@
-import { assertSafeXhsKeyword, UnsafeQueryError, type XhsSearch } from '@matchbot/websearch';
+import {
+  assertSafeXhsKeyword,
+  UnsafeQueryError,
+  XhsSearchError,
+  type XhsSearch,
+} from '@matchbot/websearch';
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
 import type { AgentDeps, MatchContext } from '../context.js';
@@ -127,6 +132,7 @@ export function xhsSearchTool(deps: AgentDeps & { xhsSearch: XhsSearch }) {
       const batches = await Promise.allSettled(
         pending.map((q) =>
           deps.xhsSearch.find({
+            reportErrors: true,
             keyword: q.keyword,
             page: q.page,
             sort: q.sort,
@@ -142,6 +148,11 @@ export function xhsSearchTool(deps: AgentDeps & { xhsSearch: XhsSearch }) {
       let failures = 0;
       for (const batch of batches) {
         if (batch.status === 'rejected') {
+          ctx.sourceFailures ??= [];
+          ctx.sourceFailures.push(
+            'xiaohongshu:' +
+              (batch.reason instanceof XhsSearchError ? batch.reason.reason : 'unavailable'),
+          );
           failures++;
           continue;
         }

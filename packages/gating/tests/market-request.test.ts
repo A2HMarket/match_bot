@@ -33,11 +33,17 @@ describe('selectMarketTradeType', () => {
     '我想卖掉餐桌，看看谁在收',
     '我是房东，帮我找租客',
     '我可以帮带，想看看谁需要',
+    '我2026年11月1日伦敦飞上海，有2公斤空余行李，帮我找需要帮带的人',
+    '我有5kg剩余行李额，有人需要伦敦回国帮带吗',
     'I can bring books, anyone need help?',
     'Anyone want to buy my old phone?',
   ])('provider finds requests: %s', (text) => expect(selectMarketTradeType(text)).toBe('BUY'));
-  it.each(['找网球搭子', '想找一起看展的人', 'Looking for a tennis partner'])(
-    'companions search PEER posts: %s',
-    (text) => expect(selectMarketTradeType(text)).toBe('PEER'),
+  it.each([
+    '找网球搭子',
+    '想找一起看展的人',
+    'Looking for a tennis partner',
+    '想找室友一起合租，Waterloo附近',
+  ])('companions search PEER posts: %s', (text) =>
+    expect(selectMarketTradeType(text)).toBe('PEER'),
   );
 });

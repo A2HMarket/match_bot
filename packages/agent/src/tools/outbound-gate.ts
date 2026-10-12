@@ -116,7 +116,7 @@ export async function decideForOutbound(
     return decision;
   }
   if (ctx.phase === 2) {
-    const demand = d.evaluationDemand ?? ctx.demand;
+    const demand = ctx.currentRequest?.demand ?? d.evaluationDemand ?? ctx.demand;
     const v = demand
       ? await deps.evaluateOutbound(deps.jev, {
           draft: d.text,
@@ -168,7 +168,8 @@ export async function decideForOutbound(
 /** 出站只写 outbound_messages 表（AGENTS.md §3.3 第 3 条）；发送由 apps/bot 消费。 */
 export function formatOutboundText(ctx: MatchContext, d: OutboundDraftInput): string {
   return d.disclaimer
-    ? `${d.text}\n\n${disclaimerFor(ctx.demand?.lang, d.text, d.disclaimer)}`
+    ? `${d.text}
+\n${disclaimerFor(ctx.demand?.lang, d.text, d.disclaimer)}`
     : d.text;
 }
 
@@ -195,6 +196,7 @@ export async function executeOutbound(
     },
     status,
   );
+  ctx.answerRecorded = true;
   deps.logger.info({ outboundId: row.id, decision, phase: ctx.phase }, 'outbound message recorded');
   return status === 'dry_run'
     ? `dry-run recorded (${row.id}); nothing was sent`

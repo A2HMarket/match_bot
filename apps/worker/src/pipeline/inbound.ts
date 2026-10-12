@@ -160,6 +160,7 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     groupId: group?.id ?? null,
     phase,
     sourceMessageId: stored.id,
+    requestCategory: verdict.category,
     source: { messageId: msg.messageId, userId: msg.userId },
     ...(group?.rateLimitPerDay != null ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
     ...(msg.addressedToBot ? { addressedToBot: true } : {}),

@@ -2,6 +2,31 @@ import { describe, expect, it } from 'vitest';
 import { formatRecommendation } from '../src/recommendation-format.js';
 
 describe('formatRecommendation', () => {
+  it('renders official numbered sources using UTF-16 offsets', () => {
+    const url = 'https://www.nhs.uk/nhs-services/gps/how-to-register-with-a-gp-surgery/';
+    const body = formatRecommendation(
+      '🙂 注册步骤\n来源：[1. NHS 注册指南](' + url + ')',
+      'recommendation',
+    );
+    expect(body.text).toBe('🙂 注册步骤\n来源：1. NHS 注册指南');
+    expect(body.entities).toEqual([
+      {
+        type: 'text_link',
+        offset: body.text.indexOf('1. NHS'),
+        length: '1. NHS 注册指南'.length,
+        url,
+      },
+    ]);
+  });
+
+  it.each(['https://127.0.0.1/path', 'https://user:password@example.com/path'])(
+    'does not render private or credential-bearing sources: %s',
+    (url) => {
+      const text = '来源：[1. 注册指南](' + url + ')';
+      expect(formatRecommendation(text, 'recommendation')).toEqual({ text });
+    },
+  );
+
   it('renders marketplace and original repost links together without showing long URL tokens', () => {
     const market = 'https://a2hmarket.ai/listings/listing_a';
     const original = 'https://www.xiaohongshu.com/discovery/item/n1?xsec_token=tok';

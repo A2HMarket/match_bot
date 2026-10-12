@@ -1,3 +1,4 @@
+import { bindCurrentRequest } from './current-request.js';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -40,6 +41,17 @@ export async function runInbound(p: {
   ctx: MatchContext;
   input: string;
 }): Promise<RunOutcome> {
+  if (p.deps.answerRequests) {
+    bindCurrentRequest(p.ctx, p.input);
+    await p.deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: p.ctx.sourceMessageId,
+      output: { gate: 'current_request', category: p.ctx.currentRequest?.demand.category },
+      phase: p.ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+  }
   if (p.deps.marketSearch) {
     p.ctx.marketTarget = selectMarketTradeType(p.input);
     await p.deps.repos.traces.create({
@@ -52,12 +64,88 @@ export async function runInbound(p: {
     });
   }
   const { agent, runner } = createMatchAgent(p.deps, { phase: p.ctx.phase, input: p.input });
-  const session = createPgSession({ repos: p.deps.repos, userId: p.ctx.userId });
-  const result = await runner.run(agent, p.input, {
-    context: p.ctx,
-    session,
-    ...RUN_OPTIONS,
+  const session = createPgSession({
+    repos: p.deps.repos,
+    userId: p.ctx.userId,
+    isolatePreviousTurns: !!p.deps.answerRequests,
   });
+  let result: SettleResult;
+  try {
+    result = await runner.run(agent, p.input, { context: p.ctx, session, ...RUN_OPTIONS });
+  } catch (error) {
+    if (
+      !p.deps.answerRequests ||
+      !(error instanceof Error) ||
+      error.name !== 'MaxTurnsExceededError' ||
+      p.ctx.outboundBlocked
+    )
+      throw error;
+    p.ctx.sourceFailures ??= [];
+    p.ctx.sourceFailures.push('processing:turn_limit');
+    await p.deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: p.ctx.sourceMessageId,
+      output: { gate: 'answer_finalization', reason: 'turn_limit' },
+      phase: p.ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+    return finalizeRequest(p, session);
+  }
+  if (
+    p.deps.answerRequests &&
+    result.interruptions.some((item) => !hasValidArguments(item.arguments))
+  ) {
+    await p.deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: p.ctx.sourceMessageId,
+      output: { gate: 'answer_finalization', reason: 'malformed_tool_json' },
+      phase: p.ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+    });
+    p.ctx.sourceFailures ??= [];
+    p.ctx.sourceFailures.push('processing:invalid_tool_input');
+    return finalizeRequest(p, session);
+  }
+  if (
+    p.deps.answerRequests &&
+    !result.interruptions.length &&
+    !p.ctx.answerRecorded &&
+    !p.ctx.outboundBlocked &&
+    p.ctx.currentRequest?.isActionable &&
+    p.ctx.currentRequest.demand.category !== 'job'
+  )
+    return finalizeRequest(p, session);
+  return settle(p.deps, p.ctx, result);
+}
+
+function hasValidArguments(raw: string | undefined): boolean {
+  if (!raw) return false;
+  try {
+    return z.record(z.string(), z.unknown()).safeParse(JSON.parse(raw) as unknown).success;
+  } catch {
+    return false;
+  }
+}
+
+async function finalizeRequest(
+  p: { deps: AgentDeps; ctx: MatchContext; input: string },
+  session: ReturnType<typeof createPgSession>,
+): Promise<RunOutcome> {
+  p.ctx.isAnswerFinalization = true;
+  if (p.ctx.answerInputExhausted) {
+    p.ctx.sourceFailures ??= [];
+    p.ctx.sourceFailures.push('processing:invalid_evidence');
+  }
+  const { agent, runner } = createMatchAgent(p.deps, {
+    phase: p.ctx.phase,
+    input: p.input,
+    finalAnswerOnly: true,
+  });
+  const result = await runner.run(agent, p.input, { context: p.ctx, session, maxTurns: 3 });
+  if (result.interruptions.some((item) => !hasValidArguments(item.arguments)))
+    throw new Error('Final answer has malformed tool input; no approval snapshot created');
   return settle(p.deps, p.ctx, result);
 }
 

@@ -1,3 +1,5 @@
+import { currentRequestSchema } from './current-request.js';
+import { knowledgeSourceSchema } from './knowledge-evidence.js';
 import { demandDraftSchema } from '@matchbot/domain';
 import { z } from 'zod';
 import type { MatchContext } from './context.js';
@@ -19,6 +21,12 @@ const contextSchema = z.object({
   groupId: z.string().nullable(),
   source: z.object({ messageId: z.string(), userId: z.string() }).optional(),
   demand: demandDraftSchema.optional(),
+  currentRequest: currentRequestSchema.optional(),
+  answerInputExhausted: z.boolean().optional(),
+  isAnswerFinalization: z.boolean().optional(),
+  knowledgeSources: z.array(knowledgeSourceSchema).max(16).optional(),
+  informationQueries: z.array(z.string()).max(4).optional(),
+  sourceFailures: z.array(z.string()).optional(),
   rateLimitPerDay: z.number().int().nonnegative().optional(),
   xhsNotes: z
     .array(
@@ -55,7 +63,8 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
   if (
     raw['xhsNotes'] === undefined &&
     raw['marketListings'] === undefined &&
-    raw['outboundPreviews'] === undefined
+    raw['outboundPreviews'] === undefined &&
+    raw['currentRequest'] === undefined
   )
     return ctx;
   const saved = contextSchema.parse(raw);
@@ -64,6 +73,18 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
   }
   return {
     ...ctx,
+    ...(saved.answerInputExhausted !== undefined
+      ? { answerInputExhausted: saved.answerInputExhausted }
+      : {}),
+    ...(saved.isAnswerFinalization !== undefined
+      ? { isAnswerFinalization: saved.isAnswerFinalization }
+      : {}),
+    ...(saved.currentRequest
+      ? { currentRequest: saved.currentRequest, demand: saved.currentRequest.demand }
+      : {}),
+    ...(saved.knowledgeSources ? { knowledgeSources: saved.knowledgeSources } : {}),
+    ...(saved.informationQueries ? { informationQueries: saved.informationQueries } : {}),
+    ...(saved.sourceFailures ? { sourceFailures: saved.sourceFailures } : {}),
     ...(saved.xhsNotes
       ? {
           xhsNotes: saved.xhsNotes.map(({ isDetailLoaded, ...note }) => ({
@@ -80,6 +101,9 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
       ? {
           marketPlan: {
             intent: saved.marketPlan.intent,
+            ...(saved.marketPlan.capacityKg !== undefined
+              ? { capacityKg: saved.marketPlan.capacityKg }
+              : {}),
             needs: saved.marketPlan.needs,
             preferences: saved.marketPlan.preferences,
             ...(saved.marketPlan.essentialPreferences

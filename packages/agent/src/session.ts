@@ -36,6 +36,7 @@ const EPHEMERAL_RESULT_TOOLS = new Set([
   'xhs_search',
   'xhs_read_notes',
   'web_search',
+  'search_information',
   'xhs_legacy_search',
 ]);
 
@@ -93,13 +94,23 @@ export function trimHistory(items: AgentInputItem[]): AgentInputItem[] {
  * Session 粒度 = 用户（AGENTS.md §3.3 第 7 条）。群上下文与画像走 instructions，不进 session。
  * popItem 返回 undefined 而不是 null（PoC V3：SDK 类型如此，写 null 会 TS2416）。
  */
-export function createPgSession(p: { repos: Repositories; userId: string }): Session {
+export function createPgSession(p: {
+  repos: Repositories;
+  userId: string;
+  isolatePreviousTurns?: boolean;
+}): Session {
+  let previousItemCount: number | undefined;
   return {
     getSessionId() {
       return Promise.resolve(p.userId);
     },
     async getItems(limit?: number) {
       const items = (await p.repos.sessionItems.list(p.userId, limit)) as AgentInputItem[];
+      // Keep the user-level session, but do not replay another independent request into this answer.
+      if (p.isolatePreviousTurns) {
+        previousItemCount ??= items.length;
+        return trimHistory(items.slice(previousItemCount));
+      }
       return trimHistory(items);
     },
     prepareHistoryItemForModelInput(item: AgentInputItem) {

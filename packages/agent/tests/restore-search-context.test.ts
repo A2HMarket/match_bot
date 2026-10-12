@@ -40,6 +40,26 @@ const snapshot = (over: Record<string, unknown>) =>
   });
 
 describe('restoreSearchContext', () => {
+  it('restores current request and canonical failure state for approval resumption', () => {
+    const currentRequest = {
+      text: 'E14找房',
+      demand: { category: 'housing', need: 'E14找房', confidence: 1 },
+      isActionable: true,
+    };
+    const restored = restoreSearchContext(
+      ctx,
+      snapshot({
+        currentRequest,
+        answerInputExhausted: true,
+        isAnswerFinalization: true,
+        sourceFailures: ['processing:invalid_evidence'],
+      }),
+    );
+    expect(restored.currentRequest).toEqual(currentRequest);
+    expect(restored.demand).toEqual(currentRequest.demand);
+    expect(restored.answerInputExhausted).toBe(true);
+    expect(restored.isAnswerFinalization).toBe(true);
+  });
   it('keeps normalized requirements through encrypted approval snapshot reconstruction', () => {
     const plan = {
       intent: 'second_hand',

@@ -28,7 +28,11 @@ export function webSearchTool(deps: AgentDeps & { webSearch: WebSearch }) {
     }),
     execute: async (args, rc) => {
       const ctx = (rc as RunContext<MatchContext>).context;
-      if (ctx.marketListings || ctx.xhsNotes)
+      if (
+        deps.answerRequests
+          ? ctx.marketListings?.length || ctx.xhsNotes?.length
+          : ctx.marketListings || ctx.xhsNotes
+      )
         return 'another search source was already used; do not switch sources';
       const allowed = ctx.demand?.category === 'other' || ctx.supplierSearchEmpty === true;
       if (!allowed) {
@@ -38,7 +42,7 @@ export function webSearchTool(deps: AgentDeps & { webSearch: WebSearch }) {
       if (ctx.searchResults) {
         return ctx.searchResults.length
           ? `already searched; use these refs: ${ctx.searchResults.map((c) => c.ref).join(', ')}`
-          : 'already searched and found nothing; do not reply';
+          : 'Business search is empty; use search_information or an honest reply_to_request.';
       }
       try {
         const found = await deps.webSearch.find({
@@ -63,7 +67,8 @@ export function webSearchTool(deps: AgentDeps & { webSearch: WebSearch }) {
           latencyMs: 0,
           costMicro: 0,
         });
-        if (found.length === 0) return 'no verified results; do not reply';
+        if (found.length === 0)
+          return 'No contact-verified businesses; use search_information for public facts or reply_to_request for the search gap.';
         // 只给模型结构化字段，不给网页正文（防注入）
         return JSON.stringify(
           found.map((c) => ({

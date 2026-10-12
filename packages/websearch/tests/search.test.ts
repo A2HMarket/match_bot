@@ -29,7 +29,48 @@ const PLUMBER = `<body>Plumber SE1 London <a href="tel:020 7946 0000">Call</a></
 const NO_CONTACT = `<body>Lovely bakery in London. Order in store.</body>`;
 const OUTSIDE = `<body>Cakes in Manchester <a href="tel:0161 496 0000">call</a></body>`;
 
+describe('information availability', () => {
+  it('distinguishes a successful empty result from rate limiting', async () => {
+    const f = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ results: [] })))
+      .mockResolvedValueOnce(new Response('{}', { status: 429 }));
+    const service = createWebSearch({ apiKey: 'k', logger, fetchImpl: f as never });
+    if (!service.research) throw new Error('missing research');
+    expect(await service.research({ query: 'London events' })).toEqual({
+      status: 'ok',
+      sources: [],
+    });
+    expect(await service.research({ query: 'London events' })).toEqual({
+      status: 'unavailable',
+      sources: [],
+      reason: 'rate_limited',
+    });
+  });
+});
+
 describe('createWebSearch', () => {
+  it('has a separate evidence path that preserves NHS pages without business contacts', async () => {
+    const { f } = stubFetch(
+      [
+        {
+          url: 'https://www.nhs.uk/nhs-services/gps/how-to-register-with-a-gp-surgery/',
+          title: 'Register with a GP',
+          content: 'You do not need an NHS number to register. Registration is free.',
+        },
+      ],
+      {},
+    );
+    const ws = createWebSearch({ apiKey: 'k', logger, fetchImpl: f as never });
+    expect(typeof ws.research).toBe('function');
+    if (!ws.research) throw new Error('missing information research');
+    const out = await ws.research({
+      query: 'register GP no NHS number England',
+      domains: ['nhs.uk'],
+    });
+    expect(out.status).toBe('ok');
+    expect(out.sources[0]?.text).toContain('Registration is free');
+  });
   it('keeps own sites with a contact and a London mention, drops the rest', async () => {
     const { f, calls } = stubFetch(
       [

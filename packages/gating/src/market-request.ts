@@ -12,8 +12,15 @@ export function isStandaloneMarketAdvertisement(text: string): boolean {
 export function selectMarketTradeType(text: string): 'SELL' | 'BUY' | 'PEER' | 'ANY' {
   const provider =
     /想卖|卖掉|找买家|谁在收|找租客|我是房东|我(?:能|可以)帮带|帮我(?:卖|转租)|\b(?:want to sell|sell my|selling my|anyone want to buy|find (?:a )?(?:buyer|tenant)|looking for (?:a )?buyer|rent out my|I can (?:bring|carry)|I have luggage space|anyone need)\b/iu;
-  if (provider.test(text)) return 'BUY';
+  const spareCapacity =
+    /我[^。！？]{0,60}有[^。！？]{0,12}(?:空余|剩余|多余)[^。！？]{0,12}(?:行李|额度)|我[^。！？]{0,50}(?:空余|剩余)行李/i;
+  if (provider.test(text) || spareCapacity.test(text)) return 'BUY';
   if (/求.*帮带|找.*帮带|需要.*帮带|someone to (?:bring|carry)/iu.test(text)) return 'SELL';
-  if (/搭子|伙伴|一起|\b(?:companion|partner|peers|play together)\b/iu.test(text)) return 'PEER';
+  if (
+    /搭子|伙伴|室友|\broommate\b|想找一起|找人一起|有人一起|\b(?:companion|partner|peers|play together)\b/iu.test(
+      text,
+    )
+  )
+    return 'PEER';
   return 'SELL';
 }

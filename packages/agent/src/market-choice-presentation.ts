@@ -34,7 +34,7 @@ function explainChoice(row: MarketChoice, plan: MarketPlan, zh: boolean): string
       zh
         ? plan.intent === 'companion'
           ? '原文是在找同类活动的伙伴'
-          : '原文提供了你要找的这类供给'
+          : '原文与这次物品或同行需求相关'
         : 'The post offers the requested item or activity',
     );
   return reasons.join(zh ? '；' : '; ');
@@ -59,6 +59,8 @@ function priceLine(row: MarketChoice, plan: MarketPlan, zh: boolean): string {
             : 'Item price';
   const evidence = row.assessment.itemPriceEvidence;
   if (!evidence) return `${label}${zh ? '：待确认' : ': unconfirmed'}`;
+  if (evidence.includes(String.fromCharCode(10)))
+    return (zh ? '分项报价：' : 'Item quotes: ') + compact(evidence, 160);
   const parts = evidence.split('｜');
   const field =
     parts.length > 1 ? (parts.find((part) => /£|GBP|免费|free/i.test(part)) ?? evidence) : evidence;
@@ -121,7 +123,8 @@ function renderChoice(
     row.missing.length
       ? `${zh ? '待确认：' : 'Unconfirmed: '}${row.missing.map((label) => translate(label, zh)).join(' / ')}`
       : '',
-    `${stamp} · ${links}`,
+    stamp,
+    (zh ? '来源：' : 'Source: ') + links,
   ]
     .filter(Boolean)
     .join('\n');
@@ -129,7 +132,7 @@ function renderChoice(
 function introduction(choices: MarketChoices, zh: boolean): string {
   if (!choices.primary.length)
     return zh
-      ? `这次搜索还没找到关键条件都能确认的供给。下面${choices.backup.length}条可作备选，先核实标出的信息。`
+      ? `这次尚未确认完全匹配的选项。下面${choices.backup.length}条是待核实线索，先看标出的缺口。`
       : 'This search did not confirm every essential condition. These are leads to check first.';
   return zh
     ? `我会先看第1项，再比较下面这${choices.primary.length}个选择，关键条件已有原文支持。${choices.backup.length ? `另有${choices.backup.length}条备选，缺失信息已标出。` : '未确认的偏好已单独标出。'}`
@@ -140,13 +143,24 @@ export function renderMarketChoiceReply(p: {
   selections: MarketSelection[];
   plan: MarketPlan;
   zh: boolean;
+  assessWholeOffer?: boolean;
 }) {
   const choices = buildMarketChoices({
     candidates: p.listings,
     plan: p.plan,
-    names: Object.fromEntries(p.selections.map((s) => [s.ref, s.name])),
+    ...(p.assessWholeOffer
+      ? {}
+      : { names: Object.fromEntries(p.selections.map((s) => [s.ref, s.name])) }),
   });
   const blocks = [introduction(choices, p.zh)];
+  const covered = new Set(
+    [...choices.primary, ...choices.backup].flatMap((row) => row.assessment.needs),
+  );
+  const missing = p.plan.needs
+    .filter((need) => !covered.has(need.id))
+    .map((need) => need.terms[0] ?? need.id);
+  if (missing.length)
+    blocks.push((p.zh ? '尚未确认到：' : 'Not yet confirmed: ') + missing.join(' / '));
   let index = 0;
   for (const [heading, rows] of [
     [p.zh ? '【优先看】' : '【Start here】', choices.primary],
