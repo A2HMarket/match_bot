@@ -34,7 +34,7 @@
 
 | P19 | 推荐首选/备选、证据理由与缺口补搜 | [P19-market-recommendation-choices.md](./P19-market-recommendation-choices.md) | P18 | 5 | codex | 完成 | 0.13.0：首选/备选、对应报价/风险、一次缺口补搜；本地发布 | 2026-10-11 |
 
-| P20 | 修复真实请求漏回复 | [P20-fix-missing-market-replies.md](./P20-fix-missing-market-replies.md) | P19 | 5 | codex | 完成 | 0.13.1：536测试、三条真实预览/出站判断通过、本地发布 | 2026-10-12 |
+| P20 | 修复真实请求漏回复 | [P20-fix-missing-market-replies.md](./P20-fix-missing-market-replies.md) | P19 | 5 | codex | 完成 | 0.13.2：539测试、实际Telegram打印机/桌椅sent，帮带补修后复测sent；本地发布 | 2026-10-12 |
 
 ## 波次与并行
 

@@ -25,7 +25,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.13.1';
+export const AGENT_VERSION = '0.13.2';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:

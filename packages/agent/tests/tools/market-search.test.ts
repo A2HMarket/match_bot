@@ -299,6 +299,91 @@ describe('market research tools', () => {
 });
 
 describe('reply_with_market_results', () => {
+  it.each([false, true])(
+    'on the final repair retains only independently valid offers (allInvalid=%s)',
+    async (allInvalid) => {
+      const d = deps();
+      const c = ctx({
+        marketPlan: {
+          intent: 'second_hand',
+          needs: [{ id: 'pot', terms: ['小绿锅'] }],
+          preferences: [],
+        },
+        marketListings: [
+          { ...POT, ref: 'm1' },
+          { ...POT, id: 'listing_b', ref: 'm2' },
+        ],
+        outboundInputFailures: { tool: 'reply_with_market_results', count: 2 },
+      });
+      const recommendations = [
+        { ...args.recommendations[0], ...(allInvalid ? { name: 'invented name' } : {}) },
+        { ...args.recommendations[0], ref: 'm2', name: 'another invented name' },
+      ];
+      await replyWithMarketResultsTool(d as never).invoke(
+        rc(c),
+        JSON.stringify({ ...args, recommendations }),
+      );
+      if (allInvalid) {
+        expect(d.repos.outbound.create).not.toHaveBeenCalled();
+        expect(c.outboundBlocked).toBe(true);
+      } else {
+        expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+        const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+        expect(draft.text).not.toContain('invented');
+        const rows = d.repos.traces.create.mock.calls.map(
+          ([row]) => row as { output?: { rejectedRefs?: string[] } },
+        );
+        expect(rows.some((row) => row.output?.rejectedRefs?.includes('m2'))).toBe(true);
+      }
+    },
+  );
+  it('never publishes a known wrong trip date while recovering a valid carry lead', async () => {
+    const d = deps();
+    const good = {
+      ...POT,
+      id: 'good_trip',
+      ref: 'm1',
+      title: '伦敦帮带',
+      description: '帮带：上海 -> 伦敦，11月4日可带行李',
+      sourceUrl: null,
+    };
+    const wrong = {
+      ...POT,
+      id: 'wrong_trip',
+      ref: 'm2',
+      title: '上海伦敦帮带',
+      description: '帮带：10月27日上海飞伦敦，11月9日回上海',
+      sourceUrl: null,
+    };
+    const c = ctx({
+      demand: { category: 'other', confidence: 1, lang: 'zh' },
+      marketPlan: {
+        intent: 'carry',
+        needs: [{ id: 'carry', terms: ['帮带'] }],
+        preferences: [],
+        route: { from: ['上海'], to: ['伦敦'] },
+        dateRange: { from: '2026-11-01', to: '2026-11-30' },
+      },
+      marketListings: [good, wrong],
+      outboundInputFailures: { tool: 'reply_with_market_results', count: 2 },
+    });
+    const recommendations = [good, wrong].map((listing) => ({
+      ...args.recommendations[0],
+      ref: listing.ref,
+      name: '帮带',
+      evidence: listing.description,
+      facts: [],
+    }));
+    await replyWithMarketResultsTool(d as never).invoke(
+      rc(c),
+      JSON.stringify({ intro: '公开帮带线索', recommendations }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('11月4日');
+    expect(draft.text).not.toContain('10月27日');
+    expect(draft.text).toContain('待确认');
+  });
   it('renders actual item, its own post price/date and marketplace plus repost links', async () => {
     const d = deps();
     await replyWithMarketResultsTool(d as never).invoke(

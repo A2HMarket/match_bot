@@ -313,3 +313,6 @@ handleApprovalCallback(p: { repos: Repositories; queues: Queues; reviewer: strin
 `DraftResult` 的错误分支增加可选 `kind: 'research_required'`。它表示正常的缺口补搜，单独记 `outbound_research` trace，不计入 `outboundInputFailures`；真正 schema/证据错误仍累计三次后终止。
 
 `OutboundDraftInput.evaluationDemand?: DemandDraft` 只由工具内部构造，不开放给模型参数。A2H 推荐使用本轮受原请求约束的 `MarketPlan`（当前品类、分项需求、路线、区域、日期、预算）；没指定的字段不从历史建档继承。旧工具仍默认使用 ctx.demand。该字段不写出站表，不新增 DB/PII 字段；phase、Jev、频控及审批契约不变。
+
+
+P20真实Telegram补充（0.13.2）：第三次证据纠错时，若部分条目独立合格，则移除不合格条目并对有效子集重新运行全部校验；正常补搜/phase/Jev/频控不变。全无效、schema及公开联系方式错误仍拒绝。market_recommendation_selection增加rejectedRefs，无文本或身份值。

@@ -85,6 +85,7 @@ const singleLine = (s: string) => s.replace(/[\r\n]+/g, ' ').trim();
 function validateSelections(
   ctx: MatchContext,
   args: z.infer<typeof params>,
+  canRecover = true,
 ): MarketCandidate[] | Extract<DraftResult, { error: string }> {
   const selected: MarketCandidate[] = [];
   const publicFields = [
@@ -203,10 +204,24 @@ function validateSelections(
     }
     selected.push(listing);
   }
-  if (errors.length)
+  if (errors.length) {
+    // P20 真实 Telegram 回归：最后一次只保留独立通过全部检查的条目，
+    // 不让一条改写名称拖掉其他有效结果；重新核对候选间的地点/路线优先规则。
+    if (
+      canRecover &&
+      ctx.marketPlan &&
+      ctx.outboundInputFailures?.tool === 'reply_with_market_results' &&
+      ctx.outboundInputFailures.count === 2
+    ) {
+      const valid = args.recommendations.filter(
+        (_, index) => !errors.some((error) => error.startsWith(`recommendations.${index}.`)),
+      );
+      if (valid.length) return validateSelections(ctx, { ...args, recommendations: valid }, false);
+    }
     return {
       error: `invalid recommendation: correct ALL listed fields in one repair, preserving valid entries. ${errors.join('; ')}`,
     };
+  }
 
   const followup = requestFocusedFollowup(ctx, args, selected);
   if (followup) return { error: followup, kind: 'research_required' };
@@ -398,6 +413,9 @@ export function replyWithMarketResultsTool(deps: AgentDeps) {
           output: {
             gate: 'market_recommendation_selection',
             decision: 'selected',
+            rejectedRefs: args.recommendations
+              .filter((item) => !selected.some((listing) => listing.ref === item.ref))
+              .map((item) => item.ref),
             primaryRefs: presentation.choices.primary.map((row) => row.listing.ref),
             backupRefs: presentation.choices.backup.map((row) => row.listing.ref),
             omittedRefs: selected.filter((n) => !rendered.includes(n)).map((n) => n.ref),
