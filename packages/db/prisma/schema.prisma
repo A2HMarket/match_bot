@@ -33,6 +33,17 @@ enum DemandStatus {
   expired
 }
 
+enum TaskStatus {
+  active
+  waiting_user
+  waiting_source
+  waiting_delivery
+  delivered
+  completed
+  cancelled
+  expired
+}
+
 enum SupplierPool {
   A
   B
@@ -83,6 +94,7 @@ model User {
   supplies     Supply[]
   sessionItems SessionItem[]
   runStates    RunState[]
+  tasks        Task[]
 
   @@unique([channel, externalId])
   @@map("users")
@@ -151,6 +163,53 @@ model Demand {
 
   @@index([userId, status])
   @@map("demands")
+}
+
+/// PRD §13: one scoped user objective; operational revision and requirements version are distinct.
+model Task {
+  id                  String         @id @default(cuid())
+  userId              String         @map("user_id")
+  channel             Channel
+  chatId              String         @map("chat_id")
+  sourceMessageId     String         @map("source_message_id")
+  intentKey           String         @map("intent_key")
+  originHash          String         @map("origin_hash")
+  category            DemandCategory
+  status              TaskStatus     @default(active)
+  revision            Int            @default(0)
+  requirementsVersion Int            @default(0) @map("requirements_version")
+  state               Json
+  lastUserActivityAt  DateTime       @map("last_user_activity_at") @db.Timestamptz
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events TaskEvent[]
+
+  @@unique([userId, channel, chatId, sourceMessageId, intentKey])
+  @@index([userId, channel, chatId, status])
+  @@index([lastUserActivityAt])
+  @@map("tasks")
+}
+
+/// Append-only checkpoints expire with task personal data after 30 inactive days (PRD §13).
+model TaskEvent {
+  id              String   @id @default(cuid())
+  taskId          String   @map("task_id")
+  revision        Int
+  operationKey    String   @map("operation_key")
+  requestHash     String   @map("request_hash")
+  kind            String
+  actorKind       String   @map("actor_kind")
+  sourceMessageId String?  @map("source_message_id")
+  checkpoint      Json
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, revision])
+  @@unique([taskId, operationKey])
+  @@map("task_events")
 }
 
 model Supply {

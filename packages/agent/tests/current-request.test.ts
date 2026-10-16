@@ -1,7 +1,75 @@
 import { describe, expect, it } from 'vitest';
 import { bindCurrentRequest } from '../src/current-request.js';
 import type { MatchContext } from '../src/context.js';
+import { taskSchema } from '@matchbot/domain';
 describe('current request binding', () => {
+  it('keeps the selected task goal and constraints when the user answers a radius question', () => {
+    const task = taskSchema.parse({
+      id: 'badminton',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: 'c' },
+      objective: '找羽毛球搭子',
+      category: 'other',
+      status: 'active',
+      revision: 2,
+      requirementsVersion: 1,
+      goals: [
+        {
+          id: 'activity',
+          title: '周末适合初学者的羽毛球活动',
+          required: true,
+          criteria: [
+            {
+              id: 'fit',
+              label: '时间/水平/通勤符合',
+              strength: 'hard',
+              status: 'unknown',
+              evidenceRefs: [],
+            },
+          ],
+        },
+      ],
+      constraints: [
+        {
+          key: 'area',
+          strength: 'hard',
+          value: { kind: 'location', area: 'E14' },
+          origin: { kind: 'user', sourceMessageId: 'original' },
+        },
+        {
+          key: 'radius',
+          strength: 'hard',
+          value: { kind: 'duration', minutes: 30 },
+          origin: { kind: 'user', sourceMessageId: 'm' },
+        },
+      ],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    const ctx: MatchContext = {
+      userId: 'u',
+      chatId: 'c',
+      groupId: null,
+      phase: 0,
+      sourceMessageId: 'm',
+      recentReplies: [],
+      task,
+    };
+    bindCurrentRequest(ctx, '半小时以内');
+    expect(ctx.currentRequest?.isActionable).toBe(true);
+    expect(ctx.currentRequest?.text).toContain('羽毛球');
+    expect(ctx.currentRequest?.text).toContain('初学者');
+    expect(ctx.currentRequest?.text).toContain('30');
+    expect(ctx.demand?.fromPostcode).toBe('E14');
+    expect(ctx.demand?.category).toBe('other');
+    expect(ctx.currentRequest?.text).not.toContain('sourceMessageId');
+    expect(() => bindCurrentRequest({ ...ctx, userId: 'another' }, '继续')).toThrow('scope');
+    expect(() => bindCurrentRequest({ ...ctx, chatId: 'elsewhere' }, '继续')).toThrow('scope');
+    expect(() => bindCurrentRequest({ ...ctx, channel: 'whatsapp' }, '继续')).toThrow('scope');
+  });
   it('does not inherit a carry topic or old budget into a food request', () => {
     const ctx: MatchContext = {
       userId: 'u',

@@ -6,6 +6,7 @@ function repos() {
     messages: { redactOlderThan: vi.fn(() => Promise.resolve(3)) },
     demands: { expireOlderThan: vi.fn(() => Promise.resolve(2)) },
     runStates: { expireOld: vi.fn(() => Promise.resolve(1)) },
+    tasks: { deleteInactiveBefore: vi.fn((_cutoff: Date) => Promise.resolve(2)) },
   };
 }
 const logger = () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() });
@@ -31,6 +32,7 @@ describe('runCronJob', () => {
     [CRON_JOBS.redactMessages.name, 'messages', 'redactOlderThan'],
     [CRON_JOBS.expireDemands.name, 'demands', 'expireOlderThan'],
     [CRON_JOBS.expireRunStates.name, 'runStates', 'expireOld'],
+    ['delete_inactive_tasks', 'tasks', 'deleteInactiveBefore'],
   ])('%s calls the matching repository method', async (name, repo, method) => {
     const r = repos();
     await runCronJob(name, r as never, logger() as never);
@@ -44,5 +46,14 @@ describe('runCronJob', () => {
     const log = logger();
     await runCronJob('nope', repos() as never, log as never);
     expect(log.warn).toHaveBeenCalledWith({ name: 'nope' }, 'unknown cron job');
+  });
+  it('deletes task personal data after 30 inactive days using a bounded cutoff', async () => {
+    const r = repos();
+    const before = Date.now();
+    await runCronJob('delete_inactive_tasks', r as never, logger() as never);
+    const cutoff = r.tasks.deleteInactiveBefore.mock.calls[0]?.[0];
+    expect(cutoff).toBeInstanceOf(Date);
+    expect(cutoff?.getTime()).toBeGreaterThanOrEqual(before - 30 * 86400e3);
+    expect(cutoff?.getTime()).toBeLessThanOrEqual(Date.now() - 30 * 86400e3);
   });
 });

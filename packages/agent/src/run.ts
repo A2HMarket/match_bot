@@ -47,7 +47,17 @@ export async function runInbound(p: {
     await p.deps.repos.traces.create({
       kind: 'gate',
       inputRef: p.ctx.sourceMessageId,
-      output: { gate: 'current_request', category: p.ctx.currentRequest?.demand.category },
+      output: {
+        gate: 'current_request',
+        category: p.ctx.currentRequest?.demand.category,
+        ...(p.ctx.task
+          ? {
+              taskId: p.ctx.task.id,
+              taskRevision: p.ctx.task.revision,
+              requirementsVersion: p.ctx.task.requirementsVersion,
+            }
+          : {}),
+      },
       phase: p.ctx.phase,
       latencyMs: 0,
       costMicro: 0,

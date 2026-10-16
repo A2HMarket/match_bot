@@ -12,10 +12,12 @@ import { suppliersRepo } from './suppliers.js';
 import { suppliesRepo } from './supplies.js';
 import { tracesRepo } from './traces.js';
 import { usersRepo } from './users.js';
+import { tasksRepo } from './tasks.js';
 
 export function createRepositories(prisma: PrismaClient) {
   return {
     users: usersRepo(prisma),
+    tasks: tasksRepo(prisma),
     groups: groupsRepo(prisma),
     messages: messagesRepo(prisma),
     demands: demandsRepo(prisma),

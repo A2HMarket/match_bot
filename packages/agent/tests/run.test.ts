@@ -4,6 +4,7 @@ import { assistantMessage, functionCall, ScriptedModel } from '@openai/agents/te
 import { describe, expect, it, vi } from 'vitest';
 import { AGENT_VERSION } from '../src/agent.js';
 import { resumeRun, runInbound } from '../src/run.js';
+import { taskSchema } from '@matchbot/domain';
 
 const VAN = { id: 'a', name: 'Van Co', roughPrice: '£40/h', telegram: '@vanco' };
 
@@ -86,6 +87,83 @@ const replyCall = (callId = 'c1') =>
   );
 
 describe('runInbound', () => {
+  it('passes the selected persistent task into actual SDK instructions for a short followup', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'reply_to_request',
+          {
+            kind: 'clarification',
+            text: '周末你更方便周六还是周日？',
+            refs: [],
+          },
+          { callId: 'task-answer' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    const task = taskSchema.parse({
+      id: 'badminton',
+      ownerUserId: 'u1',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找羽毛球搭子',
+      category: 'other',
+      status: 'active',
+      revision: 2,
+      goals: [
+        {
+          id: 'activity',
+          title: '周末初学者羽毛球活动',
+          required: true,
+          criteria: [
+            {
+              id: 'fit',
+              label: '符合时间和水平',
+              strength: 'hard',
+              status: 'unknown',
+              evidenceRefs: [],
+            },
+          ],
+        },
+      ],
+      constraints: [
+        {
+          key: 'area',
+          strength: 'hard',
+          value: { kind: 'location', area: 'E14' },
+          origin: { kind: 'user', sourceMessageId: 'first' },
+        },
+        {
+          key: 'radius',
+          strength: 'hard',
+          value: { kind: 'duration', minutes: 30 },
+          origin: { kind: 'user', sourceMessageId: 'm1' },
+        },
+      ],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    await runInbound({
+      deps: { ...deps, answerRequests: true } as never,
+      ctx: { ...ctx(2), task },
+      input: '半小时以内',
+    });
+    const instructions = JSON.stringify(model.calls[0]?.request.systemInstructions);
+    expect(instructions).toContain('初学者羽毛球');
+    expect(instructions).toContain('E14');
+    expect(instructions).toContain('30 minutes');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    model.assertComplete();
+  });
   it('binds current food instead of the old carry request during information answering', async () => {
     const model = new ScriptedModel([
       [

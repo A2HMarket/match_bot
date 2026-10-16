@@ -5,11 +5,13 @@ import type { Logger } from '@matchbot/shared';
 /** 保留期见 AGENTS.md §6：messages.text 30 天、run_states 快照 7 天（过期由 expiresAt 判定）。 */
 const MESSAGE_RETENTION_DAYS = 30;
 const DEMAND_EXPIRY_DAYS = 14;
+const TASK_RETENTION_DAYS = 30; // PRD §13: delete task text and cascading checkpoints, not just status.
 
 export const CRON_JOBS = {
   redactMessages: { name: 'redact_messages', every: 6 * 3600e3 },
   expireDemands: { name: 'expire_demands', every: 24 * 3600e3 },
   expireRunStates: { name: 'expire_run_states', every: 3600e3 },
+  deleteInactiveTasks: { name: 'delete_inactive_tasks', every: 6 * 3600e3 },
 } as const;
 
 /**
@@ -39,6 +41,16 @@ export async function runCronJob(name: string, repos: Repositories, logger: Logg
       break;
     case CRON_JOBS.expireRunStates.name:
       logger.info({ n: await repos.runStates.expireOld(new Date()) }, 'expired run states');
+      break;
+    case CRON_JOBS.deleteInactiveTasks.name:
+      logger.info(
+        {
+          n: await repos.tasks.deleteInactiveBefore(
+            new Date(Date.now() - TASK_RETENTION_DAYS * 86400e3),
+          ),
+        },
+        'deleted inactive tasks',
+      );
       break;
     default:
       logger.warn({ name }, 'unknown cron job');

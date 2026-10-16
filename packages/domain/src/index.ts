@@ -4,3 +4,6 @@ export * from './phase.js';
 export * from './drafts.js';
 export * from './trace.js';
 export * from './jev-questions.js';
+export * from './task.js';
+export * from './task-routing.js';
+export * from './task-requirements.js';

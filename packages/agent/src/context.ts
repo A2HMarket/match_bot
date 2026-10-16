@@ -1,5 +1,5 @@
 import type { Repositories } from '@matchbot/db';
-import type { DemandDraft, DemandCategory, Phase } from '@matchbot/domain';
+import type { DemandDraft, DemandCategory, Phase, UserTask } from '@matchbot/domain';
 import type { Thresholds } from '@matchbot/gating';
 import type { evaluateOutbound, JevClient } from '@matchbot/jev';
 import type { Env, Logger } from '@matchbot/shared';
@@ -21,6 +21,7 @@ import type { MarketCandidate, MarketResearchQuery } from './market-research.js'
 
 /** 一次 run 的上下文。Session 粒度是用户；群上下文与开放需求经这里 + instructions 注入。 */
 export interface MatchContext {
+  channel?: 'telegram' | 'whatsapp';
   userId: string;
   chatId: string;
   groupId: string | null;
@@ -37,6 +38,8 @@ export interface MatchContext {
   addressedToBot?: boolean;
   replyToBotText?: string;
   requestCategory?: DemandCategory;
+  /** Server-selected, owner/scope-checked task; never accept an arbitrary model-provided snapshot. */
+  task?: UserTask;
   currentRequest?: CurrentRequest;
   knowledgeSources?: KnowledgeSource[];
   informationQueries?: string[];

@@ -329,3 +329,17 @@ P22兼容与终点：AgentDeps.answerRequests由worker启用，旧注入调用�
 ### P23 拒绝后的受控请求状态
 
 Jev出站输入以source_evidence表达供应商、A2H与公开信息来源，replyPurpose区分answer/request_status；旧调用参数supplierSummaries兼容。问题集判定不可靠事实与适配保证，允许明确未知和实用解释。gating增加isVerifiedRequestStatus，仅agent确认notification文本精确等于服务器renderRequestStatus且当前请求可行动、未回复时才为true。代码固定状态可忽略推荐语义分，Jev不可用/phase/频控策略不变，所有分数及状态门留痕。ctx.outboundBlocked不清除，原推荐仍终止；status工具不接收模型文案。未送审阶段由controller调用tool.needsApproval和tool.invoke，不再调用生成模型写失败说明；需审批时保留SDK加密快照/原子恢复路径，isRequestStatusRun随服务端快照恢复。无新DB或PII字段。
+
+
+### P24 任务领域基础（实施中）
+
+新增domain taskSchema/UserTask（用户、作用域、版本、目标/验收条目、约束来源、证据、待回答问题、投递与用户确认）及assessTaskReadiness、transitionTaskStatus。readiness只代表有据的信息交付，不代表真实生活目标达成；completed/cancelled需受信入站构建的owner用户确认及sourceMessageId，模型工具不能选择actor身份或意图。queued/sent/用户完成分开，已发问题才waiting_user；同目标证据绑定、未知/冲突不作supported。新任务契约独立于旧Demand兼容，尚未接入worker/SDK/出站，不改变当前线上行为。DB接口、迁移与任务关联随后在本节补充；旧数据不猜测归属。
+
+P24基础接口（分支验证中）：
+
+- `selectTask`先过滤owner/channel/chat及终态；新意图、明确引用、唯一接话、歧义及无可关联目标分别返回结果。不按最近任务盲接，语义意图由调用方判定，尚未实现入站自动路由。
+- `reviseTaskRequirements`只合并指定goal/constraint，不能传入证据状态或用户完成状态；每项变更必须引用当前用户消息中存在的原句，origin由服务端写入。原句存在只证明出处，不自动证明模型解释正确，P25真实多轮仍须评判。条件改变递增requirementsVersion并作废旧适配证据，其他分项条件保留。
+- `confirmTaskGoal`与整个任务完成分开；本人明确确认一件已买到，不关闭其他子目标，不伪造其来源已核实。`revision`记录操作，`requirementsVersion`仅记录条件变化，不能混作出站授权版本。
+- `repos.tasks.{create,findById,findOpenByScope,reviseRequirements,confirmGoal,transition}`均需要受信`access={userId,scope:{channel,chatId}}`。写入带expectedRevision/operationKey，返回applied/replayed/conflict/not_found；相同幂等键不同载荷报错。Task头及事件checkpoint为一个Prisma嵌套写入。sourceMessageId必须归本人及同作用域；不得让模型选择access/actor或传整份状态覆盖。
+- 新迁移`20261016170253_task_foundation`只加tasks/task_events及TaskStatus，不改旧业务表语义。Task.state经domain taskPayloadSchema校验，只存可变部分；身份/作用域/版本以列为准。30天无用户活动后deleteInactiveBefore删除task及级联事件，由worker的delete_inactive_tasks清理任务执行；不因agent运行刷新保留期。
+- `MatchContext.task`仅接收服务端选中并更新后的任务，`channel`用于scope检查。`bindCurrentRequest`能将其未解决目标、当前条件和简短补充绑定成评估输入，排除已完成分项及内部ID；SDK stub已验证能进入模型instructions。worker尚未加载task，真实语义路由、追问送达绑定、证据落账及快照版本核对仍属P25/P26，不能宣称线上接话已修复。
