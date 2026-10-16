@@ -46,6 +46,10 @@ function condition(task: UserTask, goalId: string, key: string | null): TaskCons
     task.constraints.find((c) => !c.goalId && c.key === key)
   );
 }
+function knownUserOrigin(task: UserTask, goalId: string, key: string | null) {
+  const c = key === 'travel_origin' ? condition(task, goalId, key) : undefined;
+  return c && (c.value.kind === 'location' || c.value.kind === 'text') ? c : null;
+}
 function getSource(ctx: MatchContext, check: Check, ref: string): Source {
   const task = ctx.task!;
   const criterion = task.goals
@@ -58,6 +62,22 @@ function getSource(ctx: MatchContext, check: Check, ref: string): Source {
     if (!need || !ctx.marketPlan)
       throw new TaskEvidenceError('market source needs the current scoped goal plan');
     const assessment = assessMarketListing(listing, { ...ctx.marketPlan, needs: [need] });
+    const target =
+      ctx.marketTarget ??
+      (task.counterparty === 'supply'
+        ? 'SELL'
+        : task.counterparty === 'demand'
+          ? 'BUY'
+          : task.counterparty === 'peer'
+            ? 'PEER'
+            : null);
+    if (check.status !== 'unknown' && target && target !== 'ANY' && listing.tradeType !== target)
+      throw new TaskEvidenceError('source has the wrong trade direction');
+    if (
+      check.status === 'supported' &&
+      !isActiveMarketListing(listing, new Date(), { respectAvailability: false })
+    )
+      throw new TaskEvidenceError('source is explicitly inactive');
     const labels: Record<string, string> = {
       budget: 'budget',
       area: 'area',
@@ -87,7 +107,7 @@ function getSource(ctx: MatchContext, check: Check, ref: string): Source {
   if (known) {
     if (
       (task.counterparty || task.category === 'housing' || task.category === 'second_hand') &&
-      check.status === 'supported'
+      check.status !== 'unknown'
     )
       throw new TaskEvidenceError(
         'a general policy cannot prove the condition of a specific offer',
@@ -156,7 +176,54 @@ export function buildTaskProgress(
     throw new TaskEvidenceError('a question requires one specific missing condition');
   const evidence = new Map<string, z.infer<typeof taskProgressSchema>['evidence'][number]>();
   const now = new Date().toISOString();
+  const contextProofs = new Map<
+    string,
+    {
+      check: z.infer<typeof taskProgressSchema>['checks'][number];
+      evidence: z.infer<typeof taskProgressSchema>['evidence'][number];
+    }
+  >();
+  for (const goal of task.goals.filter((g) => !g.userConfirmation))
+    for (const criterion of goal.criteria) {
+      const origin = knownUserOrigin(task, goal.id, criterion.constraintKey);
+      if (!origin) continue;
+      const sourceId =
+        origin.origin.kind === 'user'
+          ? origin.origin.sourceMessageId
+          : origin.origin.acceptedByMessageId;
+      const sourceRef = 'message:' + hashText(sourceId).slice(0, 40),
+        proofId =
+          'e:' +
+          hashText(JSON.stringify([goal.id, origin.key, origin.value, sourceRef])).slice(0, 40);
+      const place =
+        origin.value.kind === 'location'
+          ? origin.value.area
+          : origin.value.kind === 'text'
+            ? origin.value.text
+            : '';
+      contextProofs.set(JSON.stringify([goal.id, criterion.id]), {
+        check: {
+          goalId: goal.id,
+          criterionId: criterion.id,
+          status: 'supported',
+          evidenceRefs: [proofId],
+        },
+        evidence: {
+          id: proofId,
+          goalId: goal.id,
+          kind: 'user_statement',
+          sourceRef,
+          summary: '用户提供的出发地点：' + place.slice(0, 800),
+          observedAt: now,
+        },
+      });
+    }
   const checks: z.infer<typeof taskProgressSchema>['checks'] = args.checks.map((check) => {
+    const context = contextProofs.get(JSON.stringify([check.goalId, check.criterionId]));
+    if (context) {
+      evidence.set(context.evidence.id, context.evidence);
+      return context.check;
+    }
     const criterion = task.goals
       .find((g) => g.id === check.goalId)
       ?.criteria.find((c) => c.id === check.criterionId);
@@ -168,7 +235,7 @@ export function buildTaskProgress(
       const source = getSource(p.ctx, check, input.ref);
       if (input.quote && !source.text.includes(input.quote))
         throw new TaskEvidenceError('quote is not in the returned source');
-      let quote = input.quote;
+      let quote = input.quote ?? source.computed?.evidence ?? null;
       if (source.computed && check.status !== 'unknown') {
         const strict = /^(?:budget|area|route_from|route_to|date|capacity)$/.test(
           criterion.constraintKey ?? '',
@@ -226,6 +293,15 @@ export function buildTaskProgress(
       evidenceRefs: refs,
     };
   });
+  for (const proof of contextProofs.values())
+    if (
+      !checks.some(
+        (c) => c.goalId === proof.check.goalId && c.criterionId === proof.check.criterionId,
+      )
+    ) {
+      checks.push(proof.check);
+      evidence.set(proof.evidence.id, proof.evidence);
+    }
   const refreshed = new Map<string, { text: string; usable: boolean }>();
   for (const listing of p.ctx.marketListings ?? [])
     if (p.ctx.marketDetailIds?.includes(listing.id))
@@ -303,39 +379,58 @@ export function buildTaskSourceReview(
   const sources = new Map<string, string>();
   const indexes: number[] = [];
   const sourceIndexes: number[] = [];
+  const eligible: boolean[] = [];
   for (const [index, check] of checks.entries()) {
-    if (check.status === 'unknown') continue;
     const goal = ctx.task!.goals.find((g) => g.id === check.goalId)!;
     const criterion = goal.criteria.find((c) => c.id === check.criterionId)!;
+    if (knownUserOrigin(ctx.task!, goal.id, criterion.constraintKey)) continue;
     for (const [sourceIndex, proof] of check.sources.entries()) {
       const source = getSource(ctx, check, proof.ref);
-      const quote =
+      const initialQuote =
         source.computed?.status !== 'unknown'
           ? (source.computed?.evidence ?? proof.quote)
           : proof.quote;
-      if (!quote) continue;
-      const at = source.text.indexOf(quote);
+      if (!initialQuote) continue;
+      const at = source.text.indexOf(initialQuote);
       const text =
         source.text.length <= 5000
           ? source.text
           : source.text.slice(Math.max(0, at - 1500), Math.max(0, at - 1500) + 5000);
       const sourceId = source.sourceRef + ':' + hashText(text).slice(0, 16);
       sources.set(sourceId, text);
-      claims.push({
-        goalId: goal.id,
-        criterionId: criterion.id,
-        goal: goal.title,
-        requirement: JSON.stringify({
-          criterion: criterion.label,
-          condition: condition(ctx.task!, goal.id, criterion.constraintKey)?.value ?? null,
-          counterparty: ctx.task!.counterparty,
-        }),
-        proposedStatus: check.status,
-        sourceId,
-        quote,
-      });
-      indexes.push(index);
-      sourceIndexes.push(sourceIndex);
+      for (const status of check.status === 'unknown'
+        ? (['supported', 'conflict'] as const)
+        : [check.status]) {
+        let canUse = true,
+          quote = initialQuote;
+        try {
+          const validated = buildTaskProgress({
+            ctx,
+            checks: [{ ...check, status, sources: [proof] }],
+            next: { action: 'research', goalId: null, constraintKey: null, reason: '核验来源条件' },
+          });
+          quote = validated.evidence[0]?.summary ?? initialQuote;
+        } catch (error) {
+          if (!(error instanceof TaskEvidenceError)) throw error;
+          canUse = false;
+        }
+        claims.push({
+          goalId: goal.id,
+          criterionId: criterion.id,
+          goal: goal.title,
+          requirement: JSON.stringify({
+            criterion: criterion.label,
+            condition: condition(ctx.task!, goal.id, criterion.constraintKey)?.value ?? null,
+            counterparty: ctx.task!.counterparty,
+          }),
+          proposedStatus: status,
+          sourceId,
+          quote,
+        });
+        indexes.push(index);
+        sourceIndexes.push(sourceIndex);
+        eligible.push(canUse);
+      }
     }
   }
   return {
@@ -343,5 +438,6 @@ export function buildTaskSourceReview(
     sources: [...sources].map(([id, text]) => ({ id, text })),
     indexes,
     sourceIndexes,
+    eligible,
   };
 }

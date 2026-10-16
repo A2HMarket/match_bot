@@ -8,6 +8,7 @@ import { replyRequestStatusTool } from '../../src/tools/reply-request-status.js'
 import { makeOutboundTool } from '../../src/tools/make-outbound-tool.js';
 import { z } from 'zod';
 import { renderRequestStatus } from '../../src/request-status.js';
+import { taskSchema } from '@matchbot/domain';
 function setup(phase: 0 | 1 | 2, available = true) {
   const c: MatchContext = {
     userId: 'u',
@@ -44,6 +45,37 @@ function setup(phase: 0 | 1 | 2, available = true) {
   return { c, d, t: replyRequestStatusTool(d as unknown as AgentDeps) };
 }
 describe('reply_request_status', () => {
+  it('does not ask for a travel limit the selected task already knows', async () => {
+    const { c, d, t } = setup(2);
+    c.task = taskSchema.parse({
+      id: 't',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找新手羽毛球',
+      status: 'active',
+      revision: 1,
+      goals: [],
+      constraints: [
+        {
+          key: 'max_travel_minutes',
+          strength: 'hard',
+          value: { kind: 'duration', minutes: 30 },
+          origin: { kind: 'user', sourceMessageId: 'm' },
+        },
+      ],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    await t.invoke(new RunContext(c), '{}');
+    const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+    expect(draft.text).not.toContain('最多能接受多久');
+    expect(draft.text).toContain('通勤范围');
+    expect(draft.text).not.toMatch(/30|E14|https?:/);
+    expect(c.outboundBlocked).toBe(true);
+  });
   it.each([0, 2] as const)(
     'phase %i sends only a fixed status, retaining the blocked recommendation',
     async (phase) => {

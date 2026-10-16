@@ -243,9 +243,9 @@ export function normalizeTaskPatch(p: {
     ...p.task.constraints,
     ...unique,
   ];
-  const goals = p.input.goals.map((goal) => ({
-    ...goal,
-    criteria: goal.criteria.map((criterion) => {
+  const goals = p.input.goals.map((goal) => {
+    let hasSubject = false;
+    const criteria = goal.criteria.flatMap((criterion) => {
       let constraintKey = criterion.constraintKey ? canonicalKey(criterion.constraintKey) : null;
       const has = (key: string) =>
         available.some((c) => c.key === key && (!c.goalId || c.goalId === goal.id));
@@ -253,17 +253,41 @@ export function normalizeTaskPatch(p: {
         constraintKey = 'travel_origin';
       const optionalGap =
         !!constraintKey && !has(constraintKey) && criterion.strength === 'preference';
+      if (!constraintKey && /\d/.test(criterion.label))
+        throw new TaskProposalError(
+          'Keep criterion labels parameter-free; bind monetary/date/numeric conditions with constraintKey rather than copying a value into the label.',
+        );
+      if (!constraintKey) {
+        if (hasSubject) return [];
+        hasSubject = true;
+        return [
+          {
+            ...criterion,
+            strength: 'hard' as const,
+            constraintKey: null,
+            label: /\p{Script=Han}/u.test(p.text)
+              ? '来源描述的对象或邀约：' + goal.title
+              : 'Subject described in the source: ' + goal.title,
+          },
+        ];
+      }
       const label = optionalGap
         ? '核对信息：' + constraintKey
         : constraintKey
           ? '核对当前条件：' + constraintKey
           : criterion.label;
-      if (!constraintKey && /\d/.test(label))
-        throw new TaskProposalError(
-          'Keep criterion labels parameter-free; bind monetary/date/numeric conditions with constraintKey rather than copying a value into the label.',
-        );
-      return { ...criterion, constraintKey: optionalGap ? null : constraintKey, label };
-    }),
-  }));
+      return [{ ...criterion, constraintKey: optionalGap ? null : constraintKey, label }];
+    });
+    if (!hasSubject)
+      criteria.unshift({
+        id: 'subject:' + goal.id,
+        strength: 'hard',
+        constraintKey: null,
+        label: /\p{Script=Han}/u.test(p.text)
+          ? '来源描述的对象或邀约：' + goal.title
+          : 'Subject described in the source: ' + goal.title,
+      });
+    return { ...goal, criteria };
+  });
   return taskRequirementPatchSchema.parse({ goals, constraints: unique });
 }

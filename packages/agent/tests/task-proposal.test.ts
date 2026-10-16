@@ -35,6 +35,52 @@ const task = taskSchema.parse({
   userConfirmation: null,
 });
 describe('task proposal normalization', () => {
+  it('compiles a source-level subject check while preserving an explicit identity-verification requirement', () => {
+    const input = taskPatchProposalSchema.parse({
+      goals: [
+        {
+          id: 'home',
+          title: '一居室',
+          required: true,
+          sourceQuote: '一居室',
+          criteria: [
+            {
+              id: 'listing',
+              label: '为可联系房东或中介的真实出租房源信息',
+              strength: 'hard',
+              constraintKey: null,
+            },
+            {
+              id: 'verified',
+              label: '必须核实房东身份',
+              strength: 'hard',
+              constraintKey: 'custom:verified_landlord',
+            },
+          ],
+        },
+      ],
+      constraints: [
+        {
+          key: 'custom:verified_landlord',
+          goalId: 'home',
+          strength: 'hard',
+          value: { kind: 'boolean', value: true },
+          sourceQuote: '核实房东身份',
+        },
+      ],
+    });
+    const patch = normalizeTaskPatch({ input, task, text: '找一居室，并且必须核实房东身份' });
+    expect(patch?.goals[0]?.criteria[0]).toMatchObject({
+      id: 'listing',
+      label: '来源描述的对象或邀约：一居室',
+      constraintKey: null,
+    });
+    expect(patch?.goals[0]?.criteria[1]).toMatchObject({
+      constraintKey: 'custom:verified_landlord',
+      strength: 'hard',
+    });
+    expect(patch?.constraints[0]?.value).toEqual({ kind: 'boolean', value: true });
+  });
   it('does not invent or move a date from an unrelated pet requirement', () => {
     const input = taskPatchProposalSchema.parse({
       goals: [],

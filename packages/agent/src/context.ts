@@ -46,6 +46,7 @@ export interface MatchContext {
   taskProgressCalls?: number;
   taskProgressVersion?: number;
   sourceReviewCache?: Record<string, boolean>;
+  taskSourceReviewedClaims?: number;
   runDeadlineAt?: number;
   taskUpdate?: {
     kind:

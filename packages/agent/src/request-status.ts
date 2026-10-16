@@ -22,6 +22,29 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
     : unavailable
       ? 'This query could not complete; that does not mean no suitable options exist.'
       : 'I have not confirmed an option I can reliably recommend; unknown conditions are not a confirmed match.';
+  const task =
+    ctx.task?.ownerUserId === ctx.userId &&
+    ctx.task.scope.chatId === ctx.chatId &&
+    ctx.task.scope.channel === (ctx.channel ?? 'telegram')
+      ? ctx.task
+      : undefined;
+  if (task?.constraints.some((c) => c.key === 'max_travel_minutes'))
+    return (
+      intro +
+      (zh
+        ? '\n\n你给出的通勤范围已保留，不需要重复说明。下一步应核对来源中的准确地点与适用条件，再按原要求比较；信息缺失不能当作已经匹配。'
+        : '\n\nYour travel limit is retained; you do not need to repeat it. The next step is to verify the source location and suitability, then compare using the same conditions. Missing facts are not a confirmed match.')
+    );
+  if (
+    task?.category === 'housing' &&
+    task.constraints.some((c) => c.key === 'area' && c.strength === 'hard')
+  )
+    return (
+      intro +
+      (zh
+        ? '\n\n已保留你指定的区域与条件。下一步需要继续核实房型、月租、起租时间和宠物许可；条件未核对清楚前，不能把线索当成已匹配房源。'
+        : '\n\nYour required area and conditions are retained. The next step is to verify the room type, rent, move-in terms and pet permission without treating missing facts as a match.')
+    );
   if (!zh)
     return (
       intro +

@@ -15,7 +15,7 @@ export function recordTaskProgressTool(deps: AgentDeps) {
   return tool({
     name: 'record_task_progress',
     description:
-      'Record verified source evidence and a responsible next step for the selected task. Use known goal/criterion IDs and source refs. Each criterion describes the best coherent option: every source you attach must support that SAME status and option; do not include rejected alternatives as supporting evidence. Use exact quotes; quote=null only for a returned computed budget/area/route/date fact. Never combine different offers into one matching option, treat public listing status as a guarantee, or mark the user goal complete. Choose research, one necessary ask_user, wait_source only after a real failure, or deliver an honest partial/full answer with unknowns. This sends nothing.',
+      'Record verified source evidence and a responsible next step for the selected task. Use known goal/criterion IDs and source refs. Exact source text may be supplied with status=unknown: the server then checks both support and contradiction, keeping missing/ambiguous/unavailable evidence unknown. Each criterion describes the best coherent option; do not mix rejected alternatives into supporting evidence. Use exact quotes; quote=null only for a returned computed fact. Never combine different offers, treat public status as guaranteed availability, or mark the user goal complete. Choose research, one necessary ask_user, wait_source only after a real failure, or deliver an honest partial/full answer with unknowns. This sends nothing.',
     parameters: taskProgressParameters,
     needsApproval: false,
     errorFunction: async (rc) => {
@@ -35,22 +35,15 @@ export function recordTaskProgressTool(deps: AgentDeps) {
         await trace(deps, ctx, 'outbound_declined');
         return 'not allowed: outbound already declined';
       }
+      if (ctx.runDeadlineAt !== undefined && Date.now() >= ctx.runDeadlineAt) {
+        await trace(deps, ctx, 'deadline');
+        return 'research deadline reached; do not start another review';
+      }
       try {
         const progress = buildTaskProgress({ ctx, ...args });
-        const rejected = await reviewSources(deps, ctx, args.checks);
-        const rejectedCriteria: string[] = [];
-        for (const [index, sourceIndexes] of rejected) {
-          const check = progress.checks[index];
-          if (check) {
-            check.evidenceRefs = [
-              ...new Set(check.evidenceRefs.filter((_, i) => !sourceIndexes.has(i))),
-            ];
-            if (!check.evidenceRefs.length) {
-              check.status = 'unknown';
-              rejectedCriteria.push(check.criterionId);
-            }
-          }
-        }
+        const reviews = await reviewSources(deps, ctx, args.checks);
+        const checked = applySourceReviews(progress.checks, reviews.decisions);
+        progress.checks = checked.checks;
         progress.checks = mergeChecks(ctx, progress);
         progress.coherence = await reviewCoherence(deps, ctx, progress);
         if (ctx.runDeadlineAt !== undefined && Date.now() >= ctx.runDeadlineAt) {
@@ -69,7 +62,9 @@ export function recordTaskProgressTool(deps: AgentDeps) {
           sourceMessageId: ctx.sourceMessageId,
           operationKey:
             'progress:' +
-            (details?.toolCall?.callId ?? ctx.sourceMessageId + ':' + ctx.taskProgressCalls),
+            ctx.sourceMessageId +
+            ':' +
+            hashText(details?.toolCall?.callId ?? String(ctx.taskProgressCalls)).slice(0, 40),
           progress,
         });
         if (result.kind !== 'applied' && result.kind !== 'replayed') {
@@ -81,8 +76,10 @@ export function recordTaskProgressTool(deps: AgentDeps) {
         await trace(deps, ctx, 'recorded');
         return JSON.stringify({
           recorded: true,
-          rejectedCriteria,
-          rejectedSourceCount: [...rejected.values()].reduce((sum, s) => sum + s.size, 0),
+          rejectedCriteria: checked.rejectedCriteria,
+          rejectedSourceCount: checked.rejectedCount,
+          sourceReviewBudgetExhausted: reviews.exhausted,
+          sourceReviewClaimsUsed: ctx.taskSourceReviewedClaims ?? 0,
           readiness: assessTaskReadiness(result.task),
           next: result.task.nextStep,
           checks: progress.checks.map((c) => ({
@@ -134,7 +131,13 @@ async function reviewCoherence(
       sources: c.evidenceRefs
         .map((id) => proposed.evidence.find((e) => e.id === id))
         .filter((e) => !!e)
-        .map((e) => ({ source: e.sourceRef, entity: e.entityKey, text: e.summary, url: e.url })),
+        .map((e) => ({
+          source: e.sourceRef,
+          kind: e.kind,
+          entity: e.entityKey,
+          text: e.summary,
+          url: e.url,
+        })),
       refutations: (c.conflictingEvidenceRefs ?? [])
         .map((id) => proposed.evidence.find((e) => e.id === id))
         .filter((e) => !!e)
@@ -236,9 +239,8 @@ async function reviewSources(
   deps: AgentDeps,
   ctx: MatchContext,
   checks: Parameters<typeof buildTaskSourceReview>[1],
-): Promise<Map<number, Set<number>>> {
+) {
   const review = buildTaskSourceReview(ctx, checks);
-  const rejected = new Map<number, Set<number>>();
   ctx.sourceReviewCache ??= {};
   const pending = review.claims.map((claim, index) => ({
     claim,
@@ -251,11 +253,16 @@ async function reviewSources(
       ]),
     ),
   }));
+  for (const item of pending)
+    if (!review.eligible[item.index]) ctx.sourceReviewCache[item.key] = false;
   for (let offset = 0; offset < pending.length; offset += 24) {
+    const remaining = Math.max(0, 96 - (ctx.taskSourceReviewedClaims ?? 0));
     const batch = pending
       .slice(offset, offset + 24)
-      .filter((item) => ctx.sourceReviewCache![item.key] === undefined);
+      .filter((item) => ctx.sourceReviewCache![item.key] === undefined)
+      .slice(0, remaining);
     if (batch.length) {
+      ctx.taskSourceReviewedClaims = (ctx.taskSourceReviewedClaims ?? 0) + batch.length;
       const response = await evaluateSourceSupport(deps.jev, {
         taskContext:
           'Current date (Europe/London): ' +
@@ -277,14 +284,55 @@ async function reviewSources(
           response.ok && (response.scores[index] ?? 0) >= deps.thresholds.T_SOURCE_SUPPORT_ACCEPT;
     }
   }
-  for (const item of pending)
-    if (!ctx.sourceReviewCache[item.key]) {
-      const checkIndex = review.indexes[item.index]!,
-        sources = rejected.get(checkIndex) ?? new Set<number>();
-      sources.add(review.sourceIndexes[item.index]!);
-      rejected.set(checkIndex, sources);
+  const decisions = new Map<number, Map<number, Set<'supported' | 'conflict'>>>();
+  for (const item of pending) {
+    const index = review.indexes[item.index]!,
+      sourceIndex = review.sourceIndexes[item.index]!;
+    const sources = decisions.get(index) ?? new Map<number, Set<'supported' | 'conflict'>>();
+    const statuses = sources.get(sourceIndex) ?? new Set<'supported' | 'conflict'>();
+    if (ctx.sourceReviewCache[item.key]) statuses.add(item.claim.proposedStatus);
+    sources.set(sourceIndex, statuses);
+    decisions.set(index, sources);
+  }
+  const exhausted = pending.some((item) => ctx.sourceReviewCache![item.key] === undefined);
+  if (exhausted) await trace(deps, ctx, 'review_budget_exhausted');
+  return {
+    exhausted,
+    decisions: new Map(
+      [...decisions].map(([index, sources]) => [
+        index,
+        new Map(
+          [...sources].map(([sourceIndex, statuses]) => [
+            sourceIndex,
+            statuses.size === 1 ? [...statuses][0]! : ('unknown' as const),
+          ]),
+        ),
+      ]),
+    ),
+  };
+}
+function applySourceReviews(
+  checks: ReturnType<typeof buildTaskProgress>['checks'],
+  reviews: Awaited<ReturnType<typeof reviewSources>>['decisions'],
+) {
+  const rejectedCriteria: string[] = [];
+  let rejectedCount = 0;
+  const checked = checks.flatMap((check, index) => {
+    const sources = reviews.get(index);
+    if (!sources) return [check];
+    const rows: typeof checks = [];
+    for (const status of ['supported', 'conflict'] as const) {
+      const refs = check.evidenceRefs.filter((_, i) => sources.get(i) === status);
+      if (refs.length) rows.push({ ...check, status, evidenceRefs: [...new Set(refs)] });
     }
-  return rejected;
+    rejectedCount += [...sources.values()].filter((status) => status === 'unknown').length;
+    if (!rows.length) {
+      rejectedCriteria.push(check.criterionId);
+      rows.push({ ...check, status: 'unknown', evidenceRefs: [] });
+    }
+    return rows;
+  });
+  return { checks: checked, rejectedCriteria, rejectedCount };
 }
 async function trace(deps: AgentDeps, ctx: MatchContext, result: string) {
   await deps.repos.traces.create({
