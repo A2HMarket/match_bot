@@ -343,3 +343,9 @@ P24基础接口（分支验证中）：
 - `repos.tasks.{create,findById,findOpenByScope,reviseRequirements,confirmGoal,transition}`均需要受信`access={userId,scope:{channel,chatId}}`。写入带expectedRevision/operationKey，返回applied/replayed/conflict/not_found；相同幂等键不同载荷报错。Task头及事件checkpoint为一个Prisma嵌套写入。sourceMessageId必须归本人及同作用域；不得让模型选择access/actor或传整份状态覆盖。
 - 新迁移`20261016170253_task_foundation`只加tasks/task_events及TaskStatus，不改旧业务表语义。Task.state经domain taskPayloadSchema校验，只存可变部分；身份/作用域/版本以列为准。30天无用户活动后deleteInactiveBefore删除task及级联事件，由worker的delete_inactive_tasks清理任务执行；不因agent运行刷新保留期。
 - `MatchContext.task`仅接收服务端选中并更新后的任务，`channel`用于scope检查。`bindCurrentRequest`能将其未解决目标、当前条件和简短补充绑定成评估输入，排除已完成分项及内部ID；SDK stub已验证能进入模型instructions。worker尚未加载task，真实语义路由、追问送达绑定、证据落账及快照版本核对仍属P25/P26，不能宣称线上接话已修复。
+
+P25实施接口：`tasks.applyUserTurn`将一条本人消息的条件补丁和已验证的结果确认作为一次CAS/事件写入，避免改了一半条件后确认失败留下半轮状态。确认语义由agent内的受约束整理步骤结合本人原话提出并校验，仓储仍验证来源身份/作用域，actor由服务端组装，不接受模型传入。taskRequests装配开关仅在完整任务流程验证后启用；原供应商/搜索/出站门继续复用。
+
+真实DeepSeek准备阶段首轮预览发现：预算key漂移、旧验收label保留旧金额、住房补充提议失败、无已发问题锚点时半小时追问被判歧义。因此P25补充契约：核心constraint key在tool输入受约束（自定义需求用custom:命名空间），criterion新增constraintKey可绑定同目标或共享条件；服务器为当前条件补齐绑定验收，并使用参数无关的label，避免模型改预算时遗留旧金额。依然保留当前用户原句验证，不把模型解释当作已核实来源；未通过预览保留，不计为多轮验收通过。
+
+P25准备协议现为start_task/update_task/clarify_task/acknowledge_task四个内部工具，均无出站路径，更新为平铺goals/constraints且条件更新不重传旧计划。tasks.create可由服务端传counterparty=supply/demand/peer/null，落在已有state JSON；模型工具无此字段，旧Task默认null。marketPlan.needs新增可选rules（完整的逐目标有效规则），避免共享预算覆盖特例、一个物品的必要条件套到另一个。审批快照规则schema及恢复保留rules；Task本体及最新版本核对仍待P26完成。Task/user/goal完成与信息入队/送达仍分开。

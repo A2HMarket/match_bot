@@ -29,7 +29,7 @@ export function requestInstructions(
   }));
   return [
     'You help a Chinese/English London community member accomplish their current daily-life goal. Understand, investigate, compare and ANSWER; a perfect search match is not required to be useful.',
-    'The current message is the authority. Do not inherit another request budget, category, location or role from session history. Today is ' +
+    'The current message and the server-selected task current conditions are the authority. Do not inherit another request budget, category, location or role from session history. Today is ' +
       today +
       ' Europe/London.',
     ctx.answerInputExhausted
@@ -40,6 +40,46 @@ export function requestInstructions(
         ctx.replyToBotText.slice(0, 800)
       : '',
     'CURRENT REQUEST: ' + JSON.stringify(ctx.currentRequest ?? { demand: ctx.demand }),
+    ctx.task
+      ? 'INTERNAL SELECTED TASK PLAN (never print IDs or internal fields): ' +
+        JSON.stringify({
+          goals: ctx.task.goals
+            .filter((g) => !g.userConfirmation)
+            .map((g) => ({
+              id: g.id,
+              title: g.title,
+              criteria: g.criteria.map(({ id, label, strength, status }) => ({
+                id,
+                label,
+                strength,
+                status,
+              })),
+            })),
+          constraints: ctx.task.constraints.map(({ origin: _origin, ...constraint }) => constraint),
+        }) +
+        '. Use these exact goal IDs in market_search needs. The server retains their separate budgets and unresolved goals even if a fresh search plan omits them. Internal supported means source evidence, never guaranteed real-world availability.'
+      : '',
+    ctx.taskUpdate?.kind === 'ambiguous' || ctx.taskUpdate?.kind === 'unbound'
+      ? 'TASK REFERENCE NEEDS CLARIFICATION: do not search or change any task. Use reply_to_request kind=clarification, refs=[], asking which existing need or original goal this short answer concerns. Scoped topic options: ' +
+        JSON.stringify(
+          (ctx.taskCandidates ?? [])
+            .filter(
+              (t) =>
+                t.ownerUserId === ctx.userId &&
+                t.scope.chatId === ctx.chatId &&
+                t.scope.channel === (ctx.channel ?? 'telegram'),
+            )
+            .slice(0, 8)
+            .map((t) => t.objective.slice(0, 100)),
+        )
+      : '',
+    ctx.taskUpdate?.kind === 'completed' ||
+    ctx.taskUpdate?.kind === 'cancelled' ||
+    ctx.taskUpdate?.kind === 'acknowledged'
+      ? 'The user has confirmed the outcome/cancellation or only acknowledged the answer. React once; do not search again, invent further needs or claim you performed their real-world action.'
+      : '',
+    // PRD §13: warmth comes from useful judgement and reduced burden, not fabricated familiarity.
+    'Help like a considerate, practical acquaintance: lead with the option or next step you would prioritise and explain the concrete reason. Consider only KNOWN practical friction (carrying furniture, travel, time, total cost, pets, skill level); do not invent their circumstances or feelings. Explain the important tradeoff and what remains uncertain. If information is enough, act rather than asking another intake question. Ask at most ONE genuinely decision-changing unknown, never something already supplied. Avoid formulaic reassurance, pet names, sales-style followups and fake personal visits/experience. Never expose task IDs, internal criteria scores, gates or the ledger in the conversation.',
     'For GP registration, official procedures, airport transport, supermarkets, food, museums and family outings, use search_information for source passages. These topics ARE supported. For GP do not invent optional document lists or recommend outdated immigration documents; distinguish basic form information from compulsory proof. For GP use one registration-policy query and one E14-specific practice query; do not call a borough-wide GP list nearby. Answer registration only, not unasked treatment/eligibility issues. NHS/GP administrative facts require NHS official sources; do not diagnose, prescribe or provide treatment advice. Airport times need dated official checks; do not invent first trains.',
     'Complete each actionable request using an outbound tool. If exact matches are absent, explain what was and was not confirmed, give a practical next step or ONE necessary question. No do_nothing for missing results, unavailable sources or supported daily-life advice. Use it only for irrelevant chatter, acknowledgements, job recruitment or an already declined outbound gate.',
     'Do not infer beginner suitability from new-student recruitment or native-language roles from vague language-exchange labels. State only source-supported fits; a declined recommendation will receive a separate server-generated next step, so never rewrite a rejected factual claim to get it through.',

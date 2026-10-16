@@ -3,6 +3,56 @@ import { bindCurrentRequest } from '../src/current-request.js';
 import type { MatchContext } from '../src/context.js';
 import { taskSchema } from '@matchbot/domain';
 describe('current request binding', () => {
+  it('does not collapse different effective item budgets back to the shared default', () => {
+    const task = taskSchema.parse({
+      id: 't',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: 'c' },
+      objective: '买桌椅',
+      category: 'second_hand',
+      status: 'active',
+      revision: 0,
+      goals: ['desk', 'chair'].map((id) => ({
+        id,
+        title: id,
+        required: true,
+        criteria: [
+          { id: 'fit', label: '适配', strength: 'hard', status: 'unknown', evidenceRefs: [] },
+        ],
+      })),
+      constraints: [
+        {
+          key: 'budget',
+          strength: 'hard',
+          value: { kind: 'money', amountPence: 5000, unit: 'item' },
+          origin: { kind: 'user', sourceMessageId: 'old' },
+        },
+        {
+          key: 'budget',
+          goalId: 'desk',
+          strength: 'hard',
+          value: { kind: 'money', amountPence: 7000, unit: 'item' },
+          origin: { kind: 'user', sourceMessageId: 'm' },
+        },
+      ],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    const ctx: MatchContext = {
+      userId: 'u',
+      chatId: 'c',
+      groupId: null,
+      phase: 0,
+      sourceMessageId: 'm',
+      recentReplies: [],
+      task,
+    };
+    bindCurrentRequest(ctx, '桌子可以到70');
+    expect(ctx.demand?.budgetPence).toBeUndefined();
+  });
   it('keeps the selected task goal and constraints when the user answers a radius question', () => {
     const task = taskSchema.parse({
       id: 'badminton',

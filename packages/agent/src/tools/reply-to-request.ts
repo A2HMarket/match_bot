@@ -58,13 +58,18 @@ function renderMarketRefs(
   const choices = buildMarketChoices({ candidates: listings, plan: ctx.marketPlan });
   const usable = [...choices.primary, ...choices.backup].map((r) => r.listing);
   if (usable.length !== listings.length) return null;
-  const terms = ctx.marketPlan.needs.flatMap((n) => n.terms);
   const selections = usable.map((n) => {
+    const matched =
+      [...choices.primary, ...choices.backup].find((row) => row.listing.ref === n.ref)?.assessment
+        .needs ?? [];
+    const ownTerms = ctx
+      .marketPlan!.needs.filter((need) => matched.includes(need.id))
+      .flatMap((need) => need.terms);
     const rows = n.description.split('\n');
     const bullets = rows.filter(
       (s) =>
         /^\s*[-•]/.test(s) &&
-        terms.some((t) => s.toLowerCase().includes(t.toLowerCase())) &&
+        ownTerms.some((t) => s.toLowerCase().includes(t.toLowerCase())) &&
         !/已出|已售|❌|sold/i.test(s),
     );
     const evidence = bullets.length
@@ -98,7 +103,34 @@ function renderMarketRefs(
   });
   return {
     text: rendered.text,
-    evidence: usable.map((n) => n.title + '\n' + n.description.slice(0, 1600)),
+    evidence: selections.map((selection, index) => {
+      const listing = usable[index];
+      if (!listing) return selection.evidence;
+      const matched =
+        [...choices.primary, ...choices.backup].find((row) => row.listing.ref === listing.ref)
+          ?.assessment.needs ?? [];
+      const mentions = (text: string, terms: string[]) =>
+        terms.some((term) => text.toLowerCase().includes(term.toLowerCase()));
+      const excluded = ctx.marketPlan!.needs.some(
+        (need) =>
+          !matched.includes(need.id) &&
+          mentions(listing.title + '\n' + listing.description, need.terms),
+      );
+      if (!excluded) return listing.title + '\n' + listing.description.slice(0, 1600);
+      const ownTerms = ctx
+        .marketPlan!.needs.filter((need) => matched.includes(need.id))
+        .flatMap((need) => need.terms);
+      const blocks = listing.description
+        .split(/\n(?=\s*[-•])/)
+        .filter((block) => mentions(block.split('\n')[0] ?? '', ownTerms))
+        .map((block) => block.split('——原帖原文——')[0] ?? '')
+        .join('\n');
+      const common = listing.description
+        .split('\n')
+        .filter((line) => /^(?:地点|位置|时间|路线|要求|户型|费用)[：:]/.test(line))
+        .join('\n');
+      return selection.name + '\n' + (blocks || selection.evidence).slice(0, 1600) + '\n' + common;
+    }),
   };
 }
 

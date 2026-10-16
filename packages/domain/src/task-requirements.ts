@@ -22,19 +22,57 @@ export const taskRequirementPatchSchema = z.strictObject({
   goals: z.array(goalDefinition).max(24),
   constraints: z.array(constraintChange).max(64),
 });
-export type TaskRequirementPatch = z.infer<typeof taskRequirementPatchSchema>;
+export type TaskRequirementPatch = z.input<typeof taskRequirementPatchSchema>;
 
 function goalDefinitionOf(goal: UserTask['goals'][number]) {
   return {
     id: goal.id,
     title: goal.title,
     required: goal.required,
-    criteria: goal.criteria.map(({ id, label, strength }) => ({ id, label, strength })),
+    criteria: goal.criteria.map(({ id, label, strength, constraintKey }) => ({
+      id,
+      label,
+      strength,
+      constraintKey,
+    })),
   };
 }
 function constraintDefinitionOf(constraint: UserTask['constraints'][number]) {
   const { origin: _origin, ...definition } = constraint;
   return definition;
+}
+
+/** PRD §13: every current condition remains checkable after a short update that omits the old plan. */
+function bindConditionCriteria(task: UserTask): boolean {
+  let changed = false;
+  for (const goal of task.goals) {
+    if (goal.userConfirmation) continue;
+    const conditions = new Map(task.constraints.filter((c) => !c.goalId).map((c) => [c.key, c]));
+    for (const condition of task.constraints.filter((c) => c.goalId === goal.id))
+      conditions.set(condition.key, condition);
+    for (const condition of conditions.values()) {
+      const label = '核对当前条件：' + condition.key;
+      const existing = goal.criteria.find((c) => c.constraintKey === condition.key);
+      if (!existing) {
+        goal.criteria.push(
+          taskCriterionSchema.parse({
+            id: 'condition:' + condition.key,
+            label,
+            strength: condition.strength,
+            constraintKey: condition.key,
+            status: 'unknown',
+            evidenceRefs: [],
+          }),
+        );
+        changed = true;
+      } else if (existing.label !== label || existing.strength !== condition.strength) {
+        existing.label = label;
+        existing.strength = condition.strength;
+        changed = true;
+      }
+    }
+  }
+  return changed;
 }
 
 /** PRD §13: merge only named changes, retain the other subgoals, and recheck advice after changed requirements. */
@@ -95,6 +133,7 @@ export function reviseTaskRequirements(p: {
     else task.constraints[index] = next;
     changed = true;
   }
+  changed = bindConditionCriteria(task) || changed;
   if (changed) {
     task.requirementsVersion += 1;
     task.evidence = [];

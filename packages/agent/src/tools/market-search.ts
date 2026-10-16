@@ -8,6 +8,7 @@ import {
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
 import { buildMarketChoices, buildMarketResearchTasks } from '../market-choices.js';
+import { bindTaskMarketPlan } from '../task-market-plan.js';
 import { marketPlanInputSchema, toMarketPlan, rankMarketListings } from '../market-strategy.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 import {
@@ -141,7 +142,8 @@ export function marketSearchTool(
         }
         if (args.plan.dateRange && args.plan.dateRange.from > args.plan.dateRange.to)
           return deny('plan date range must be ordered');
-        ctx.marketPlan = toMarketPlan({ ...args.plan, intent: args.intent }, requestText);
+        const proposed = toMarketPlan({ ...args.plan, intent: args.intent }, requestText);
+        ctx.marketPlan = ctx.task ? bindTaskMarketPlan(proposed, ctx.task) : proposed;
       }
       if (args.plan && ctx.marketPlan) {
         let learned = 0;

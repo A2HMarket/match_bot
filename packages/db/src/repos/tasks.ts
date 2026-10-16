@@ -26,6 +26,7 @@ const createSchema = z.strictObject({
   intentKey: id,
   objective: taskSchema.shape.objective,
   category: z.enum(DEMAND_CATEGORIES),
+  counterparty: taskSchema.shape.counterparty,
 });
 const mutationSchema = z.strictObject({
   access: accessSchema,
@@ -42,6 +43,13 @@ const reviseSchema = mutationSchema.extend({
   patch: taskRequirementPatchSchema,
 });
 const confirmGoalSchema = mutationSchema.extend({ goalId: id, actor: taskActorSchema });
+const userTurnSchema = mutationSchema.extend({
+  sourceMessageId: id,
+  patch: taskRequirementPatchSchema.nullable(),
+  outcome: z
+    .strictObject({ intent: z.enum(['achieved', 'cancelled']), goalIds: z.array(id).max(24) })
+    .nullable(),
+});
 export type TaskMutationResult =
   { kind: 'applied' | 'replayed'; task: UserTask } | { kind: 'conflict' | 'not_found' };
 
@@ -104,7 +112,7 @@ function assertReplay(actual: string, expected: string): void {
 
 type Mutation = z.infer<typeof mutationSchema> & {
   requestHash: string;
-  kind: 'status_changed' | 'requirements_revised' | 'goal_confirmed';
+  kind: 'status_changed' | 'requirements_revised' | 'goal_confirmed' | 'user_turn';
   actorKind: 'agent' | 'user' | 'system';
   sourceMessageId?: string;
   compute: (task: UserTask, source: Awaited<ReturnType<typeof requireMessage>> | null) => UserTask;
@@ -205,6 +213,7 @@ export function tasksRepo(prisma: PrismaClient) {
       const originHash = fingerprint(p);
       const state = taskPayloadSchema.parse({
         objective: p.objective,
+        counterparty: p.counterparty,
         goals: [],
         evidence: [],
         pendingQuestion: null,
@@ -296,6 +305,48 @@ export function tasksRepo(prisma: PrismaClient) {
         }),
         ...(p.actor.kind === 'user' ? { sourceMessageId: p.actor.messageId } : {}),
         compute: (task) => confirmTaskGoal({ task, goalId: p.goalId, actor: p.actor }),
+      });
+    },
+    async applyUserTurn(input: z.input<typeof userTurnSchema>): Promise<TaskMutationResult> {
+      const p = userTurnSchema.parse(input);
+      return commitMutation(prisma, {
+        ...p,
+        kind: 'user_turn',
+        actorKind: 'user',
+        requestHash: fingerprint({
+          expectedRevision: p.expectedRevision,
+          sourceMessageId: p.sourceMessageId,
+          patch: p.patch,
+          outcome: p.outcome,
+        }),
+        compute: (current, source) => {
+          if (!source) throw new Error('task turn source missing');
+          let task = p.patch
+            ? reviseTaskRequirements({
+                task: current,
+                source: { messageId: source.id, text: source.text },
+                patch: p.patch,
+              })
+            : current;
+          if (p.outcome) {
+            const actor = {
+              kind: 'user' as const,
+              userId: p.access.userId,
+              messageId: source.id,
+              intent: p.outcome.intent,
+            };
+            if (p.outcome.goalIds.length) {
+              for (const goalId of p.outcome.goalIds)
+                task = confirmTaskGoal({ task, goalId, actor });
+            } else
+              task = transitionTaskStatus({
+                task,
+                actor,
+                next: p.outcome.intent === 'achieved' ? 'completed' : 'cancelled',
+              });
+          }
+          return { ...task, revision: current.revision + 1 };
+        },
       });
     },
   };

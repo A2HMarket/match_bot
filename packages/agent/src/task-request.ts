@@ -40,14 +40,20 @@ export function taskCurrentRequest(ctx: MatchContext, input: string): CurrentReq
   const constraints = task.constraints.filter(
     (c) => !c.goalId || goals.some((g) => g.id === c.goalId),
   );
-  const budgets = constraints.filter((c) => c.key === 'budget' && c.value.kind === 'money');
-  const amounts = new Set(budgets.map((c) => (c.value.kind === 'money' ? c.value.amountPence : 0)));
-  const globalBudget = budgets.find((c) => !c.goalId)?.value;
-  const sameBudget =
-    budgets.length === goals.length && amounts.size === 1 ? [...amounts][0] : undefined;
-  const budgetPence = globalBudget?.kind === 'money' ? globalBudget.amountPence : sameBudget;
+  const budgets = goals.map(
+    (g) =>
+      constraints.find((c) => c.goalId === g.id && c.key === 'budget') ??
+      constraints.find((c) => !c.goalId && c.key === 'budget'),
+  );
+  const amounts = new Set(
+    budgets.map((c) =>
+      c?.value.kind === 'money' && c.strength === 'hard' ? c.value.amountPence : undefined,
+    ),
+  );
+  const budgetPence = amounts.size === 1 ? [...amounts][0] : undefined;
   const area = constraints.find(
-    (c) => !c.goalId && c.key === 'area' && c.value.kind === 'location',
+    (c) =>
+      !c.goalId && (c.key === 'area' || c.key === 'travel_origin') && c.value.kind === 'location',
   )?.value;
   const outcode =
     area?.kind === 'location' && /^(?:SE|SW|NW|EC|WC|E|W|N)\d{1,2}[A-Z]?$/i.test(area.area)

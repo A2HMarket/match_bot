@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Approval, RunState } from '@matchbot/db';
 import type { DemandDraft, Phase } from '@matchbot/domain';
-import { selectMarketTradeType } from '@matchbot/gating';
+import { resolveTaskMarketTarget } from './task-market-plan.js';
 import { decrypt, encrypt } from '@matchbot/shared';
 import { RunContext, RunState as SdkRunState } from '@openai/agents';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import { AGENT_VERSION, createMatchAgent } from './agent.js';
 import type { AgentDeps, MatchContext } from './context.js';
 import { createPgSession } from './session.js';
 import { restoreSearchContext } from './restore-search-context.js';
+import { prepareTaskTurn } from './task-preparation.js';
 
 export type RunOutcome =
   { kind: 'completed'; toolsCalled: string[] } | { kind: 'interrupted'; runStateId: string };
@@ -36,14 +37,36 @@ function resolveSdkVersion(): string {
 const SDK_VERSION = resolveSdkVersion();
 
 const RUN_OPTIONS = { maxTurns: MAX_TURNS } as const;
+const RUN_TIMEOUT_MS = 150000;
 
 export async function runInbound(p: {
   deps: AgentDeps;
   ctx: MatchContext;
   input: string;
 }): Promise<RunOutcome> {
+  p.ctx.runDeadlineAt = Date.now() + RUN_TIMEOUT_MS;
+  const signal = AbortSignal.timeout(RUN_TIMEOUT_MS);
+  const session = createPgSession({
+    repos: p.deps.repos,
+    userId: p.ctx.userId,
+    isolatePreviousTurns: !!p.deps.answerRequests,
+  });
+  if (p.deps.taskRequests) {
+    if (!p.deps.answerRequests) throw new Error('taskRequests requires answerRequests');
+    bindCurrentRequest(p.ctx, p.input);
+    if (!(await prepareTaskTurn({ ...p, signal }))) {
+      if (p.ctx.currentRequest && (p.ctx.addressedToBot || p.ctx.taskCandidates?.length))
+        p.ctx.currentRequest.isActionable = true;
+      return respondRequestStatus(p, session);
+    }
+  }
   if (p.deps.answerRequests) {
     bindCurrentRequest(p.ctx, p.input);
+    if (
+      p.ctx.currentRequest &&
+      (p.ctx.taskUpdate?.kind === 'ambiguous' || p.ctx.taskUpdate?.kind === 'unbound')
+    )
+      p.ctx.currentRequest.isActionable = true;
     await p.deps.repos.traces.create({
       kind: 'gate',
       inputRef: p.ctx.sourceMessageId,
@@ -64,7 +87,7 @@ export async function runInbound(p: {
     });
   }
   if (p.deps.marketSearch) {
-    p.ctx.marketTarget = selectMarketTradeType(p.input);
+    p.ctx.marketTarget = resolveTaskMarketTarget(p.ctx.task, p.input);
     await p.deps.repos.traces.create({
       kind: 'gate',
       inputRef: p.ctx.sourceMessageId,
@@ -74,28 +97,26 @@ export async function runInbound(p: {
       costMicro: 0,
     });
   }
-  const { agent, runner } = createMatchAgent(p.deps, { phase: p.ctx.phase, input: p.input });
-  const session = createPgSession({
-    repos: p.deps.repos,
-    userId: p.ctx.userId,
-    isolatePreviousTurns: !!p.deps.answerRequests,
+  const ambiguous = p.ctx.taskUpdate?.kind === 'ambiguous' || p.ctx.taskUpdate?.kind === 'unbound';
+  const { agent, runner } = createMatchAgent(p.deps, {
+    phase: p.ctx.phase,
+    input: p.ctx.currentRequest?.text ?? p.input,
+    finalAnswerOnly: ambiguous,
+    inputRef: p.ctx.sourceMessageId,
+    ...(p.ctx.task ? { taskId: p.ctx.task.id } : {}),
   });
   let result: SettleResult;
   try {
-    result = await runner.run(agent, p.input, { context: p.ctx, session, ...RUN_OPTIONS });
+    result = await runner.run(agent, p.input, { context: p.ctx, session, ...RUN_OPTIONS, signal });
   } catch (error) {
-    if (
-      !p.deps.answerRequests ||
-      !(error instanceof Error) ||
-      error.name !== 'MaxTurnsExceededError'
-    )
+    if (!p.deps.answerRequests || !(error instanceof Error) || /Guardrail/.test(error.name))
       throw error;
     p.ctx.sourceFailures ??= [];
-    p.ctx.sourceFailures.push('processing:turn_limit');
+    p.ctx.sourceFailures.push('processing:' + error.name);
     await p.deps.repos.traces.create({
       kind: 'gate',
       inputRef: p.ctx.sourceMessageId,
-      output: { gate: 'answer_finalization', reason: 'turn_limit' },
+      output: { gate: 'answer_finalization', reason: error.name },
       phase: p.ctx.phase,
       latencyMs: 0,
       costMicro: 0,
@@ -144,6 +165,8 @@ async function finalizeRequest(
   p: { deps: AgentDeps; ctx: MatchContext; input: string },
   session: ReturnType<typeof createPgSession>,
 ): Promise<RunOutcome> {
+  const remaining = (p.ctx.runDeadlineAt ?? Date.now() + 30000) - Date.now();
+  if (remaining <= 0) return respondRequestStatus(p, session);
   p.ctx.isAnswerFinalization = true;
   if (p.ctx.answerInputExhausted) {
     p.ctx.sourceFailures ??= [];
@@ -155,14 +178,19 @@ async function finalizeRequest(
     finalAnswerOnly: true,
   });
   try {
-    const result = await runner.run(agent, p.input, { context: p.ctx, session, maxTurns: 3 });
+    const result = await runner.run(agent, p.input, {
+      context: p.ctx,
+      session,
+      maxTurns: 3,
+      signal: AbortSignal.timeout(Math.min(30000, remaining)),
+    });
     if (result.interruptions.some((item) => !hasValidArguments(item.arguments)))
       return respondRequestStatus(p, session);
     if (!result.interruptions.length && !p.ctx.answerRecorded)
       return respondRequestStatus(p, session);
     return settle(p.deps, p.ctx, result);
   } catch (error) {
-    if (!(error instanceof Error) || error.name !== 'MaxTurnsExceededError') throw error;
+    if (!(error instanceof Error) || /Guardrail/.test(error.name)) throw error;
     return respondRequestStatus(p, session);
   }
 }
@@ -207,6 +235,7 @@ async function respondRequestStatus(
     context: p.ctx,
     session,
     maxTurns: 2,
+    signal: AbortSignal.timeout(30000),
   });
   return settle(p.deps, p.ctx, result);
 }

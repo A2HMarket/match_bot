@@ -26,6 +26,46 @@ const plan: MarketPlan = {
   requiredArea: ['E14'],
 };
 describe('source-grounded market strategy', () => {
+  it('keeps separate item budgets and retains only the valid part of a mixed bundle', () => {
+    const separate: MarketPlan = {
+      ...plan,
+      budget: 100,
+      needs: [
+        { id: 'desk', terms: ['书桌'], budget: 70 },
+        { id: 'chair', terms: ['办公椅'], budget: 50 },
+      ],
+    };
+    const n = listing('- 书桌｜£60\n- 办公椅｜£65\n地点：E14 自提');
+    const result = assessMarketListing(n, separate);
+    expect(result.needs).toEqual(['desk']);
+    expect(result.itemPriceEvidence).toContain('书桌');
+    expect(result.itemPriceEvidence).not.toContain('办公椅');
+    expect(result.checks).toContainEqual({
+      label: 'budget',
+      status: 'met',
+      evidence: '- 书桌｜£60',
+    });
+    const chair = assessMarketListing(n, separate, '办公椅');
+    expect(chair.checks.some((c) => c.label === 'budget' && c.status === 'mismatch')).toBe(true);
+  });
+  it('checks each quote against its own cap when both items fit', () => {
+    const separate: MarketPlan = {
+      ...plan,
+      needs: [
+        { id: 'desk', terms: ['书桌'], budget: 70 },
+        { id: 'chair', terms: ['办公椅'], budget: 50 },
+      ],
+    };
+    const result = assessMarketListing(
+      listing('- 书桌｜£60\n- 办公椅｜£45\n地点：E14 自提'),
+      separate,
+    );
+    expect(result.needs).toEqual(['desk', 'chair']);
+    expect(result.checks.filter((c) => c.label === 'budget').map((c) => c.status)).toEqual([
+      'met',
+      'met',
+    ]);
+  });
   it('does not declare an estimated rent lower bound within the monthly budget', () => {
     const n = {
       ...listing('转租：Stratford一居室公寓\n价格：租金预算估计在£400以上/月'),

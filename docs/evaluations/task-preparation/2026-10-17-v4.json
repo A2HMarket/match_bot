@@ -1,0 +1,1021 @@
+{
+  "runId": "c0201a2f-0236-4960-b509-f541c0e0c278",
+  "sourceFingerprint": "9816871d6054b4ed3c3443a969be1b35459704c1bf8029e74334af0fde17c75f",
+  "agentVersion": "0.16.2",
+  "model": "deepseek-flash",
+  "status": "completed",
+  "elapsedMs": 14792,
+  "boundary": "synthetic user inputs; real model and isolated DB; no search, Jev or Telegram",
+  "results": [
+    {
+      "scenario": "desk_chair",
+      "turn": 0,
+      "input": "E14想收书桌和办公椅，每件50镑以内，能自提。",
+      "elapsedMs": 3431,
+      "update": {
+        "kind": "new"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvba46kf0003wpbg24rjxoa8",
+        "ownerUserId": "cmvba43xd0000wpbgjebmcdte",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-c0201a2f-0236-4960-b509-f541c0e0c278-desk_chair"
+        },
+        "objective": "在E14附近寻找可自提的二手书桌和办公椅",
+        "category": "second_hand",
+        "status": "active",
+        "revision": 1,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba43xn0002wpbgosgp1bt1"
+            }
+          },
+          {
+            "key": "budget",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 5000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba43xn0002wpbgosgp1bt1"
+            }
+          },
+          {
+            "key": "self_collect",
+            "strength": "hard",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba43xn0002wpbgosgp1bt1"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "desk",
+            "title": "书桌",
+            "required": true,
+            "criteria": [
+              {
+                "id": "desk_source",
+                "label": "来源可靠且信息可核实",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_actionable",
+                "label": "信息可直接用于联系或购买",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_price",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_self_collect",
+                "label": "核对当前条件：self_collect",
+                "strength": "hard",
+                "constraintKey": "self_collect",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          },
+          {
+            "id": "office_chair",
+            "title": "办公椅",
+            "required": true,
+            "criteria": [
+              {
+                "id": "chair_source",
+                "label": "来源可靠且信息可核实",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_actionable",
+                "label": "信息可直接用于联系或购买",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_price",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_self_collect",
+                "label": "核对当前条件：self_collect",
+                "strength": "hard",
+                "constraintKey": "self_collect",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "start_task",
+          "arguments": "{\"objective\": \"在E14附近寻找可自提的二手书桌和办公椅\", \"category\": \"second_hand\", \"goals\": [{\"id\": \"desk\", \"title\": \"书桌\", \"required\": true, \"criteria\": [{\"id\": \"desk_source\", \"label\": \"来源可靠且信息可核实\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"desk_actionable\", \"label\": \"信息可直接用于联系或购买\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"desk_price\", \"label\": \"核对当前单品预算\", \"strength\": \"hard\", \"constraintKey\": \"max_price_per_item\"}, {\"id\": \"desk_self_collect\", \"label\": \"核对是否可自提\", \"strength\": \"hard\", \"constraintKey\": \"self_collect\"}, {\"id\": \"desk_area\", \"label\": \"核对所在区域范围\", \"strength\": \"hard\", \"constraintKey\": \"area\"}], \"sourceQuote\": \"想收书桌和办公椅，每件50镑以内，能自提\"}, {\"id\": \"office_chair\", \"title\": \"办公椅\", \"required\": true, \"criteria\": [{\"id\": \"chair_source\", \"label\": \"来源可靠且信息可核实\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"chair_actionable\", \"label\": \"信息可直接用于联系或购买\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"chair_price\", \"label\": \"核对当前单品预算\", \"strength\": \"hard\", \"constraintKey\": \"max_price_per_item\"}, {\"id\": \"chair_self_collect\", \"label\": \"核对是否可自提\", \"strength\": \"hard\", \"constraintKey\": \"self_collect\"}, {\"id\": \"chair_area\", \"label\": \"核对所在区域范围\", \"strength\": \"hard\", \"constraintKey\": \"area\"}], \"sourceQuote\": \"想收书桌和办公椅\"}], \"constraints\": [{\"key\": \"area\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"E14\"}, \"sourceQuote\": \"E14\"}, {\"key\": \"max_price_per_item\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 5000, \"unit\": \"item\"}, \"sourceQuote\": \"每件50镑以内\"}, {\"key\": \"self_collect\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"boolean\", \"value\": true}, \"sourceQuote\": \"能自提\"}]}",
+          "callId": "call_00_rwpw3f74btKoHTMUzuhg8167"
+        }
+      ]
+    },
+    {
+      "scenario": "desk_chair",
+      "turn": 1,
+      "input": "桌子可以到70镑，椅子还是50",
+      "elapsedMs": 1869,
+      "update": {
+        "kind": "continued"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvba46kf0003wpbg24rjxoa8",
+        "ownerUserId": "cmvba43xd0000wpbgjebmcdte",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-c0201a2f-0236-4960-b509-f541c0e0c278-desk_chair"
+        },
+        "objective": "在E14附近寻找可自提的二手书桌和办公椅",
+        "category": "second_hand",
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba43xn0002wpbgosgp1bt1"
+            }
+          },
+          {
+            "key": "budget",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 5000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba43xn0002wpbgosgp1bt1"
+            }
+          },
+          {
+            "key": "self_collect",
+            "strength": "hard",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba43xn0002wpbgosgp1bt1"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "desk",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 7000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba46la0008wpbg1nosnk0n"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "office_chair",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 5000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba46la0008wpbg1nosnk0n"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "desk",
+            "title": "书桌",
+            "required": true,
+            "criteria": [
+              {
+                "id": "desk_source",
+                "label": "来源可靠且信息可核实",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_actionable",
+                "label": "信息可直接用于联系或购买",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_price",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_self_collect",
+                "label": "核对当前条件：self_collect",
+                "strength": "hard",
+                "constraintKey": "self_collect",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          },
+          {
+            "id": "office_chair",
+            "title": "办公椅",
+            "required": true,
+            "criteria": [
+              {
+                "id": "chair_source",
+                "label": "来源可靠且信息可核实",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_actionable",
+                "label": "信息可直接用于联系或购买",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_price",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_self_collect",
+                "label": "核对当前条件：self_collect",
+                "strength": "hard",
+                "constraintKey": "self_collect",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "update_task",
+          "arguments": "{\"taskRef\": \"cmvba46kf0003wpbg24rjxoa8\", \"referenceQuote\": \"桌子可以到70镑，椅子还是50\", \"goals\": [], \"constraints\": [{\"key\": \"budget\", \"goalId\": \"desk\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 7000, \"unit\": \"item\"}, \"sourceQuote\": \"桌子可以到70镑\"}, {\"key\": \"budget\", \"goalId\": \"office_chair\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 5000, \"unit\": \"item\"}, \"sourceQuote\": \"椅子还是50\"}], \"outcome\": null}",
+          "callId": "call_00_lY0aF4F8D44d0XxE7EwM7573"
+        }
+      ]
+    },
+    {
+      "scenario": "cat_housing",
+      "turn": 0,
+      "input": "想在Stratford找一居室，月租1600镑以内，11月入住，我有一只猫。",
+      "elapsedMs": 3034,
+      "update": {
+        "kind": "new"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvba4ad7000fwpbg4umqjdc4",
+        "ownerUserId": "cmvba481c000cwpbg72yoc17a",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-c0201a2f-0236-4960-b509-f541c0e0c278-cat_housing"
+        },
+        "objective": "用户想在Stratford租一居室",
+        "category": "housing",
+        "status": "active",
+        "revision": 1,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "11月入住"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "goal_1br",
+            "title": "一居室",
+            "required": true,
+            "criteria": [
+              {
+                "id": "c_1br_room",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_rent",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_src",
+                "label": "核对房源信息有可查来源且可实际看房或联系",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "start_task",
+          "arguments": "{\"objective\": \"用户想在Stratford租一居室\", \"category\": \"housing\", \"goals\": [{\"id\": \"goal_1br\", \"title\": \"一居室\", \"required\": true, \"criteria\": [{\"id\": \"c_1br_room\", \"label\": \"核对房源户型为一居室\", \"strength\": \"hard\", \"constraintKey\": \"room_type\"}, {\"id\": \"c_1br_area\", \"label\": \"核对房源所在区域\", \"strength\": \"hard\", \"constraintKey\": \"area\"}, {\"id\": \"c_1br_rent\", \"label\": \"核对当前月租预算\", \"strength\": \"hard\", \"constraintKey\": \"budget\"}, {\"id\": \"c_1br_pets\", \"label\": \"核对房源是否允许养猫\", \"strength\": \"hard\", \"constraintKey\": \"pets\"}, {\"id\": \"c_1br_date\", \"label\": \"核对入住日期是否符合要求\", \"strength\": \"hard\", \"constraintKey\": \"move_in_date\"}, {\"id\": \"c_1br_src\", \"label\": \"核对房源信息有可查来源且可实际看房或联系\", \"strength\": \"hard\", \"constraintKey\": null}], \"sourceQuote\": \"想在Stratford找一居室\"}], \"constraints\": [{\"key\": \"area\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"Stratford\"}, \"sourceQuote\": \"在Stratford\"}, {\"key\": \"room_type\", \"goalId\": \"goal_1br\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"一居室\"}, \"sourceQuote\": \"一居室\"}, {\"key\": \"budget\", \"goalId\": \"goal_1br\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 160000, \"unit\": \"month\"}, \"sourceQuote\": \"月租1600镑以内\"}, {\"key\": \"move_in_date\", \"goalId\": \"goal_1br\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"11月入住\"}, \"sourceQuote\": \"11月入住\"}, {\"key\": \"pets\", \"goalId\": \"goal_1br\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"猫\"}, \"sourceQuote\": \"我有一只猫\"}]}",
+          "callId": "call_00_mzHbk9OUgkRbtW8XmxYz1626"
+        }
+      ]
+    },
+    {
+      "scenario": "cat_housing",
+      "turn": 1,
+      "input": "11月5日入住，猫一定要能养，包账单更好，但不增加预算。",
+      "elapsedMs": 1983,
+      "update": {
+        "kind": "continued"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvba4ad7000fwpbg4umqjdc4",
+        "ownerUserId": "cmvba481c000cwpbg72yoc17a",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-c0201a2f-0236-4960-b509-f541c0e0c278-cat_housing"
+        },
+        "objective": "用户想在Stratford租一居室",
+        "category": "housing",
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "2026-11-05"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4adr000kwpbgr403pfjk"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "goal_1br",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba481f000ewpbg85ghb95b"
+            }
+          },
+          {
+            "key": "bills",
+            "goalId": "goal_1br",
+            "strength": "preference",
+            "value": {
+              "kind": "text",
+              "text": "包账单"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4adr000kwpbgr403pfjk"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "goal_1br",
+            "title": "一居室",
+            "required": true,
+            "criteria": [
+              {
+                "id": "c_1br_room",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_rent",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "c_1br_src",
+                "label": "核对房源信息有可查来源且可实际看房或联系",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "condition:bills",
+                "label": "核对当前条件：bills",
+                "strength": "preference",
+                "constraintKey": "bills",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "update_task",
+          "arguments": "{\"taskRef\": \"cmvba4ad7000fwpbg4umqjdc4\", \"referenceQuote\": \"11月5日入住，猫一定要能养，包账单更好，但不增加预算。\", \"goals\": [], \"constraints\": [{\"key\": \"move_in_date\", \"goalId\": \"goal_1br\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"2026-11-05\"}, \"sourceQuote\": \"11月5日入住\"}, {\"key\": \"pets\", \"goalId\": \"goal_1br\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"猫\"}, \"sourceQuote\": \"猫一定要能养\"}, {\"key\": \"bills\", \"goalId\": \"goal_1br\", \"strength\": \"preference\", \"value\": {\"kind\": \"text\", \"text\": \"包账单\"}, \"sourceQuote\": \"包账单更好\"}], \"outcome\": null}",
+          "callId": "call_00_SC13mHPALuZ7eAwnjxuE4027"
+        }
+      ]
+    },
+    {
+      "scenario": "beginner_badminton",
+      "turn": 0,
+      "input": "我住E14，周末想找适合初学者的羽毛球搭子。",
+      "elapsedMs": 2529,
+      "update": {
+        "kind": "new"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvba4duy000rwpbg2nhdvuru",
+        "ownerUserId": "cmvba4bwz000owpbggl82o2aw",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-c0201a2f-0236-4960-b509-f541c0e0c278-beginner_badminton"
+        },
+        "objective": "找适合初学者的羽毛球搭子",
+        "category": "other",
+        "status": "active",
+        "revision": 1,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "travel_origin",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4bx2000qwpbgsc2zcrb5"
+            }
+          },
+          {
+            "key": "level",
+            "goalId": "badminton_partner",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "初学者"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4bx2000qwpbgsc2zcrb5"
+            }
+          },
+          {
+            "key": "day",
+            "goalId": "badminton_partner",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "周末"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4bx2000qwpbgsc2zcrb5"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "badminton_partner",
+            "title": "羽毛球搭子",
+            "required": true,
+            "criteria": [
+              {
+                "id": "badminton_partner_level",
+                "label": "核对当前条件：level",
+                "strength": "hard",
+                "constraintKey": "level",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "badminton_partner_day",
+                "label": "核对当前条件：day",
+                "strength": "hard",
+                "constraintKey": "day",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "badminton_partner_source",
+                "label": "来自可核实的公开来源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "badminton_partner_actionable",
+                "label": "提供可联系或可报名的具体途径",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "condition:travel_origin",
+                "label": "核对当前条件：travel_origin",
+                "strength": "hard",
+                "constraintKey": "travel_origin",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "start_task",
+          "arguments": "{\"objective\": \"找适合初学者的羽毛球搭子\", \"category\": \"other\", \"goals\": [{\"id\": \"badminton_partner\", \"title\": \"羽毛球搭子\", \"required\": true, \"criteria\": [{\"id\": \"badminton_partner_level\", \"label\": \"水平适合初学者\", \"strength\": \"hard\", \"constraintKey\": \"level\"}, {\"id\": \"badminton_partner_day\", \"label\": \"活动时间在周末\", \"strength\": \"hard\", \"constraintKey\": \"day\"}, {\"id\": \"badminton_partner_source\", \"label\": \"来自可核实的公开来源\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"badminton_partner_actionable\", \"label\": \"提供可联系或可报名的具体途径\", \"strength\": \"hard\", \"constraintKey\": null}], \"sourceQuote\": \"周末想找适合初学者的羽毛球搭子\"}], \"constraints\": [{\"key\": \"travel_origin\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"E14\"}, \"sourceQuote\": \"我住E14\"}, {\"key\": \"level\", \"goalId\": \"badminton_partner\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"初学者\"}, \"sourceQuote\": \"适合初学者的羽毛球搭子\"}, {\"key\": \"day\", \"goalId\": \"badminton_partner\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"周末\"}, \"sourceQuote\": \"周末想找适合初学者的羽毛球搭子\"}]}",
+          "callId": "call_00_NgdI7cm4bbpmliezgLQA5065"
+        }
+      ]
+    },
+    {
+      "scenario": "beginner_badminton",
+      "turn": 1,
+      "input": "半小时以内",
+      "elapsedMs": 1821,
+      "update": {
+        "kind": "continued"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvba4duy000rwpbg2nhdvuru",
+        "ownerUserId": "cmvba4bwz000owpbggl82o2aw",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-c0201a2f-0236-4960-b509-f541c0e0c278-beginner_badminton"
+        },
+        "objective": "找适合初学者的羽毛球搭子",
+        "category": "other",
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "travel_origin",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4bx2000qwpbgsc2zcrb5"
+            }
+          },
+          {
+            "key": "level",
+            "goalId": "badminton_partner",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "初学者"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4bx2000qwpbgsc2zcrb5"
+            }
+          },
+          {
+            "key": "day",
+            "goalId": "badminton_partner",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "周末"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4bx2000qwpbgsc2zcrb5"
+            }
+          },
+          {
+            "key": "max_travel_minutes",
+            "goalId": "badminton_partner",
+            "strength": "hard",
+            "value": {
+              "kind": "duration",
+              "minutes": 30
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvba4dve000wwpbg16gmrrdt"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "badminton_partner",
+            "title": "羽毛球搭子",
+            "required": true,
+            "criteria": [
+              {
+                "id": "badminton_partner_level",
+                "label": "核对当前条件：level",
+                "strength": "hard",
+                "constraintKey": "level",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "badminton_partner_day",
+                "label": "核对当前条件：day",
+                "strength": "hard",
+                "constraintKey": "day",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "badminton_partner_source",
+                "label": "来自可核实的公开来源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "badminton_partner_actionable",
+                "label": "提供可联系或可报名的具体途径",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "condition:travel_origin",
+                "label": "核对当前条件：travel_origin",
+                "strength": "hard",
+                "constraintKey": "travel_origin",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "condition:max_travel_minutes",
+                "label": "核对当前条件：max_travel_minutes",
+                "strength": "hard",
+                "constraintKey": "max_travel_minutes",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "update_task",
+          "arguments": "{\"taskRef\": \"cmvba4duy000rwpbg2nhdvuru\", \"referenceQuote\": \"半小时以内\", \"goals\": [], \"constraints\": [{\"key\": \"max_travel_minutes\", \"goalId\": \"badminton_partner\", \"strength\": \"hard\", \"value\": {\"kind\": \"duration\", \"minutes\": 30}, \"sourceQuote\": \"半小时以内\"}], \"outcome\": null}",
+          "callId": "call_00_GlcIaG65Go3YlP680N4z8141"
+        }
+      ]
+    }
+  ],
+  "captureOriginalSha256": "f6f1e4b0f99c0a0118a16a3853323c24e5ed1c38d383b39c77d576df5e80e42c",
+  "captureNote": "Synthetic inputs only; exact task states and tool arguments retained; duplicated vendor metadata omitted. This is preparation-only, not a full reply/Telegram acceptance run."
+}

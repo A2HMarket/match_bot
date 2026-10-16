@@ -40,6 +40,14 @@ export interface MatchContext {
   requestCategory?: DemandCategory;
   /** Server-selected, owner/scope-checked task; never accept an arbitrary model-provided snapshot. */
   task?: UserTask;
+  taskCandidates?: UserTask[];
+  taskAnchorId?: string;
+  taskPlanFailures?: number;
+  runDeadlineAt?: number;
+  taskUpdate?: {
+    kind:
+      'new' | 'continued' | 'ambiguous' | 'acknowledged' | 'completed' | 'cancelled' | 'unbound';
+  };
   currentRequest?: CurrentRequest;
   knowledgeSources?: KnowledgeSource[];
   informationQueries?: string[];
@@ -85,6 +93,8 @@ export interface MatchContext {
 export interface AgentDeps {
   /** P22 production enables request-bound answering; legacy injected callers remain compatible. */
   answerRequests?: boolean;
+  /** Enable the persistent task preparation stage once migrations and the full flow are deployed. */
+  taskRequests?: boolean;
   env: Env;
   repos: Repositories;
   jev: JevClient;

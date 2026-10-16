@@ -97,17 +97,26 @@ export function buildMarketChoices(p: {
     .map((listing): MarketChoice => {
       const assessment = assessMarketListing(listing, p.plan, p.names?.[listing.ref]);
       const unknown = assessment.checks.filter((check) => check.status === 'unknown');
+      const essentialPreferences = new Set([
+        ...(p.plan.essentialPreferences ?? []),
+        ...p.plan.needs
+          .filter((need) => assessment.needs.includes(need.id))
+          .flatMap((need) => need.rules?.essentialPreferences ?? []),
+      ]);
       return {
         listing,
         assessment,
         reasons: describeReasons(assessment, p.plan, listing.tradeType),
-        warning: itemWarning(listing, p.plan, p.names?.[listing.ref]),
+        warning: itemWarning(
+          listing,
+          { ...p.plan, needs: p.plan.needs.filter((need) => assessment.needs.includes(need.id)) },
+          p.names?.[listing.ref],
+        ),
         missing: [...new Set(unknown.map((c) => describeMarketCondition(c.label, p.plan)))],
         essentialMissing: unknown
           .filter(
             (c) =>
-              !c.label.startsWith('preference:') ||
-              (p.plan.essentialPreferences ?? []).includes(c.label.slice(11)),
+              !c.label.startsWith('preference:') || essentialPreferences.has(c.label.slice(11)),
           )
           .map((c) => describeMarketCondition(c.label, p.plan)),
       };

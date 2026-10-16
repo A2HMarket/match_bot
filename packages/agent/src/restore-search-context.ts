@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { MatchContext } from './context.js';
 import { XHS_RESEARCH_LIMITS, xhsResearchQuerySchema } from './xhs-research.js';
 import { xhsRecommendationSchema } from './xhs-recommendations.js';
-import { marketPlanSchema } from './market-strategy.js';
+import { marketPlanSchema, type marketRulesSchema, type MarketRules } from './market-strategy.js';
 import { MARKET_INTENTS } from '@matchbot/websearch';
 import {
   marketCandidateSchema,
@@ -58,6 +58,19 @@ const contextSchema = z.object({
 const snapshotSchema = z.object({
   context: z.object({ context: z.record(z.string(), z.unknown()) }),
 });
+function restoreRules(rules: z.infer<typeof marketRulesSchema>): MarketRules {
+  return {
+    preferences: rules.preferences,
+    ...(rules.budget !== undefined ? { budget: rules.budget } : {}),
+    ...(rules.capacityKg !== undefined ? { capacityKg: rules.capacityKg } : {}),
+    ...(rules.essentialPreferences ? { essentialPreferences: rules.essentialPreferences } : {}),
+    ...(rules.requiredArea ? { requiredArea: rules.requiredArea } : {}),
+    ...(rules.requiredTerms ? { requiredTerms: rules.requiredTerms } : {}),
+    ...(rules.excludeTerms ? { excludeTerms: rules.excludeTerms } : {}),
+    ...(rules.route ? { route: rules.route } : {}),
+    ...(rules.dateRange ? { dateRange: rules.dateRange } : {}),
+  };
+}
 
 /** 只读服务端解密快照。SDK 的 context override 只合并审批信息，不合并业务上下文（P14 实测）。 */
 export function restoreSearchContext(ctx: MatchContext, snapshot: string): MatchContext {
@@ -110,7 +123,11 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
             ...(saved.marketPlan.capacityKg !== undefined
               ? { capacityKg: saved.marketPlan.capacityKg }
               : {}),
-            needs: saved.marketPlan.needs,
+            needs: saved.marketPlan.needs.map(({ budget, rules, ...need }) => ({
+              ...need,
+              ...(budget !== undefined ? { budget } : {}),
+              ...(rules ? { rules: restoreRules(rules) } : {}),
+            })),
             preferences: saved.marketPlan.preferences,
             ...(saved.marketPlan.essentialPreferences
               ? { essentialPreferences: saved.marketPlan.essentialPreferences }

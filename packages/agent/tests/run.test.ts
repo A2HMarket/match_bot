@@ -4,7 +4,7 @@ import { assistantMessage, functionCall, ScriptedModel } from '@openai/agents/te
 import { describe, expect, it, vi } from 'vitest';
 import { AGENT_VERSION } from '../src/agent.js';
 import { resumeRun, runInbound } from '../src/run.js';
-import { taskSchema } from '@matchbot/domain';
+import { taskSchema, reviseTaskRequirements } from '@matchbot/domain';
 
 const VAN = { id: 'a', name: 'Van Co', roughPrice: '£40/h', telegram: '@vanco' };
 
@@ -87,6 +87,145 @@ const replyCall = (callId = 'c1') =>
   );
 
 describe('runInbound', () => {
+  it('does not turn thanks for a recommendation into another research/finalization reply', async () => {
+    const model = new ScriptedModel([
+      [functionCall('acknowledge_task', {}, { callId: 'ack' })],
+      [functionCall('react', { emoji: '👍' }, { callId: 'reaction' })],
+      [assistantMessage('done')],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    await runInbound({
+      deps: {
+        ...deps,
+        answerRequests: true,
+        taskRequests: true,
+        repos: { ...repos, tasks: { findOpenByScope: () => Promise.resolve([]) } },
+      } as never,
+      ctx: { ...ctx(2), source: { messageId: 'tg1', userId: 'user1' } },
+      input: '谢谢推荐',
+    });
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    expect(repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'reaction' }),
+      'pending',
+    );
+    model.assertComplete();
+  });
+  it('loads, prepares and updates a persistent task before answering a short followup', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'update_task',
+          {
+            taskRef: 'activity-task',
+            referenceQuote: null,
+            goals: [],
+            constraints: [
+              {
+                key: 'max_travel_minutes',
+                goalId: null,
+                strength: 'hard',
+                value: { kind: 'duration', minutes: 30 },
+                sourceQuote: '半小时以内',
+              },
+            ],
+            outcome: null,
+          },
+          { callId: 'plan' },
+        ),
+      ],
+      [
+        functionCall(
+          'reply_to_request',
+          { kind: 'clarification', text: '周末更方便周六还是周日？', refs: [] },
+          { callId: 'task-reply' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    const task = taskSchema.parse({
+      id: 'activity-task',
+      ownerUserId: 'u1',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找初学者周末羽毛球',
+      category: 'other',
+      status: 'active',
+      revision: 0,
+      goals: [
+        {
+          id: 'activity',
+          title: '初学者周末羽毛球',
+          required: true,
+          criteria: [
+            {
+              id: 'fit',
+              label: '水平/时间/地点适合',
+              strength: 'hard',
+              status: 'unknown',
+              evidenceRefs: [],
+            },
+          ],
+        },
+      ],
+      constraints: [
+        {
+          key: 'area',
+          strength: 'hard',
+          value: { kind: 'location', area: 'E14' },
+          origin: { kind: 'user', sourceMessageId: 'first' },
+        },
+      ],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    const tasks = {
+      findOpenByScope: vi.fn(() => Promise.resolve([task])),
+      applyUserTurn: vi.fn((p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
+        Promise.resolve({
+          kind: 'applied',
+          task: reviseTaskRequirements({
+            task,
+            patch: p.patch,
+            source: { messageId: 'm1', text: '半小时以内' },
+          }),
+        }),
+      ),
+    };
+    await runInbound({
+      deps: {
+        ...deps,
+        repos: { ...repos, tasks },
+        answerRequests: true,
+        taskRequests: true,
+      } as never,
+      ctx: ctx(2),
+      input: '半小时以内',
+    });
+    expect(tasks.findOpenByScope).toHaveBeenCalledWith({
+      userId: 'u1',
+      scope: { channel: 'telegram', chatId: '-1' },
+    });
+    expect(tasks.applyUserTurn).toHaveBeenCalledOnce();
+    expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('30 minutes');
+    expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('E14');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    model.assertComplete();
+  });
   it('passes the selected persistent task into actual SDK instructions for a short followup', async () => {
     const model = new ScriptedModel([
       [

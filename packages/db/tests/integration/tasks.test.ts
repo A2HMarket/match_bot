@@ -31,6 +31,42 @@ async function seed(tx: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
   return { repos, owner, other, message, access };
 }
 describe('task repository', () => {
+  it('applies a whole user turn atomically and rejects an invalid outcome without partial requirements', async () =>
+    withTestDb(async (tx) => {
+      const { repos, access, message } = await seed(tx);
+      const task = await repos.tasks.create({
+        access,
+        sourceMessageId: message.id,
+        intentKey: 'turn',
+        objective: '找到桌椅',
+        category: 'second_hand',
+      });
+      const patch = {
+        goals: ['desk', 'chair'].map((id) => ({
+          id,
+          title: id,
+          required: true,
+          sourceQuote: '桌椅',
+          criteria: [{ id: 'fit', label: '条件适配', strength: 'hard' as const }],
+        })),
+        constraints: [],
+      };
+      const input = {
+        access,
+        id: task.id,
+        expectedRevision: 0,
+        operationKey: 'whole-turn',
+        sourceMessageId: message.id,
+        patch,
+        outcome: { intent: 'achieved' as const, goalIds: ['missing'] },
+      };
+      await expect(repos.tasks.applyUserTurn(input)).rejects.toThrow('existing goal');
+      expect((await repos.tasks.findById({ access, id: task.id }))?.goals).toEqual([]);
+      const applied = await repos.tasks.applyUserTurn({ ...input, outcome: null });
+      expect(applied.kind).toBe('applied');
+      expect(await tx.taskEvent.count({ where: { taskId: task.id } })).toBe(2);
+      expect((await repos.tasks.findById({ access, id: task.id }))?.revision).toBe(1);
+    }));
   it('does not write a checkpoint or advance the task for fabricated requirement provenance', async () =>
     withTestDb(async (tx) => {
       const { repos, access, message } = await seed(tx);

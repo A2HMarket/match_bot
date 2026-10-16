@@ -15,6 +15,23 @@ describe('londonToday', () => {
 });
 
 describe('generation settings', () => {
+  it('uses separate small internal tools for task creation, updates, clarification and acknowledgement', () => {
+    const { agent } = createMatchAgent({ env: { DEEPSEEK_MODEL: 'deepseek-flash' } } as never, {
+      phase: 0,
+      taskPlanningOnly: true,
+      taskRefs: ['task-a'],
+    });
+    expect(agent.tools.map((t) => (t.type === 'function' ? t.name : ''))).toEqual([
+      'start_task',
+      'update_task',
+      'clarify_task',
+      'acknowledge_task',
+    ]);
+    const update = agent.tools.find((t) => t.type === 'function' && t.name === 'update_task');
+    if (!update || update.type !== 'function') throw new Error('missing update tool');
+    expect(update.parameters.properties).not.toHaveProperty('category');
+    expect(update.parameters.properties).not.toHaveProperty('patch');
+  });
   it('registers the verified XHS protocol by default and the research protocol only when enabled', () => {
     for (const enabled of [false, true]) {
       const { agent } = createMatchAgent({

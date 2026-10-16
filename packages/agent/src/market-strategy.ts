@@ -1,10 +1,8 @@
 import { isActiveMarketListing, hasLondonEvidence } from '@matchbot/websearch';
 import { z } from 'zod';
 import type { MarketListing, MarketIntent } from '@matchbot/websearch';
-export type MarketNeed = { id: string; terms: string[] };
-export type MarketPlan = {
-  intent: MarketIntent;
-  needs: MarketNeed[];
+export type MarketNeed = { id: string; terms: string[]; budget?: number; rules?: MarketRules };
+export type MarketRules = {
   preferences: string[];
   essentialPreferences?: string[];
   budget?: number;
@@ -15,6 +13,7 @@ export type MarketPlan = {
   route?: { from: string[]; to: string[] };
   capacityKg?: number;
 };
+export type MarketPlan = MarketRules & { intent: MarketIntent; needs: MarketNeed[] };
 export type MarketCheck = {
   label: string;
   status: 'met' | 'unknown' | 'mismatch';
@@ -145,7 +144,61 @@ function routeCheck(n: MarketListing, route: NonNullable<MarketPlan['route']>): 
     );
   return { label: 'route', status: wrong ? 'mismatch' : 'unknown', evidence: wrong ?? null };
 }
+export function getMarketCityAliases(city: string): string[] {
+  return /伦敦|London|Heathrow|希思罗/i.test(city)
+    ? ['伦敦', 'London', '希思罗', 'Heathrow']
+    : /上海|Shanghai|浦东/i.test(city)
+      ? ['上海', 'Shanghai', '浦东', 'PVG']
+      : [city];
+}
 export function assessMarketListing(
+  n: MarketListing,
+  p: MarketPlan,
+  focusName?: string,
+): MarketAssessment {
+  if (!p.needs.some((need) => need.budget !== undefined || need.rules !== undefined))
+    return assessSharedMarketListing(n, p, focusName);
+  const views = p.needs
+    .filter((need) => !focusName || contains(focusName, need.terms))
+    .map((need) =>
+      assessSharedMarketListing(
+        n,
+        {
+          ...(need.rules ? { intent: p.intent, ...need.rules } : p),
+          needs: [need],
+          ...(need.budget !== undefined ? { budget: need.budget } : {}),
+        },
+        focusName,
+      ),
+    );
+  const relevant = views.filter((view) => view.needs.length);
+  const usable = relevant.filter(
+    (view) => !view.checks.some((check) => check.status === 'mismatch'),
+  );
+  const chosen = usable.length ? usable : relevant;
+  const prices = chosen.flatMap((view) => (view.itemPriceGBP ? [view.itemPriceGBP] : []));
+  return {
+    id: n.id,
+    needs: chosen.flatMap((view) => view.needs),
+    checks: chosen.flatMap((view) => view.checks),
+    itemPriceEvidence:
+      [
+        ...new Set(
+          chosen.flatMap((view) => (view.itemPriceEvidence ? [view.itemPriceEvidence] : [])),
+        ),
+      ].join('\n') || null,
+    ...(prices.length
+      ? {
+          itemPriceGBP: {
+            min: Math.min(...prices.map((v) => v.min)),
+            max: Math.max(...prices.map((v) => v.max)),
+          },
+        }
+      : {}),
+    score: chosen.reduce((sum, view) => sum + view.score, 0),
+  };
+}
+function assessSharedMarketListing(
   n: MarketListing,
   p: MarketPlan,
   focusName?: string,
@@ -489,8 +542,7 @@ export const marketPlanInputSchema = z.object({
   route: z.object({ from: terms.min(1), to: terms.min(1) }).nullable(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).nullable(),
 });
-export const marketPlanSchema = marketPlanInputSchema.extend({
-  intent: z.enum(['second_hand', 'housing', 'carry', 'companion']),
+export const marketRulesSchema = marketPlanInputSchema.omit({ needs: true }).extend({
   budget: z.number().finite().nonnegative().max(100000).optional(),
   route: z.object({ from: terms.min(1), to: terms.min(1) }).optional(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).optional(),
@@ -499,6 +551,18 @@ export const marketPlanSchema = marketPlanInputSchema.extend({
   requiredTerms: terms.optional(),
   excludeTerms: terms.optional(),
   requiredArea: terms.optional(),
+});
+export const marketPlanSchema = marketRulesSchema.extend({
+  intent: z.enum(['second_hand', 'housing', 'carry', 'companion']),
+  needs: z
+    .array(
+      marketPlanInputSchema.shape.needs.element.extend({
+        budget: z.number().finite().nonnegative().max(100000).optional(),
+        rules: marketRulesSchema.optional(),
+      }),
+    )
+    .min(1)
+    .max(6),
 });
 function carryMonthRange(requestText: string | undefined): MarketPlan['dateRange'] {
   const match = requestText?.match(
@@ -571,15 +635,9 @@ export function toMarketPlan(
   const routeMatch = requestText?.match(
     /(伦敦|上海|北京|广州|London|Shanghai|Beijing|Heathrow|希思罗|浦东)\s*(?:飞|到|至|往|->|→|✈️?|to)\s*(伦敦|上海|北京|广州|London|Shanghai|Beijing|Heathrow|希思罗|浦东)/i,
   );
-  const aliases = (city: string) =>
-    /伦敦|London|Heathrow|希思罗/i.test(city)
-      ? ['伦敦', 'London', '希思罗', 'Heathrow']
-      : /上海|Shanghai|浦东/i.test(city)
-        ? ['上海', 'Shanghai', '浦东', 'PVG']
-        : [city];
   const route =
     input.intent === 'carry' && routeMatch
-      ? { from: aliases(routeMatch[1]!), to: aliases(routeMatch[2]!) }
+      ? { from: getMarketCityAliases(routeMatch[1]!), to: getMarketCityAliases(routeMatch[2]!) }
       : input.intent === 'carry' || requested === null
         ? input.route
         : null;

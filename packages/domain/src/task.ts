@@ -12,6 +12,29 @@ export const TASK_STATUSES = [
   'expired',
 ] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
+export const TASK_CONSTRAINT_KEYS = [
+  'area',
+  'travel_origin',
+  'budget',
+  'max_travel_minutes',
+  'day',
+  'time',
+  'level',
+  'room_type',
+  'pets',
+  'move_in_date',
+  'date',
+  'route_from',
+  'route_to',
+  'capacity',
+  'role',
+  'feature',
+  'condition',
+  'self_collect',
+  'bills',
+  'exclude',
+  'quantity',
+] as const;
 const id = z.string().min(1).max(160);
 const strength = z.enum(['hard', 'preference']);
 const userConfirmationSchema = z.strictObject({
@@ -48,6 +71,7 @@ export const taskCriterionSchema = z.strictObject({
   id,
   label: z.string().min(1).max(300),
   strength,
+  constraintKey: id.nullable().default(null),
   status: z.enum(['unknown', 'supported', 'conflict']),
   evidenceRefs: z.array(id).max(16),
 });
@@ -82,6 +106,7 @@ export const taskSchema = z.strictObject({
   scope: z.strictObject({ channel: z.enum(['telegram', 'whatsapp']), chatId: id }),
   objective: z.string().min(1).max(600),
   category: z.enum(DEMAND_CATEGORIES).default('other'),
+  counterparty: z.enum(['supply', 'demand', 'peer']).nullable().default(null),
   status: z.enum(TASK_STATUSES),
   revision: z.number().int().nonnegative(),
   requirementsVersion: z.number().int().nonnegative().default(0),
@@ -145,6 +170,15 @@ function assertEvidenceBindings(task: UserTask): void {
     if (new Set(goal.criteria.map((c) => c.id)).size !== goal.criteria.length)
       throw new TaskTransitionError('criterion IDs must be unique within a goal');
     for (const criterion of goal.criteria) {
+      if (
+        criterion.constraintKey &&
+        !task.constraints.some(
+          (c) => c.key === criterion.constraintKey && (!c.goalId || c.goalId === goal.id),
+        )
+      )
+        throw new TaskTransitionError(
+          'criterion condition binding must refer to this goal or a shared condition',
+        );
       if (criterion.status !== 'unknown' && !criterion.evidenceRefs.length)
         throw new TaskTransitionError('supported/conflicting criteria require evidence');
       for (const ref of criterion.evidenceRefs)

@@ -54,6 +54,91 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('retains later source facts for Jev when a single relevant item does not need bundle filtering', async () => {
+    const { d, c, t } = setup(2);
+    bindCurrentRequest(c, '伦敦收无线激光打印机，预算60镑');
+    c.marketTarget = 'SELL';
+    c.marketPlan = {
+      intent: 'second_hand',
+      needs: [{ id: 'printer', terms: ['打印机'] }],
+      budget: 60,
+      preferences: ['无线'],
+    };
+    c.marketListings = [
+      {
+        ref: 'm1',
+        id: 'printer',
+        title: '伦敦激光打印机',
+        description:
+          '出售：HP激光打印机\n价格：£50\n地点：E14 自提\n' +
+          '普通使用说明。'.repeat(60) +
+          '\n原帖明确：支持无线打印。',
+        tags: [],
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        url: 'https://a2hmarket.ai/listings/printer',
+        sourceUrl: null,
+        isRepost: false,
+        priceLabel: '£50',
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ];
+    await t.needsApproval(
+      { context: c } as never,
+      { kind: 'partial', text: '原帖写支持无线打印，收货前可以请贴主演示。', refs: ['m1'] },
+      'long-source',
+    );
+    const input = d.evaluateOutbound.mock.calls[0] as unknown as [
+      unknown,
+      { supplierSummaries: string[] },
+    ];
+    expect(input[1].supplierSummaries.join('\n')).toContain('支持无线打印');
+  });
+  it('renders only the affordable item from a bundle under separate task budgets', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, 'E14买书桌和办公椅，桌子70镑，椅子50镑');
+    c.marketTarget = 'SELL';
+    c.marketPlan = {
+      intent: 'second_hand',
+      needs: [
+        { id: 'desk', terms: ['书桌'], budget: 70 },
+        { id: 'chair', terms: ['办公椅'], budget: 50 },
+      ],
+      preferences: [],
+      requiredArea: ['E14'],
+    };
+    c.marketListings = [
+      {
+        ref: 'm1',
+        id: 'bundle',
+        title: '伦敦桌椅',
+        description: '- 书桌｜£60\n- 办公椅｜£65\n地点：E14 自提',
+        tags: [],
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        url: 'https://a2hmarket.ai/listings/bundle',
+        sourceUrl: null,
+        isRepost: false,
+        priceLabel: '帖子报价',
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ kind: 'partial', text: '我会先看这张书桌，椅子还要继续找。', refs: ['m1'] }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('£60');
+    expect(draft.text).not.toContain('£65');
+    expect(draft.text).toContain('尚未确认到：办公椅');
+  });
   it('does not match a smaller price as a substring of another price', async () => {
     const { d, c, t } = setup(0);
     c.knowledgeSources = [

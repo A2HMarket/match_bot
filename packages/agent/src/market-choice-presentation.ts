@@ -135,8 +135,8 @@ function introduction(choices: MarketChoices, zh: boolean): string {
       ? `这次尚未确认完全匹配的选项。下面${choices.backup.length}条是待核实线索，先看标出的缺口。`
       : 'This search did not confirm every essential condition. These are leads to check first.';
   return zh
-    ? `我会先看第1项，再比较下面这${choices.primary.length}个选择，关键条件已有原文支持。${choices.backup.length ? `另有${choices.backup.length}条备选，缺失信息已标出。` : '未确认的偏好已单独标出。'}`
-    : 'I would start with these choices: the essential conditions have source evidence. Unconfirmed preferences and backups are marked separately.';
+    ? `先看这${choices.primary.length}条相关线索，报价和待确认项已分别标出。${choices.backup.length ? `另外${choices.backup.length}条备选还缺关键信息。` : ''}`
+    : 'Here are the most relevant leads from this search. Quotes and remaining questions are shown for each option.';
 }
 export function renderMarketChoiceReply(p: {
   listings: MarketCandidate[];

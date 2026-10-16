@@ -114,8 +114,13 @@ describe('requirement revisions', () => {
         ],
       },
     });
-    expect(updated.goals[0]?.criteria.map((c) => c.id)).toEqual(['fit', 'material']);
-    expect(updated.goals[1]).toEqual(t.goals[1]);
+    expect(updated.goals[0]?.criteria.map((c) => c.id)).toEqual(
+      expect.arrayContaining(['fit', 'material']),
+    );
+    expect(updated.goals[1]?.criteria.map((c) => c.id)).toEqual(
+      expect.arrayContaining(t.goals[1]!.criteria.map((c) => c.id)),
+    );
+    expect(updated.goals[1]?.criteria.some((c) => c.constraintKey === 'radius')).toBe(true);
     expect(updated.pendingQuestion).toBeNull();
     expect(updated.status).toBe('active');
   });
