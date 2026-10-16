@@ -26,6 +26,39 @@ const plan: MarketPlan = {
   requiredArea: ['E14'],
 };
 describe('source-grounded market strategy', () => {
+  it('recognises a stated monthly rent excluding bills without treating the rent as all-in', () => {
+    const n = {
+      ...listing('出租：伦敦Stratford一居室整租\n费用：月租£1550，不含账单\n地点：Stratford'),
+      title: 'Stratford一居室',
+    };
+    const result = assessMarketListing(n, {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      preferences: ['包账单'],
+      budget: 1600,
+    });
+    expect(result.checks.find((c) => c.label === 'budget')?.status).toBe('met');
+    expect(result.itemPriceEvidence).toContain('不含账单');
+  });
+  it('rejects explicit opposition to a hard pet condition without treating an unknown permission as a conflict', () => {
+    const p: MarketPlan = {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      preferences: ['猫'],
+      essentialPreferences: ['猫'],
+    };
+    for (const statement of ['不允许养猫', '禁止宠物，包括猫', 'no cats allowed']) {
+      const n = { ...listing('出租：伦敦一居室\n要求：' + statement), title: '一居室' };
+      expect(assessMarketListing(n, p).checks.some((c) => c.status === 'mismatch')).toBe(true);
+    }
+    const unknown = { ...listing('出租：伦敦一居室\n要求：是否能养猫待确认'), title: '一居室' };
+    expect(assessMarketListing(unknown, p).checks).toContainEqual({
+      label: 'preference:猫',
+      status: 'unknown',
+      evidence: null,
+    });
+    expect(assessMarketListing(unknown, p).checks.some((c) => c.status === 'mismatch')).toBe(false);
+  });
   it('keeps separate item budgets and retains only the valid part of a mixed bundle', () => {
     const separate: MarketPlan = {
       ...plan,

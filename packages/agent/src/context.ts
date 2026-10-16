@@ -43,6 +43,9 @@ export interface MatchContext {
   taskCandidates?: UserTask[];
   taskAnchorId?: string;
   taskPlanFailures?: number;
+  taskProgressCalls?: number;
+  taskProgressVersion?: number;
+  sourceReviewCache?: Record<string, boolean>;
   runDeadlineAt?: number;
   taskUpdate?: {
     kind:

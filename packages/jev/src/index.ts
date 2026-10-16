@@ -6,3 +6,8 @@ export { createJevClient, type JevClient, type JevOutcome } from './client.js';
 export { JEV_ENDPOINT, type JevAnswer, type JevQuestion, type JevResponse } from './types.js';
 export { evaluateInbound, inboundQuestions, type InboundVerdict } from './questions/inbound.js';
 export { evaluateOutbound, outboundQuestions, type OutboundVerdict } from './questions/outbound.js';
+export {
+  evaluateSourceSupport,
+  sourceSupportQuestions,
+  type SourceClaim,
+} from './questions/source-support.js';

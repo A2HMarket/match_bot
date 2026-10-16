@@ -5,6 +5,8 @@ import {
   taskActorSchema,
   confirmTaskGoal,
   reviseTaskRequirements,
+  recordTaskProgress,
+  taskProgressSchema,
   taskRequirementPatchSchema,
   taskPayloadSchema,
   taskSchema,
@@ -50,6 +52,7 @@ const userTurnSchema = mutationSchema.extend({
     .strictObject({ intent: z.enum(['achieved', 'cancelled']), goalIds: z.array(id).max(24) })
     .nullable(),
 });
+const progressSchema = mutationSchema.extend({ sourceMessageId: id, progress: taskProgressSchema });
 export type TaskMutationResult =
   { kind: 'applied' | 'replayed'; task: UserTask } | { kind: 'conflict' | 'not_found' };
 
@@ -112,7 +115,8 @@ function assertReplay(actual: string, expected: string): void {
 
 type Mutation = z.infer<typeof mutationSchema> & {
   requestHash: string;
-  kind: 'status_changed' | 'requirements_revised' | 'goal_confirmed' | 'user_turn';
+  kind:
+    'status_changed' | 'requirements_revised' | 'goal_confirmed' | 'user_turn' | 'source_progress';
   actorKind: 'agent' | 'user' | 'system';
   sourceMessageId?: string;
   compute: (task: UserTask, source: Awaited<ReturnType<typeof requireMessage>> | null) => UserTask;
@@ -347,6 +351,20 @@ export function tasksRepo(prisma: PrismaClient) {
           }
           return { ...task, revision: current.revision + 1 };
         },
+      });
+    },
+    async recordProgress(input: z.input<typeof progressSchema>): Promise<TaskMutationResult> {
+      const p = progressSchema.parse(input);
+      return commitMutation(prisma, {
+        ...p,
+        kind: 'source_progress',
+        actorKind: 'agent',
+        requestHash: fingerprint({
+          expectedRevision: p.expectedRevision,
+          sourceMessageId: p.sourceMessageId,
+          progress: p.progress,
+        }),
+        compute: (task) => recordTaskProgress({ task, ...p.progress }),
       });
     },
   };

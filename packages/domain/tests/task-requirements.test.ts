@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { assessTaskReadiness, taskSchema } from '../src/task.js';
-import { reviseTaskRequirements } from '../src/task-requirements.js';
+import { reviseTaskRequirements, taskRequirementPatchSchema } from '../src/task-requirements.js';
 
 function empty() {
   return taskSchema.parse({
@@ -42,6 +42,29 @@ function planned() {
   });
 }
 describe('requirement revisions', () => {
+  it('does not let a planning proposal set source verdicts', () => {
+    const goal = {
+      id: 'desk',
+      title: '书桌',
+      required: true,
+      sourceQuote: '书桌',
+      criteria: [{ id: 'fit', label: '确为书桌', strength: 'hard' }],
+    };
+    expect(
+      taskRequirementPatchSchema.safeParse({
+        goals: [{ ...goal, sourceCoherence: 'supported' }],
+        constraints: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      taskRequirementPatchSchema.safeParse({
+        goals: [
+          { ...goal, criteria: [{ ...goal.criteria[0], conflictingEvidenceRefs: ['untrusted'] }] },
+        ],
+        constraints: [],
+      }).success,
+    ).toBe(false);
+  });
   it('retains verification on identical requirements and does not clear another item question', () => {
     const t = planned();
     t.pendingQuestion = {
@@ -175,8 +198,10 @@ describe('requirement revisions', () => {
   });
   it('invalidates previous evidence and delivery when requirements change, preserving goals', () => {
     const t = planned();
+    t.goals[0]!.sourceCoherence = 'supported';
     t.goals[0]!.criteria[0]!.status = 'supported';
     t.goals[0]!.criteria[0]!.evidenceRefs = ['e'];
+    t.goals[0]!.criteria[0]!.conflictingEvidenceRefs = ['e'];
     t.evidence = [
       {
         id: 'e',
@@ -204,7 +229,9 @@ describe('requirement revisions', () => {
       },
     });
     expect(updated.goals[0]?.criteria[0]).toMatchObject({ status: 'unknown', evidenceRefs: [] });
-    expect(updated.evidence).toEqual([]);
+    expect(updated.evidence).toEqual(t.evidence);
+    expect(updated.goals[0]?.sourceCoherence).toBe('unknown');
+    expect(updated.goals[0]?.criteria[0]?.conflictingEvidenceRefs).toEqual([]);
     expect(updated.delivery).toEqual({ status: 'none', level: 'none' });
     expect(assessTaskReadiness(updated).ready).toBe(false);
     expect(updated.objective).toBe(t.objective);

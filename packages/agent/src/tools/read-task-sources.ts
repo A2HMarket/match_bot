@@ -1,0 +1,126 @@
+import { tool, type RunContext } from '@openai/agents';
+import { z } from 'zod';
+import { marketListingSchema } from '@matchbot/websearch';
+import type { AgentDeps, MatchContext } from '../context.js';
+import { bindTaskMarketPlan } from '../task-market-plan.js';
+import { MARKET_RESEARCH_LIMITS, marketListingForModel } from '../market-research.js';
+
+/** PRD §13: retain useful source memory, but refresh an offer before relying on its old conditions. */
+export function readTaskSourcesTool(deps: AgentDeps) {
+  return tool({
+    name: 'read_task_sources',
+    description:
+      'Revisit 1-4 saved source refs in the selected task, especially after a followup or changed condition. Saved excerpts are HISTORICAL observations, not current stock or permission. A2H public listings are re-read within the shared 8-detail budget and assigned current m refs. Other sources are historical hints only: use search_information/xhs_search to verify them before citing. No private lookup, contact or messages.',
+    parameters: z.object({ sources: z.array(z.string().min(1).max(160)).min(1).max(4) }),
+    needsApproval: false,
+    execute: async (args, rc) => {
+      const ctx = (rc as RunContext<MatchContext>).context,
+        task = ctx.task,
+        started = Date.now();
+      const deny = async (reason: string) => {
+        await trace(reason);
+        return reason;
+      };
+      if (ctx.outboundBlocked) return deny('outbound declined; stop');
+      if (
+        !task ||
+        task.ownerUserId !== ctx.userId ||
+        task.scope.chatId !== ctx.chatId ||
+        task.scope.channel !== (ctx.channel ?? 'telegram')
+      )
+        return deny('task scope mismatch');
+      const sources = [...new Set(args.sources)];
+      const saved = task.evidence.filter(
+        (e) =>
+          sources.includes(e.sourceRef) &&
+          !task.goals.find((g) => g.id === e.goalId)?.userConfirmation,
+      );
+      if (sources.some((ref) => !saved.some((e) => e.sourceRef === ref)))
+        return deny('only saved sources for unresolved goals are allowed');
+      const ids = sources
+        .filter((s) => /^market:[A-Za-z0-9_-]{1,100}$/.test(s))
+        .map((s) => s.slice(7));
+      const attempted = new Set(ctx.marketDetailIds ?? []),
+        fresh = ids.filter((id) => !attempted.has(id));
+      if (attempted.size + fresh.length > MARKET_RESEARCH_LIMITS.details)
+        return deny('detail budget exhausted; use current evidence');
+      if (
+        (ctx.marketListings?.length ?? 0) +
+          fresh.filter((id) => !ctx.marketListings?.some((n) => n.id === id)).length >
+        MARKET_RESEARCH_LIMITS.listings
+      )
+        return deny('candidate budget exhausted; use current evidence');
+      const failures: string[] = [];
+      if (fresh.length && deps.marketSearch) {
+        const intent =
+          task.category === 'housing'
+            ? 'housing'
+            : task.category === 'second_hand'
+              ? 'second_hand'
+              : task.counterparty === 'peer'
+                ? 'companion'
+                : /帮带|代购|carry/i.test(task.objective)
+                  ? 'carry'
+                  : null;
+        if (!intent || (ctx.marketIntent && ctx.marketIntent !== intent))
+          return deny('saved source does not match the current task intent');
+        ctx.marketPlan ??= bindTaskMarketPlan({ intent, needs: [], preferences: [] }, task);
+        ctx.marketIntent = intent;
+        ctx.marketListings ??= [];
+        for (const id of fresh) attempted.add(id);
+        ctx.marketDetailIds = [...attempted];
+        const results = await Promise.allSettled(fresh.map((id) => deps.marketSearch!.detail(id)));
+        for (const [index, result] of results.entries()) {
+          const id = fresh[index]!;
+          const parsed =
+            result.status === 'fulfilled' ? marketListingSchema.safeParse(result.value) : null;
+          if (!parsed?.success || parsed.data.id !== id) {
+            failures.push('market:' + id);
+            continue;
+          }
+          const old = ctx.marketListings.findIndex((n) => n.id === id);
+          const ref =
+            old >= 0 ? ctx.marketListings[old]!.ref : 'm' + (ctx.marketListings.length + 1);
+          const item = { ...parsed.data, ref };
+          if (old >= 0) ctx.marketListings[old] = item;
+          else ctx.marketListings.push(item);
+        }
+      } else if (fresh.length) failures.push(...fresh.map((id) => 'market:' + id));
+      if (failures.length) {
+        ctx.sourceFailures ??= [];
+        ctx.sourceFailures.push('task_sources:detail_unavailable');
+      }
+      await trace('read', failures.length);
+      return JSON.stringify({
+        historical: saved.slice(-12).map((e) => ({
+          source: e.sourceRef,
+          goalId: e.goalId,
+          summary: e.summary.slice(0, 300),
+          observedAt: e.observedAt,
+        })),
+        current: (ctx.marketListings ?? [])
+          .filter((n) => ids.includes(n.id))
+          .map((n) => marketListingForModel(n, 1500)),
+        failures,
+        guidance:
+          'Historical excerpts are not current citations. Use refreshed m refs only after checking current task conditions; SOLD/expired offers cannot be recommended. Re-search other source types. Saving or reading evidence does not complete the user goal.',
+      });
+      async function trace(result: string, failed = 0) {
+        await deps.repos.traces.create({
+          kind: 'gate',
+          inputRef: ctx.sourceMessageId,
+          phase: ctx.phase,
+          latencyMs: Date.now() - started,
+          costMicro: 0,
+          output: {
+            gate: 'read_task_sources',
+            taskId: task?.id ?? null,
+            result,
+            requested: args.sources.length,
+            failed,
+          },
+        });
+      }
+    },
+  });
+}

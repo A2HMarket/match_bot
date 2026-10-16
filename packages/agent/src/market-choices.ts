@@ -1,5 +1,7 @@
 import { isActiveMarketListing, hasLondonEvidence } from '@matchbot/websearch';
 import type { MarketCandidate } from './market-research.js';
+import type { UserTask } from '@matchbot/domain';
+import { assessTaskMarketListing } from './task-market-assessment.js';
 import { assessMarketListing, type MarketAssessment, type MarketPlan } from './market-strategy.js';
 export type MarketChoice = {
   listing: MarketCandidate;
@@ -19,6 +21,7 @@ export function getMarketSourceIdentity(listing: MarketCandidate): string {
   return listing.id;
 }
 export function describeMarketCondition(label: string, plan: MarketPlan): string {
+  if (label.startsWith('task:')) return label.slice(5);
   if (label.startsWith('preference:')) return label.slice(11);
   const labels: Record<string, string> = {
     budget: plan.intent === 'housing' ? '租金/计价单位' : '价格/计价单位',
@@ -87,6 +90,7 @@ export function buildMarketChoices(p: {
   candidates: MarketCandidate[];
   plan: MarketPlan;
   names?: Record<string, string>;
+  task?: UserTask;
 }): MarketChoices {
   const rows = p.candidates
     .filter(
@@ -95,7 +99,9 @@ export function buildMarketChoices(p: {
         hasLondonEvidence(listing),
     )
     .map((listing): MarketChoice => {
-      const assessment = assessMarketListing(listing, p.plan, p.names?.[listing.ref]);
+      const assessment = p.task
+        ? assessTaskMarketListing(listing, p.plan, p.task, p.names?.[listing.ref])
+        : assessMarketListing(listing, p.plan, p.names?.[listing.ref]);
       const unknown = assessment.checks.filter((check) => check.status === 'unknown');
       const essentialPreferences = new Set([
         ...(p.plan.essentialPreferences ?? []),

@@ -31,6 +31,86 @@ async function seed(tx: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
   return { repos, owner, other, message, access };
 }
 describe('task repository', () => {
+  it('reloads source progress and next action while rejecting stale requirements', async () =>
+    withTestDb(async (tx) => {
+      const { repos, access, message } = await seed(tx);
+      const task = await repos.tasks.create({
+        access,
+        sourceMessageId: message.id,
+        intentKey: 'progress',
+        objective: '找到桌椅',
+        category: 'second_hand',
+      });
+      await repos.tasks.applyUserTurn({
+        access,
+        id: task.id,
+        expectedRevision: 0,
+        operationKey: 'plan',
+        sourceMessageId: message.id,
+        patch: {
+          goals: [
+            {
+              id: 'desk',
+              title: '书桌',
+              required: true,
+              sourceQuote: '桌椅',
+              criteria: [{ id: 'source', label: '原帖可核验', strength: 'hard' }],
+            },
+          ],
+          constraints: [],
+        },
+        outcome: null,
+      });
+      const input = {
+        access,
+        id: task.id,
+        expectedRevision: 1,
+        operationKey: 'source-progress',
+        sourceMessageId: message.id,
+        progress: {
+          requirementsVersion: 1,
+          evidence: [
+            {
+              id: 'quote',
+              goalId: 'desk',
+              kind: 'source_excerpt' as const,
+              sourceRef: 'market:fixture',
+              entityKey: 'offer:fixture',
+              summary: '书桌£40',
+              observedAt: '2026-10-17T01:00:00Z',
+            },
+          ],
+          checks: [
+            {
+              goalId: 'desk',
+              criterionId: 'source',
+              status: 'supported' as const,
+              evidenceRefs: ['quote'],
+            },
+          ],
+          nextStep: {
+            action: 'deliver' as const,
+            owner: 'agent' as const,
+            reason: '可以给出带缺口的建议',
+          },
+        },
+      };
+      expect((await repos.tasks.recordProgress(input)).kind).toBe('applied');
+      expect((await repos.tasks.recordProgress(input)).kind).toBe('replayed');
+      const reloaded = await createRepositories(tx).tasks.findById({ access, id: task.id });
+      expect(reloaded?.nextStep?.action).toBe('deliver');
+      expect(reloaded?.evidence[0]?.sourceRef).toBe('market:fixture');
+      expect(reloaded?.status).toBe('active');
+      expect(reloaded?.userConfirmation).toBeNull();
+      await expect(
+        repos.tasks.recordProgress({
+          ...input,
+          operationKey: 'old-requirements',
+          expectedRevision: 2,
+          progress: { ...input.progress, requirementsVersion: 0 },
+        }),
+      ).rejects.toThrow('requirements');
+    }));
   it('applies a whole user turn atomically and rejects an invalid outcome without partial requirements', async () =>
     withTestDb(async (tx) => {
       const { repos, access, message } = await seed(tx);

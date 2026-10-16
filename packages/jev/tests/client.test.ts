@@ -31,6 +31,27 @@ const mk = (fetchImpl: typeof fetch) =>
   });
 
 describe('createJevClient', () => {
+  it('does not call or retry beyond the caller deadline and still records the timeout', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response('', { status: 429 })),
+    ) as unknown as typeof fetch;
+    const client = mk(fetchImpl);
+    const expired = {
+      state: 'synthetic',
+      questions,
+      inputRef: 'deadline',
+      phase: 0 as const,
+      deadlineAt: Date.now() - 1,
+    };
+    expect(await client.evaluate(expired)).toEqual({ ok: false, reason: 'timeout' });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(await client.evaluate({ ...expired, deadlineAt: Date.now() + 50 })).toEqual({
+      ok: false,
+      reason: 'timeout',
+    });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(traces.create).toHaveBeenCalledTimes(2);
+  });
   it('returns typed answers and writes a trace with cost', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(new Response(ok, { status: 200 })),
@@ -56,6 +77,8 @@ describe('createJevClient', () => {
       RequestInit,
     ];
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer k');
+    const body: unknown = typeof init.body === 'string' ? JSON.parse(init.body) : null;
+    expect(body).toMatchObject({ provider: { zdr: true } });
   });
   it('retries on 429 then succeeds', async () => {
     const fetchImpl = vi
@@ -108,7 +131,7 @@ describe('createJevClient', () => {
     const r = await mk(fetchImpl).evaluate({ state: 's', questions, inputRef: 'm6', phase: 0 });
     expect(r).toEqual({ ok: false, reason: 'invalid_response' });
   });
-  it('still resolves the outcome when traces.create rejects', async () => {
+  it('fails closed when a decision cannot be traced', async () => {
     traces.create.mockRejectedValueOnce(new Error('db unavailable'));
     const fetchImpl = vi.fn(() =>
       Promise.resolve(new Response(ok, { status: 200 })),
@@ -119,7 +142,7 @@ describe('createJevClient', () => {
       inputRef: 'm7',
       phase: 0,
     });
-    expect(r.ok).toBe(true);
+    expect(r).toEqual({ ok: false, reason: 'trace_unavailable' });
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({ inputRef: 'm7' }),
       expect.stringContaining('trace write failed'),

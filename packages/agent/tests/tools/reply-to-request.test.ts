@@ -4,6 +4,7 @@ import type { MatchContext } from '../../src/context.js';
 import { bindCurrentRequest } from '../../src/current-request.js';
 import { createKnowledgeSource } from '../../src/knowledge-evidence.js';
 import { replyToRequestTool } from '../../src/tools/reply-to-request.js';
+import { taskSchema } from '@matchbot/domain';
 
 function setup(phase: 0 | 1 | 2, ok = true) {
   const d = {
@@ -54,6 +55,56 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('accepts a structural reference to the first cited option without accepting an invented price', async () => {
+    const { d, c, t } = setup(0);
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ ...args, text: '我会先看第1条官方说明：没有NHS number也能注册GP。' }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ ...args, text: '第1条官方说明注册需要£15。' }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('does not treat the platform name A2H as a numerical factual claim', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, '找允许养猫的一居室');
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'no_match',
+        refs: [],
+        text: '这次在A2H没有确认到允许养猫的房源，我会优先核对原帖的宠物许可。你还接受哪些相邻区域？',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('requires source progress before a selected-task answer but does not turn this into a gate rejection', async () => {
+    const { d, c } = setup(0);
+    Object.assign(d, { taskRequests: true });
+    c.task = taskSchema.parse({
+      id: 't',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '注册GP',
+      status: 'active',
+      revision: 0,
+      goals: [],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    const tool = replyToRequestTool(d as never);
+    expect(await tool.invoke({ context: c } as never, JSON.stringify(args))).toContain(
+      'record_task_progress',
+    );
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(c.outboundBlocked).not.toBe(true);
+  });
   it('retains later source facts for Jev when a single relevant item does not need bundle filtering', async () => {
     const { d, c, t } = setup(2);
     bindCurrentRequest(c, '伦敦收无线激光打印机，预算60镑');
@@ -88,7 +139,11 @@ describe('reply_to_request', () => {
     ];
     await t.needsApproval(
       { context: c } as never,
-      { kind: 'partial', text: '原帖写支持无线打印，收货前可以请贴主演示。', refs: ['m1'] },
+      {
+        kind: 'partial',
+        text: '我先看m1这条，原帖写支持无线打印，收货前可以请贴主演示。',
+        refs: ['m1'],
+      },
       'long-source',
     );
     const input = d.evaluateOutbound.mock.calls[0] as unknown as [
@@ -96,6 +151,7 @@ describe('reply_to_request', () => {
       { supplierSummaries: string[] },
     ];
     expect(input[1].supplierSummaries.join('\n')).toContain('支持无线打印');
+    expect(JSON.stringify(input[1])).not.toContain('m1这条');
   });
   it('renders only the affordable item from a bundle under separate task budgets', async () => {
     const { d, c, t } = setup(0);

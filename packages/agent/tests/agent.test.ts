@@ -15,6 +15,21 @@ describe('londonToday', () => {
 });
 
 describe('generation settings', () => {
+  it('serializes dependent task steps and requires the final outbound tool even without XHS', () => {
+    const deps = {
+      env: { DEEPSEEK_MODEL: 'deepseek-flash' },
+      answerRequests: true,
+      taskRequests: true,
+    };
+    expect(
+      createMatchAgent(deps as never, { phase: 0 }).agent.modelSettings.parallelToolCalls,
+    ).toBe(false);
+    const final = createMatchAgent(deps as never, { phase: 0, finalAnswerOnly: true }).agent;
+    expect(final.modelSettings.toolChoice).toBe('required');
+    expect(final.tools.map((t) => (t.type === 'function' ? t.name : ''))).toEqual([
+      'reply_to_request',
+    ]);
+  });
   it('uses separate small internal tools for task creation, updates, clarification and acknowledgement', () => {
     const { agent } = createMatchAgent({ env: { DEEPSEEK_MODEL: 'deepseek-flash' } } as never, {
       phase: 0,

@@ -10,13 +10,21 @@ import {
 } from './task.js';
 
 const sourceQuote = z.string().trim().min(1).max(600);
-const goalDefinition = taskGoalSchema.omit({ criteria: true, userConfirmation: true }).extend({
-  criteria: z
-    .array(taskCriterionSchema.omit({ status: true, evidenceRefs: true }))
-    .min(1)
-    .max(24),
-  sourceQuote,
-});
+const goalDefinition = taskGoalSchema
+  .omit({ criteria: true, userConfirmation: true, sourceCoherence: true })
+  .extend({
+    criteria: z
+      .array(
+        taskCriterionSchema.omit({
+          status: true,
+          evidenceRefs: true,
+          conflictingEvidenceRefs: true,
+        }),
+      )
+      .min(1)
+      .max(24),
+    sourceQuote,
+  });
 const constraintChange = taskConstraintSchema.omit({ origin: true }).extend({ sourceQuote });
 export const taskRequirementPatchSchema = z.strictObject({
   goals: z.array(goalDefinition).max(24),
@@ -136,12 +144,14 @@ export function reviseTaskRequirements(p: {
   changed = bindConditionCriteria(task) || changed;
   if (changed) {
     task.requirementsVersion += 1;
-    task.evidence = [];
-    for (const goal of task.goals)
+    for (const goal of task.goals) {
+      if (goal.sourceCoherence !== undefined) goal.sourceCoherence = 'unknown';
       for (const criterion of goal.criteria) {
         criterion.status = 'unknown';
         criterion.evidenceRefs = [];
+        if (criterion.conflictingEvidenceRefs) criterion.conflictingEvidenceRefs = [];
       }
+    }
     task.status = 'active';
     task.delivery = { status: 'none', level: 'none' };
     task.blockReason = null;

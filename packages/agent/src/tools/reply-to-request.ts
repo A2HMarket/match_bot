@@ -23,8 +23,16 @@ const parameters = z.object({
     ),
 });
 
-function numericClaims(text: string): string[] {
-  return text.replace(/(^|\n)\s*\d{1,2}[.、)）]\s*/g, '$1').match(/\d+(?:\.\d+)?/g) ?? [];
+function numericClaims(text: string, referenceCount = 0): string[] {
+  return (
+    text
+      .replace(/\bA2H\b/gi, '')
+      .replace(/(?:第|这|那)(\d{1,2})(?:条|套|项)/g, (whole: string, value: string) =>
+        Number(value) > 0 && Number(value) <= referenceCount ? '' : whole,
+      )
+      .replace(/(^|\n)\s*\d{1,2}[.、)）]\s*/g, '$1')
+      .match(/\d+(?:\.\d+)?/g) ?? []
+  );
 }
 function hasSupportedNumber(support: string, value: string): boolean {
   return (support.match(/\d+(?:\.\d+)?/g) ?? []).some((n) => Number(n) === Number(value));
@@ -55,7 +63,13 @@ function renderMarketRefs(
     )
   )
     return null;
-  const choices = buildMarketChoices({ candidates: listings, plan: ctx.marketPlan });
+  const choices = buildMarketChoices({
+    candidates: listings,
+    plan: ctx.marketPlan,
+    ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
+      ? { task: ctx.task }
+      : {}),
+  });
   const usable = [...choices.primary, ...choices.backup].map((r) => r.listing);
   if (usable.length !== listings.length) return null;
   const selections = usable.map((n) => {
@@ -100,6 +114,9 @@ function renderMarketRefs(
     plan: ctx.marketPlan,
     zh,
     assessWholeOffer: true,
+    ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
+      ? { task: ctx.task }
+      : {}),
   });
   return {
     text: rendered.text,
@@ -141,6 +158,17 @@ export function replyToRequestTool(deps: AgentDeps) {
       'SENDS a useful, source-grounded reply to the current request: advice/steps, partial matches, local no-match explanation, ONE clarification or source unavailability. Complete the user goal even without a perfect offer. Use k refs from search_information for facts, m refs for valid A2H offers; code formats their facts and links. Keep explicit role/date/area/budget; never relax must-have constraints or contact people. This remains subject to phase/Jev/rate gates.',
     parameters,
     toDraft: async (ctx, args: z.infer<typeof parameters>) => {
+      if (
+        deps.taskRequests &&
+        ctx.task &&
+        !ctx.isAnswerFinalization &&
+        ctx.taskProgressVersion !== ctx.task.requirementsVersion
+      )
+        return {
+          error:
+            'Record source checks and the useful next step with record_task_progress before this task answer. Keep unknowns unknown.',
+          kind: 'research_required',
+        };
       if (ctx.answerInputExhausted && ctx.isAnswerFinalization) {
         const zhFailure = ctx.currentRequest?.demand.lang !== 'en';
         const next =
@@ -174,6 +202,9 @@ export function replyToRequestTool(deps: AgentDeps) {
           .replace(/\*\*([^*]+)\*\*/g, '$1')
           .replace(/[（(]\s*(?:k\d+(?::p\d+)?[\s、,]*)+[)）]/g, '')
           .replace(/\bk\d+(?::p\d+)?\b/g, '')
+          .replace(/\bm\d+\b/g, (ref) =>
+            ctx.marketListings?.some((n) => n.ref === ref) ? '' : ref,
+          )
           .trim(),
       };
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
@@ -190,13 +221,13 @@ export function replyToRequestTool(deps: AgentDeps) {
               'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions; choose useful valid leads or no_match',
           };
         const support = rendered.evidence.join('\n') + '\n' + (ctx.currentRequest?.text ?? '');
-        if (numericClaims(args.text).some((n) => !hasSupportedNumber(support, n)))
+        if (numericClaims(args.text, market.length).some((n) => !hasSupportedNumber(support, n)))
           return {
             error:
               'invalid answer: unsupported numerical values ' +
               [
                 ...new Set(
-                  numericClaims(args.text).filter(
+                  numericClaims(args.text, market.length).filter(
                     (n) => !hasSupportedNumber(support, n) && n.length <= 4,
                   ),
                 ),
@@ -239,14 +270,16 @@ export function replyToRequestTool(deps: AgentDeps) {
 
         if (
           args.kind !== 'clarification' &&
-          numericClaims(args.text).some((n) => !hasSupportedNumber(support, n))
+          numericClaims(args.text, new Set(sources).size).some(
+            (n) => !hasSupportedNumber(support, n),
+          )
         )
           return {
             error:
               'invalid answer: unsupported numerical values ' +
               [
                 ...new Set(
-                  numericClaims(args.text).filter(
+                  numericClaims(args.text, new Set(sources).size).filter(
                     (n) => !hasSupportedNumber(support, n) && n.length <= 4,
                   ),
                 ),

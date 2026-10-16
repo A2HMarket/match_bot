@@ -5,6 +5,8 @@ import { recordRequestTool } from './tools/record-request.js';
 import { requestInstructions } from './request-instructions.js';
 import { taskPlanningInstructions } from './task-instructions.js';
 import { taskPlanningTools } from './tools/plan-task.js';
+import { recordTaskProgressTool } from './tools/record-task-progress.js';
+import { readTaskSourcesTool } from './tools/read-task-sources.js';
 import type { Phase } from '@matchbot/domain';
 import { Agent, Runner } from '@openai/agents';
 import type { AgentDeps, MatchContext } from './context.js';
@@ -32,7 +34,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.16.2';
+export const AGENT_VERSION = '0.16.4';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:
@@ -141,19 +143,18 @@ export function createMatchAgent(
         : { isFinalOutput: false, isInterrupted: undefined };
     },
     // P14 实测：默认 high 思考让多源综合超时；Jev 判断、Flash 生成，证据仍由代码校验。
-    ...(deps.env.DEEPSEEK_MODEL === 'deepseek-flash'
-      ? {
-          modelSettings: {
-            providerData: { thinking: { type: 'disabled' } },
-            ...(run?.taskPlanningOnly ? { parallelToolCalls: false } : {}),
-            ...(run?.taskPlanningOnly ||
-            run?.requestStatusOnly ||
-            (deps.xhsSearch && deps.env.XHS_RESEARCH_ENABLED)
-              ? { toolChoice: 'required' as const }
-              : {}),
-          },
-        }
-      : {}),
+    modelSettings: {
+      ...(deps.env.DEEPSEEK_MODEL === 'deepseek-flash'
+        ? { providerData: { thinking: { type: 'disabled' } } }
+        : {}),
+      ...(run?.taskPlanningOnly || deps.taskRequests ? { parallelToolCalls: false } : {}),
+      ...(run?.taskPlanningOnly ||
+      run?.requestStatusOnly ||
+      run?.finalAnswerOnly ||
+      (deps.xhsSearch && deps.env.XHS_RESEARCH_ENABLED)
+        ? { toolChoice: 'required' as const }
+        : {}),
+    },
     instructions: (rc) =>
       run?.taskPlanningOnly
         ? taskPlanningInstructions(rc.context, londonToday())
@@ -208,6 +209,9 @@ export function createMatchAgent(
               ...(deps.answerRequests
                 ? [recordRequestTool(deps), searchInformationTool(deps), replyToRequestTool(deps)]
                 : [upsertDemandTool(deps), upsertSupplyTool(deps)]),
+              ...(deps.taskRequests
+                ? [recordTaskProgressTool(deps), readTaskSourcesTool(deps)]
+                : []),
               findSuppliersTool(deps),
               findPeerSupplyTool(deps),
               askClarificationTool(deps),

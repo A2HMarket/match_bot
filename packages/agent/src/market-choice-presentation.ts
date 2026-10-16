@@ -1,5 +1,6 @@
 import type { MarketCandidate } from './market-research.js';
 import type { MarketPlan } from './market-strategy.js';
+import type { UserTask } from '@matchbot/domain';
 import { buildMarketChoices, type MarketChoice, type MarketChoices } from './market-choices.js';
 export type MarketSelection = { ref: string; name: string; evidence: string };
 const compact = (s: string, max = 180) => {
@@ -144,10 +145,12 @@ export function renderMarketChoiceReply(p: {
   plan: MarketPlan;
   zh: boolean;
   assessWholeOffer?: boolean;
+  task?: UserTask;
 }) {
   const choices = buildMarketChoices({
     candidates: p.listings,
     plan: p.plan,
+    ...(p.task ? { task: p.task } : {}),
     ...(p.assessWholeOffer
       ? {}
       : { names: Object.fromEntries(p.selections.map((s) => [s.ref, s.name])) }),

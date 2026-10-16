@@ -9,7 +9,13 @@ export function requestInstructions(
   today: string,
 ): string {
   const choices = ctx.marketPlan
-    ? buildMarketChoices({ candidates: ctx.marketListings ?? [], plan: ctx.marketPlan })
+    ? buildMarketChoices({
+        candidates: ctx.marketListings ?? [],
+        plan: ctx.marketPlan,
+        ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
+          ? { task: ctx.task }
+          : {}),
+      })
     : null;
   const market = choices
     ? [...choices.primary, ...choices.backup].map((row) => ({
@@ -40,6 +46,18 @@ export function requestInstructions(
         ctx.replyToBotText.slice(0, 800)
       : '',
     'CURRENT REQUEST: ' + JSON.stringify(ctx.currentRequest ?? { demand: ctx.demand }),
+    ctx.task
+      ? 'TASK SOURCE LEDGER: Before the final answer, call record_task_progress with the important criterion checks and next step. Use exact current source refs/quotes; quote=null only when the tool returned a computed fact, otherwise copy the actual wording. General policies do not prove a specific offer accepts cats or matches a date. Keep unknown/conflict visible; different owners cannot be assembled into one offer. If evidence is missing, select the useful next research step, or ONE necessary user question. Record next action=deliver for the best truthful partial/full answer, even with explicitly unknown conditions. Research is not the user real-world goal completed. On followups revisit saved sources using read_task_sources before repeating broad discovery; historical excerpts are hints, not current citations. Never display internal IDs/ledger fields. Existing progress: ' +
+        JSON.stringify({
+          next: ctx.task.nextStep,
+          evidence: ctx.task.evidence.slice(-12).map((e) => ({
+            goalId: e.goalId,
+            source: e.sourceRef,
+            summary: e.summary.slice(0, 300),
+            observedAt: e.observedAt,
+          })),
+        })
+      : '',
     ctx.task
       ? 'INTERNAL SELECTED TASK PLAN (never print IDs or internal fields): ' +
         JSON.stringify({

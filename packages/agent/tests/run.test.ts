@@ -4,7 +4,7 @@ import { assistantMessage, functionCall, ScriptedModel } from '@openai/agents/te
 import { describe, expect, it, vi } from 'vitest';
 import { AGENT_VERSION } from '../src/agent.js';
 import { resumeRun, runInbound } from '../src/run.js';
-import { taskSchema, reviseTaskRequirements } from '@matchbot/domain';
+import { taskSchema, reviseTaskRequirements, recordTaskProgress } from '@matchbot/domain';
 
 const VAN = { id: 'a', name: 'Van Co', roughPrice: '£40/h', telegram: '@vanco' };
 
@@ -142,6 +142,21 @@ describe('runInbound', () => {
       ],
       [
         functionCall(
+          'record_task_progress',
+          {
+            checks: [],
+            next: {
+              action: 'ask_user',
+              goalId: 'activity',
+              constraintKey: 'day',
+              reason: '需要知道具体哪天方便',
+            },
+          },
+          { callId: 'source-progress' },
+        ),
+      ],
+      [
+        functionCall(
           'reply_to_request',
           { kind: 'clarification', text: '周末更方便周六还是周日？', refs: [] },
           { callId: 'task-reply' },
@@ -193,17 +208,25 @@ describe('runInbound', () => {
       delivery: { status: 'none', level: 'none' },
       userConfirmation: null,
     });
+    let storedTask = task;
     const tasks = {
       findOpenByScope: vi.fn(() => Promise.resolve([task])),
       applyUserTurn: vi.fn((p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
         Promise.resolve({
           kind: 'applied',
-          task: reviseTaskRequirements({
+          task: (storedTask = reviseTaskRequirements({
             task,
             patch: p.patch,
             source: { messageId: 'm1', text: '半小时以内' },
-          }),
+          })),
         }),
+      ),
+      recordProgress: vi.fn(
+        (p: { progress: Omit<Parameters<typeof recordTaskProgress>[0], 'task'> }) =>
+          Promise.resolve({
+            kind: 'applied',
+            task: (storedTask = recordTaskProgress({ task: storedTask, ...p.progress })),
+          }),
       ),
     };
     await runInbound({

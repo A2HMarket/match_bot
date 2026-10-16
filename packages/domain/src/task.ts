@@ -74,6 +74,7 @@ export const taskCriterionSchema = z.strictObject({
   constraintKey: id.nullable().default(null),
   status: z.enum(['unknown', 'supported', 'conflict']),
   evidenceRefs: z.array(id).max(16),
+  conflictingEvidenceRefs: z.array(id).max(16).optional(),
 });
 export const taskGoalSchema = z.strictObject({
   id,
@@ -81,6 +82,7 @@ export const taskGoalSchema = z.strictObject({
   required: z.boolean(),
   criteria: z.array(taskCriterionSchema).min(1).max(24),
   userConfirmation: userConfirmationSchema.nullable().default(null),
+  sourceCoherence: z.enum(['unknown', 'supported', 'conflict']).optional(),
 });
 export const taskQuestionSchema = z.strictObject({
   id,
@@ -98,6 +100,15 @@ export const taskEvidenceSchema = z.strictObject({
   sourceRef: id,
   summary: z.string().min(1).max(1000),
   observedAt: z.iso.datetime(),
+  entityKey: id.optional(),
+  url: z.url().startsWith('https://').max(3000).optional(),
+});
+export const taskNextStepSchema = z.strictObject({
+  action: z.enum(['research', 'ask_user', 'wait_source', 'deliver', 'wait_user']),
+  owner: z.enum(['agent', 'user', 'source']),
+  reason: z.string().min(1).max(500),
+  goalId: id.optional(),
+  constraintKey: id.optional(),
 });
 export const taskSchema = z.strictObject({
   schemaVersion: z.literal(1).default(1),
@@ -114,6 +125,7 @@ export const taskSchema = z.strictObject({
   goals: z.array(taskGoalSchema).max(24),
   evidence: z.array(taskEvidenceSchema).max(128),
   pendingQuestion: taskQuestionSchema.nullable(),
+  nextStep: taskNextStepSchema.nullable().default(null),
   blockReason: z.string().min(1).max(500).nullable(),
   delivery: z.strictObject({
     status: z.enum(['none', 'queued', 'sent', 'unknown', 'failed']),
@@ -181,7 +193,7 @@ function assertEvidenceBindings(task: UserTask): void {
         );
       if (criterion.status !== 'unknown' && !criterion.evidenceRefs.length)
         throw new TaskTransitionError('supported/conflicting criteria require evidence');
-      for (const ref of criterion.evidenceRefs)
+      for (const ref of [...criterion.evidenceRefs, ...(criterion.conflictingEvidenceRefs ?? [])])
         if (evidence.get(ref)?.goalId !== goal.id)
           throw new TaskTransitionError('criterion evidence must belong to the same goal');
     }
@@ -202,6 +214,48 @@ export function assessTaskReadiness(input: UserTask) {
     for (const criterion of hard)
       if (criterion.status !== 'supported')
         missing.push({ goalId: goal.id, criterionId: criterion.id, status: criterion.status });
+    if (hard.length && hard.every((c) => c.status === 'supported')) {
+      const sources = new Map(task.evidence.map((e) => [e.id, e]));
+      const contradicted = new Set(
+        hard.flatMap((c) =>
+          (c.conflictingEvidenceRefs ?? []).map((ref) => {
+            const e = sources.get(ref)!;
+            return e.entityKey ?? e.sourceRef;
+          }),
+        ),
+      );
+      const pools = hard
+        .map(
+          (c) =>
+            new Set(
+              c.evidenceRefs.flatMap((ref) => {
+                const e = sources.get(ref)!;
+                return e.kind === 'user_statement' ? [] : [e.entityKey ?? e.sourceRef];
+              }),
+            ),
+        )
+        .filter((pool) => pool.size);
+      const first = pools[0];
+      const semanticInformation =
+        goal.sourceCoherence === 'supported' &&
+        !task.counterparty &&
+        task.category !== 'housing' &&
+        task.category !== 'second_hand';
+      if (
+        goal.sourceCoherence === 'unknown' ||
+        goal.sourceCoherence === 'conflict' ||
+        !first ||
+        (!semanticInformation &&
+          ![...first].some(
+            (entity) => !contradicted.has(entity) && pools.every((pool) => pool.has(entity)),
+          ))
+      )
+        missing.push({
+          goalId: goal.id,
+          criterionId: '__coherent_source',
+          status: goal.sourceCoherence === 'unknown' ? 'unknown' : first ? 'conflict' : 'unknown',
+        });
+    }
   }
   return { ready: required.length > 0 && hasCriteria && missing.length === 0, missing };
 }

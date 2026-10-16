@@ -13,7 +13,10 @@ export type JevOutcome<Q extends string> =
       provider: string;
       model: string;
     }
-  | { ok: false; reason: 'timeout' | 'rate_limited' | 'http_error' | 'invalid_response' };
+  | {
+      ok: false;
+      reason: 'timeout' | 'rate_limited' | 'http_error' | 'invalid_response' | 'trace_unavailable';
+    };
 
 export interface JevClient {
   evaluate<Q extends string>(p: {
@@ -21,6 +24,7 @@ export interface JevClient {
     questions: Record<Q, JevQuestion>;
     inputRef: string;
     phase: Phase;
+    deadlineAt?: number;
   }): Promise<JevOutcome<Q>>;
 }
 
@@ -42,18 +46,18 @@ export function createJevClient(p: {
 
   async function once(
     body: string,
+    deadlineAt?: number,
   ): Promise<
     | { kind: 'ok'; json: unknown }
     | { kind: 'retry' }
     | { kind: 'fail'; reason: 'timeout' | 'http_error' | 'invalid_response' }
   > {
+    const remaining =
+      deadlineAt === undefined ? timeoutMs : Math.min(timeoutMs, deadlineAt - Date.now());
+    if (remaining <= 0) return { kind: 'fail', reason: 'timeout' };
     const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const timer = setTimeout(() => ac.abort(), remaining);
     try {
-      // TODO(P4): AGENTS.md §6 / plan/P4-jev.md require Zero Data Retention on Jev
-      // requests. The PoC (scripts/poc/v4-jev-inbound/RESULT.md) never recorded a
-      // header/field name for this — needs confirmation from Jev's docs or a follow-up
-      // PoC before it can be implemented. Not yet implemented.
       const res = await fetchImpl(`${p.baseUrl}${JEV_ENDPOINT}`, {
         method: 'POST',
         headers: { authorization: `Bearer ${p.apiKey}`, 'content-type': 'application/json' },
@@ -78,14 +82,26 @@ export function createJevClient(p: {
   return {
     async evaluate(q) {
       const t0 = Date.now();
-      const body = JSON.stringify({ model: p.model, state: q.state, questions: q.questions });
+      // AGENTS §6; OpenRouter Decisions accepts the same provider preferences, including per-request ZDR.
+      // Do not retry with privacy enforcement removed if routing fails.
+      const body = JSON.stringify({
+        model: p.model,
+        state: q.state,
+        questions: q.questions,
+        provider: { zdr: true },
+      });
       let outcome: JevOutcome<never> | null = null;
       let cost = 0;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        const r = await once(body);
+        const r = await once(body, q.deadlineAt);
         if (r.kind === 'retry') {
           if (attempt < maxRetries) {
-            await new Promise((res) => setTimeout(res, 200 * 2 ** attempt));
+            const delay = 200 * 2 ** attempt;
+            if (q.deadlineAt !== undefined && q.deadlineAt - Date.now() <= delay) {
+              outcome = { ok: false, reason: 'timeout' };
+              break;
+            }
+            await new Promise((res) => setTimeout(res, delay));
           }
           continue;
         }
@@ -126,9 +142,10 @@ export function createJevClient(p: {
         });
       } catch (e) {
         p.logger.warn(
-          { err: e, inputRef: q.inputRef },
-          'jev trace write failed; evaluate outcome unaffected',
+          { errorKind: e instanceof Error ? e.name : 'unknown', inputRef: q.inputRef },
+          'jev trace write failed; decision unavailable',
         );
+        return { ok: false, reason: 'trace_unavailable' } as never;
       }
       if (!outcome.ok)
         p.logger.warn({ reason: outcome.reason, inputRef: q.inputRef }, 'jev unavailable');

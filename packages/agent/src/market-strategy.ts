@@ -83,11 +83,19 @@ function priceEvidence(
   const candidateLines = [
     ...itemLines.filter((line) => /^[-•]/.test(line)),
     ...itemLines.filter((line) => !/^[-•]/.test(line)),
-    ...(distinctBulletItems.length <= 1 ? textLines.filter((s) => /^价格[：:]/.test(s)) : []),
+    ...(distinctBulletItems.length <= 1
+      ? textLines.filter(
+          (s) =>
+            /^价格[：:]/.test(s) || (p.intent === 'housing' && /^(?:费用|租金|月租)[：:]/.test(s)),
+        )
+      : []),
   ];
   const priced: Array<{ text: string; min: number; max: number }> = [];
   for (const line of candidateLines) {
-    if (/参考价|购入价|原价|新品价|不含|押金|套餐|整套|买.*送|多件|等\d*件|、/.test(line)) continue;
+    const priceContext =
+      p.intent === 'housing' ? line.replace(/不含(?:账单|水电费|水电网|bills)/gi, '') : line;
+    if (/参考价|购入价|原价|新品价|不含|押金|套餐|整套|买.*送|多件|等\d*件|、/.test(priceContext))
+      continue;
     if (
       p.intent === 'carry' &&
       /\/\s*(?:kg|g|公斤|斤)|(?:每|按).*(?:公斤|斤|重量)|\d+(?:\.\d+)?\s*kg/i.test(line)
@@ -449,11 +457,30 @@ function assessSharedMarketListing(
   const preferenceSource = focusName && matchedItems.length ? matchedItems.join('\n') : subject;
   for (const preference of p.preferences) {
     const escaped = preference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const petCondition = /^(?:猫|养猫|可养猫|宠物|允许宠物|允许养猫|pets?|cats?)$/i.test(
+      preference,
+    );
+    const contradiction = petCondition
+      ? lines(preferenceSource).find(
+          (line) =>
+            /(?:不允许|不接受|禁止|谢绝|不可|不能)(?:养|带)?(?:猫|宠物)|\bno (?:pets|cats)\b|(?:pets|cats) (?:are )?not allowed/i.test(
+              line,
+            ) && !/不是不允许|并非禁止|不再禁止/.test(line),
+        )
+      : undefined;
+    if (contradiction && p.essentialPreferences?.includes(preference)) {
+      checks.push({
+        label: `preference:${preference}`,
+        status: 'mismatch',
+        evidence: contradiction,
+      });
+      continue;
+    }
     const unresolved = new RegExp(
       `(?:没有|未|不支持|无)[^。\\n]{0,6}${escaped}|${escaped}[^。\\n]{0,10}(?:没有说明|未说明|未确认|待确认|不详|不支持)`,
       'i',
     ).test(preferenceSource);
-    if (!contains(preferenceSource, [preference]) || unresolved)
+    if (!contains(preferenceSource, [preference]) || unresolved || contradiction)
       checks.push({ label: `preference:${preference}`, status: 'unknown', evidence: null });
   }
   const met = checks.filter((c) => c.status === 'met').length,

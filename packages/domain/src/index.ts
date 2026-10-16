@@ -7,3 +7,4 @@ export * from './jev-questions.js';
 export * from './task.js';
 export * from './task-routing.js';
 export * from './task-requirements.js';
+export * from './task-progress.js';
