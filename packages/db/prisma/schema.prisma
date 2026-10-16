@@ -376,9 +376,15 @@ model Approval {
   decision   String   // approve / reject / edit / ignore
   editedText String?  @map("edited_text")
   decidedAt  DateTime @default(now()) @map("decided_at") @db.Timestamptz
+  resumeStatus ExecutionStatus? @map("resume_status")
+  resumeQueuedAt DateTime? @map("resume_queued_at") @db.Timestamptz
+  resumeAttempts Int @default(0) @map("resume_attempts")
+  resumeFence Int? @map("resume_fence")
+  resumeError String? @map("resume_error")
 
   runState RunState @relation(fields: [runStateId], references: [id])
 
+  @@index([resumeStatus, resumeQueuedAt])
   @@map("approvals")
 }
 

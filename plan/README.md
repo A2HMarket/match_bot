@@ -42,7 +42,7 @@
 | P23 | Jev请求状态回复 | [P23-jev-request-status.md](./P23-jev-request-status.md) | P22 | 5 | codex | 完成 | 0.15.1；594测试；6/6真实sent；Jev正反例8/8；固定状态/审批/缓存回归 | 2026-10-12 |
 | P24 | 任务Agent总计划、验收与任务基础 | [P24-task-agent-plan-and-acceptance.md](./P24-task-agent-plan-and-acceptance.md) | P23 | 6 | codex | 进行中 | 先冻结A01–A18；领域/持久化与任务关联 | 2026-10-17 |
 | P25 | 任务规划与朋友式帮助 | [P25-task-planning-and-companion.md](./P25-task-planning-and-companion.md) | P24 | 6 | codex | 进行中 | 来源/反证/下一步落账及复查已接入；715测试，18条来源判定通过，多轮就绪仍未过 | 2026-10-17 |
-| P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 进行中 | 投递与入站重启证明通过；765测试，审批/问题回执关联待做 | 2026-10-17 |
+| P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 进行中 | 入站/审批重启证明通过；776测试，卡片持久投递/问题回执待做 | 2026-10-17 |
 | P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 待开始 | 多轮固定集、真实预览/Telegram及发布 | 2026-10-17 |
 
 

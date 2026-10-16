@@ -66,9 +66,22 @@ export async function enqueueInbound(
 export async function enqueueResume(
   q: Queues,
   p: { runStateId: string; approvalId: string },
+  options?: { recoverActive?: boolean },
 ): Promise<void> {
+  if (q.connection.status !== 'ready') throw new Error('queue producer unavailable');
   const data = resumeRunJobSchema.parse(p);
-  await q.resume.add('resume', data, { jobId: `resume:${data.runStateId}:${data.approvalId}` });
+  const key = `resume:${data.runStateId}:${data.approvalId}`;
+  const existing = await q.resume.getJob(key);
+  if (existing) {
+    const state = await existing.getState();
+    if (
+      state === 'failed' ||
+      state === 'completed' ||
+      (state === 'active' && options?.recoverActive)
+    )
+      await existing.remove();
+  }
+  await q.resume.add('resume', data, { jobId: key });
 }
 
 export async function enqueueOutbound(q: Queues, outboundMessageId: string): Promise<void> {

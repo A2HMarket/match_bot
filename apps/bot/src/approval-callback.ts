@@ -8,7 +8,7 @@ export type ApprovalOutcome =
   'approved' | 'rejected' | 'ignored' | 'stale' | 'forbidden' | 'invalid';
 
 const TOAST: Record<ApprovalOutcome, string> = {
-  approved: '已批准，正在发送',
+  approved: '已批准，等待恢复执行',
   rejected: '已拒绝',
   ignored: '已忽略',
   stale: '这张卡已经处理过或已过期',
@@ -66,7 +66,7 @@ export function createApprovalCallbackHandler(p: {
     const outcome: ApprovalOutcome =
       r === 'invalid'
         ? 'invalid'
-        : r === 'queued'
+        : r === 'queued' || r === 'pending'
           ? parsed.decision === 'approve'
             ? 'approved'
             : 'rejected'

@@ -1165,6 +1165,100 @@ describe('runInbound', () => {
     expect(r).toEqual({ kind: 'completed', toolsCalled: ['reply_in_group'] });
     expect(repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'pending');
   });
+  it('rebuilds a modern approval from its original message and fresh fence without reading the latest unrelated demand', async () => {
+    const model = new ScriptedModel([[replyCall()]]),
+      { deps, repos, runStates } = makeDeps(model);
+    await runInbound({ deps: deps as never, ctx: ctx(1), input: 'need a van' });
+    const row = runStates[0];
+    if (!row) throw new Error('missing snapshot');
+    const fresh = {
+      ...repos,
+      messages: {
+        findById: vi.fn().mockResolvedValue({
+          id: 'm1',
+          userId: 'u1',
+          externalId: 'original-message',
+          groupId: 'g',
+          text: 'need a van',
+          taskId: null,
+        }),
+      },
+      users: {
+        findById: vi.fn().mockResolvedValue({ id: 'u1', channel: 'telegram', externalId: '111' }),
+      },
+      groups: {
+        findByExternal: vi
+          .fn()
+          .mockResolvedValue({ id: 'g', isActive: true, phase: 1, rateLimitPerDay: null }),
+      },
+      executions: {
+        recoveryFlags: vi
+          .fn()
+          .mockResolvedValue({ outboundBlocked: false, answerInputExhausted: false }),
+      },
+    };
+    const modern = { ...fresh, forExecution: vi.fn(() => fresh) },
+      lease = { userId: 'u1', messageId: 'm1', token: 'fresh-lease', fence: 2 };
+    model.enqueue([assistantMessage('posted')]);
+    const result = await resumeRun({
+      deps: { ...deps, repos: modern } as never,
+      runState: { ...row, status: 'consumed', messageId: 'm1' } as never,
+      approval: { runStateId: row.id, decision: 'approve' } as never,
+      execution: lease,
+    });
+    expect(result.kind).toBe('completed');
+    expect(repos.demands.findOpenByUser).not.toHaveBeenCalled();
+    expect(repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        execution: lease,
+        replyToMessageId: 'original-message',
+        mentionUserId: '111',
+      }),
+      'pending',
+    );
+    model.assertComplete();
+  });
+  it('refuses a modern approval after its task conditions change, before executing the old tool', async () => {
+    const model = new ScriptedModel([[replyCall()]]),
+      { deps, repos, runStates } = makeDeps(model);
+    await runInbound({ deps: deps as never, ctx: ctx(1), input: 'need a van' });
+    const row = runStates[0];
+    if (!row) throw new Error('missing snapshot');
+    const fresh = {
+        ...repos,
+        messages: {
+          findById: vi.fn().mockResolvedValue({
+            id: 'm1',
+            userId: 'u1',
+            groupId: 'g',
+            text: 'need a van',
+            taskId: 'task',
+            taskRequirementsVersion: 0,
+          }),
+        },
+        users: {
+          findById: vi.fn().mockResolvedValue({ id: 'u1', channel: 'telegram', externalId: '111' }),
+        },
+        groups: {
+          findByExternal: vi.fn().mockResolvedValue({ id: 'g', isActive: true, phase: 1 }),
+        },
+        tasks: {
+          findById: vi.fn().mockResolvedValue({ requirementsVersion: 1, status: 'active' }),
+        },
+      },
+      modern = { ...fresh, forExecution: vi.fn(() => fresh) };
+    await expect(
+      resumeRun({
+        deps: { ...deps, repos: modern } as never,
+        runState: { ...row, status: 'consumed', messageId: 'm1' } as never,
+        approval: { runStateId: row.id, decision: 'approve' } as never,
+        execution: { userId: 'u1', messageId: 'm1', token: 'new-lease', fence: 2 },
+      }),
+    ).rejects.toMatchObject({ name: 'ObsoleteResumeError' });
+    expect(repos.outbound.create).not.toHaveBeenCalled();
+    expect(repos.demands.findOpenByUser).not.toHaveBeenCalled();
+    model.assertComplete();
+  });
 
   it('resumeRun: rejected interruption does not write outbound', async () => {
     const model = new ScriptedModel([[replyCall()]]);

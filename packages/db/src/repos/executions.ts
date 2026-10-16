@@ -288,6 +288,16 @@ export function executionsRepo(prisma: PrismaClient) {
           await trace(tx, message, 'user_busy');
           return { kind: 'busy', retryAfterMs: 2000 };
         }
+        const resume = await tx.approval.findFirst({
+          where: {
+            resumeStatus: { in: ['accepted', 'running'] },
+            runState: { messageId: message.id, userId: user.id },
+          },
+        });
+        if (resume) {
+          await trace(tx, message, 'durable_resume_pending');
+          return { kind: 'waiting' };
+        }
         const reply = await tx.outboundMessage.findFirst({
           where: { sourceMessageId: message.id, kind: { not: 'reaction' } },
         });

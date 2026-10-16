@@ -7,6 +7,7 @@ import { createApprovalCallbackHandler } from './approval-callback.js';
 import { createInboundHandler } from './inbound.js';
 import { startOutboundLoop } from './outbound-loop.js';
 import { startInboundDispatch } from './inbound-dispatch.js';
+import { startResumeDispatch } from './resume-dispatch.js';
 
 const env = loadEnv();
 const log = createLogger('bot', env.LOG_LEVEL);
@@ -69,11 +70,13 @@ const stopLoop = startOutboundLoop({
   defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
 });
 const stopInboundDispatch = startInboundDispatch({ repos, queues, logger: log });
+const stopResumeDispatch = startResumeDispatch({ repos, queues, logger: log });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopLoop();
     stopInboundDispatch();
+    stopResumeDispatch();
     void bot.stop();
     void closeQueues(queues);
     void disconnectPrisma();

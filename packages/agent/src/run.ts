@@ -4,8 +4,8 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Approval, RunState } from '@matchbot/db';
-import type { DemandDraft, Phase } from '@matchbot/domain';
-import { resolveTaskMarketTarget } from './task-market-plan.js';
+import type { DemandDraft, ExecutionLease, Phase } from '@matchbot/domain';
+import { resolveTaskMarketTarget, bindTaskMarketPlan } from './task-market-plan.js';
 import { decrypt, encrypt } from '@matchbot/shared';
 import { RunContext, RunState as SdkRunState } from '@openai/agents';
 import { z } from 'zod';
@@ -36,6 +36,13 @@ function resolveSdkVersion(): string {
   }
 }
 const SDK_VERSION = resolveSdkVersion();
+
+class ObsoleteResumeError extends Error {
+  constructor() {
+    super('approval snapshot is obsolete or inaccessible');
+    this.name = 'ObsoleteResumeError';
+  }
+}
 
 const RUN_OPTIONS = { maxTurns: MAX_TURNS } as const;
 const RUN_TIMEOUT_MS = 150000;
@@ -291,9 +298,70 @@ export async function resumeRun(p: {
   deps: AgentDeps;
   runState: RunState;
   approval: Approval;
+  execution?: ExecutionLease;
 }): Promise<RunOutcome> {
+  if (p.runState.messageId && !p.execution) throw new ObsoleteResumeError();
+  if (p.execution) {
+    if (
+      p.runState.status !== 'consumed' ||
+      p.runState.userId !== p.execution.userId ||
+      p.runState.messageId !== p.execution.messageId ||
+      p.approval.runStateId !== p.runState.id ||
+      p.runState.agentVersion !== AGENT_VERSION ||
+      p.runState.sdkVersion !== SDK_VERSION ||
+      p.runState.expiresAt.getTime() <= Date.now()
+    )
+      throw new ObsoleteResumeError();
+    p = { ...p, deps: { ...p.deps, repos: p.deps.repos.forExecution(p.execution) } };
+  }
   const snapshot = decrypt(p.runState.snapshot, snapshotKey(p.deps));
-  const ctx = restoreSearchContext(await rebuildContext(p.deps, p.runState), snapshot);
+  if (p.execution) {
+    const original = z
+      .object({
+        context: z.object({
+          context: z.object({
+            userId: z.string(),
+            chatId: z.string(),
+            sourceMessageId: z.string(),
+          }),
+        }),
+      })
+      .parse(JSON.parse(snapshot) as unknown).context.context;
+    if (
+      original.userId !== p.execution.userId ||
+      original.chatId !== p.runState.chatId ||
+      original.sourceMessageId !== p.execution.messageId
+    )
+      throw new ObsoleteResumeError();
+  }
+  const rebuilt = await rebuildContext(p.deps, p.runState, p.execution);
+  const ctx = restoreSearchContext(rebuilt, snapshot);
+  ctx.runDeadlineAt = Date.now() + RUN_TIMEOUT_MS;
+  if (p.execution) {
+    ctx.groupId = rebuilt.groupId;
+    ctx.sourceMessageId = rebuilt.sourceMessageId;
+    if (rebuilt.source) ctx.source = rebuilt.source;
+    const group = ctx.groupId
+      ? await p.deps.repos.groups.findByExternal(ctx.channel ?? 'telegram', ctx.chatId)
+      : null;
+    if (ctx.groupId && (!group || !group.isActive)) throw new ObsoleteResumeError();
+    const rawPhase = group?.phase ?? p.deps.env.DEFAULT_PHASE;
+    const currentPhase = rawPhase === 1 || rawPhase === 2 ? rawPhase : 0;
+    ctx.phase = Math.min(ctx.phase, currentPhase) as Phase;
+    if (ctx.phase === 0) throw new ObsoleteResumeError();
+    if (group?.rateLimitPerDay !== null && group?.rateLimitPerDay !== undefined)
+      ctx.rateLimitPerDay = group.rateLimitPerDay;
+    else delete ctx.rateLimitPerDay;
+    const flags = await p.deps.repos.executions.recoveryFlags(p.execution);
+    if (flags.outboundBlocked || p.approval.decision !== 'approve') ctx.outboundBlocked = true;
+    if (flags.answerInputExhausted) ctx.answerInputExhausted = true;
+    const message = await p.deps.repos.messages.findById(p.execution.messageId);
+    if (!message?.text) throw new ObsoleteResumeError();
+    const demandId = ctx.demandId;
+    bindCurrentRequest(ctx, message.text);
+    if (demandId) ctx.demandId = demandId;
+    if (ctx.task && ctx.marketPlan) ctx.marketPlan = bindTaskMarketPlan(ctx.marketPlan, ctx.task);
+  }
   const { agent, runner } = createMatchAgent(p.deps, {
     phase: ctx.phase,
     requestStatusOnly: !!ctx.isRequestStatusRun,
@@ -315,7 +383,22 @@ export async function resumeRun(p: {
     }
   }
   const session = createPgSession({ repos: p.deps.repos, userId: ctx.userId });
-  const result = await runner.run(agent, state, { session, ...RUN_OPTIONS });
+  const result = await runner.run(agent, state, {
+    context: ctx,
+    session,
+    ...RUN_OPTIONS,
+    signal: AbortSignal.timeout(RUN_TIMEOUT_MS),
+  });
+  if (
+    p.execution &&
+    p.deps.answerRequests &&
+    !result.interruptions.length &&
+    !ctx.answerRecorded &&
+    ctx.currentRequest?.isActionable
+  ) {
+    const message = await p.deps.repos.messages.findById(p.execution.messageId);
+    return respondRequestStatus({ deps: p.deps, ctx, input: message?.text ?? '' }, session);
+  }
   return settle(p.deps, ctx, result);
 }
 
@@ -326,7 +409,48 @@ function snapshotKey(deps: AgentDeps): string {
 }
 
 /** run_states 只存 userId/chatId/phase；其余上下文恢复时重建：开放需求从库里取最新一条。 */
-async function rebuildContext(deps: AgentDeps, runState: RunState): Promise<MatchContext> {
+async function rebuildContext(
+  deps: AgentDeps,
+  runState: RunState,
+  execution?: ExecutionLease,
+): Promise<MatchContext> {
+  if (execution) {
+    const message = await deps.repos.messages.findById(execution.messageId);
+    if (!message || message.userId !== execution.userId || !message.text)
+      throw new ObsoleteResumeError();
+    const user = await deps.repos.users.findById(execution.userId);
+    if (!user) throw new ObsoleteResumeError();
+    const group = message.groupId
+      ? await deps.repos.groups.findByExternal(user.channel, runState.chatId)
+      : null;
+    if (message.groupId ? group?.id !== message.groupId : user.externalId !== runState.chatId)
+      throw new ObsoleteResumeError();
+    const task = message.taskId
+      ? await deps.repos.tasks.findById({
+          access: { userId: user.id, scope: { channel: user.channel, chatId: runState.chatId } },
+          id: message.taskId,
+        })
+      : null;
+    if (
+      message.taskId &&
+      (!task ||
+        task.requirementsVersion !== message.taskRequirementsVersion ||
+        ['completed', 'cancelled', 'expired'].includes(task.status))
+    )
+      throw new ObsoleteResumeError();
+    return {
+      execution,
+      userId: user.id,
+      channel: user.channel,
+      chatId: runState.chatId,
+      groupId: message.groupId,
+      phase: runState.phase === 1 || runState.phase === 2 ? runState.phase : 0,
+      sourceMessageId: message.id,
+      source: { messageId: message.externalId, userId: user.externalId },
+      recentReplies: [],
+      ...(task ? { task } : {}),
+    };
+  }
   const [open] = await deps.repos.demands.findOpenByUser(runState.userId);
   // Prisma 列是 Int，这里收窄回 Phase；脏数据按 Phase 0（最保守）处理
   const phase: Phase = runState.phase === 1 || runState.phase === 2 ? runState.phase : 0;
@@ -384,6 +508,9 @@ async function settle(
       chatId: ctx.chatId,
       phase: ctx.phase,
       ...(ctx.execution ? { messageId: ctx.execution.messageId } : {}),
+      ...(ctx.execution && ctx.task
+        ? { task: { id: ctx.task.id, requirementsVersion: ctx.task.requirementsVersion } }
+        : {}),
       snapshot: encrypt(result.state.toString(), snapshotKey(deps)),
       agentVersion: AGENT_VERSION,
       sdkVersion: SDK_VERSION,
