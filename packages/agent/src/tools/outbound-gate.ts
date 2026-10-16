@@ -232,6 +232,7 @@ export async function executeOutbound(
     {
       channel: 'telegram',
       phase: ctx.phase,
+      ...(ctx.execution ? { execution: ctx.execution } : {}),
       kind: d.kind,
       target: d.target,
       text: formatOutboundText(ctx, d),
@@ -243,9 +244,13 @@ export async function executeOutbound(
   );
   ctx.answerRecorded = true;
   deps.logger.info({ outboundId: row.id, decision, phase: ctx.phase }, 'outbound message recorded');
-  return status === 'dry_run'
+  return row.status === 'dry_run'
     ? `dry-run recorded (${row.id}); nothing was sent`
-    : `queued (${row.id})`;
+    : row.status === 'pending' || row.status === 'sending'
+      ? `queued (${row.id})`
+      : row.status === 'sent'
+        ? `not sent: this request already has a confirmed reply (${row.id})`
+        : `not sent: this request already has a failed or unconfirmed delivery (${row.id}); do not automatically resend`;
 }
 
 /** needsApproval：只有 'review' 才中断；auto / dry_run / drop 都不中断，由 execute 按 decision 处理。 */

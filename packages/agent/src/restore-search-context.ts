@@ -13,7 +13,7 @@ import {
   MARKET_RESEARCH_LIMITS,
 } from './market-research.js';
 
-const contextSchema = z.object({
+export const researchContextSchema = z.object({
   userId: z.string(),
   chatId: z.string(),
   phase: z.union([z.literal(0), z.literal(1), z.literal(2)]),
@@ -21,6 +21,15 @@ const contextSchema = z.object({
   groupId: z.string().nullable(),
   source: z.object({ messageId: z.string(), userId: z.string() }).optional(),
   demand: demandDraftSchema.optional(),
+  demandId: z.string().optional(),
+  supplierSearchEmpty: z.boolean().optional(),
+  taskProgressCalls: z.number().int().nonnegative().max(100).optional(),
+  taskProgressVersion: z.number().int().nonnegative().optional(),
+  taskSourceReviewedClaims: z.number().int().nonnegative().max(96).optional(),
+  sourceReviewCache: z.record(z.string(), z.boolean()).optional(),
+  outboundDeclineReason: z
+    .enum(['unverified_claims', 'low_value', 'jev_unavailable', 'rate_limited'])
+    .optional(),
   currentRequest: currentRequestSchema.optional(),
   answerInputExhausted: z.boolean().optional(),
   isAnswerFinalization: z.boolean().optional(),
@@ -82,12 +91,27 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
     raw['currentRequest'] === undefined
   )
     return ctx;
-  const saved = contextSchema.parse(raw);
+  const saved = researchContextSchema.parse(raw);
   if (saved.userId !== ctx.userId || saved.chatId !== ctx.chatId || saved.phase !== ctx.phase) {
     throw new Error('Search snapshot context does not match the stored run');
   }
   return {
     ...ctx,
+    ...(saved.demandId ? { demandId: saved.demandId } : {}),
+    ...(saved.supplierSearchEmpty !== undefined
+      ? { supplierSearchEmpty: saved.supplierSearchEmpty }
+      : {}),
+    ...(saved.taskProgressCalls !== undefined
+      ? { taskProgressCalls: saved.taskProgressCalls }
+      : {}),
+    ...(saved.taskProgressVersion !== undefined
+      ? { taskProgressVersion: saved.taskProgressVersion }
+      : {}),
+    ...(saved.taskSourceReviewedClaims !== undefined
+      ? { taskSourceReviewedClaims: saved.taskSourceReviewedClaims }
+      : {}),
+    ...(saved.sourceReviewCache ? { sourceReviewCache: saved.sourceReviewCache } : {}),
+    ...(saved.outboundDeclineReason ? { outboundDeclineReason: saved.outboundDeclineReason } : {}),
     ...(saved.outboundBlocked !== undefined ? { outboundBlocked: saved.outboundBlocked } : {}),
     ...(saved.isRequestStatusRun !== undefined
       ? { isRequestStatusRun: saved.isRequestStatusRun }

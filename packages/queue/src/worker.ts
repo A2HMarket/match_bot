@@ -1,4 +1,4 @@
-import { Worker } from 'bullmq';
+import { Worker, DelayedError } from 'bullmq';
 import { Redis } from 'ioredis';
 import type { z } from 'zod';
 import {
@@ -19,14 +19,21 @@ const schemas: Record<QueueName, z.ZodTypeAny> = {
 export function createWorker<T>(
   name: QueueName,
   redisUrl: string,
-  handler: (data: T, jobName: string) => Promise<void>,
+  handler: (data: T, jobName: string) => Promise<void | { deferMs: number }>,
   opts: { concurrency?: number } = {},
 ): Worker {
   const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
   return new Worker(
     name,
-    async (job) => {
-      await handler(schemas[name].parse(job.data) as T, job.name);
+    async (job, token) => {
+      const result = await handler(schemas[name].parse(job.data) as T, job.name);
+      if (result) {
+        const delay = result.deferMs;
+        if (!Number.isInteger(delay) || delay < 100 || delay > 60000)
+          throw new Error('invalid worker defer duration');
+        await job.moveToDelayed(Date.now() + delay, token);
+        throw new DelayedError();
+      }
     },
     { connection, concurrency: opts.concurrency ?? 4 },
   );

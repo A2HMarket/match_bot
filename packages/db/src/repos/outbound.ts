@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { outboundDraftSchema, type OutboundDraft, type OutboundKind } from '@matchbot/domain';
 import { z } from 'zod';
+import { hashText } from '@matchbot/shared';
+import { withExecutionFence } from '../execution-fence.js';
 import { Prisma, type OutboundMessage, type PrismaClient } from '../generated/client.js';
 
 const fence = z.object({
@@ -46,19 +48,60 @@ export function outboundRepo(prisma: PrismaClient) {
   return {
     create(raw: OutboundDraft, status: 'dry_run' | 'pending'): Promise<OutboundMessage> {
       const draft = outboundDraftSchema.parse(raw);
-      return prisma.outboundMessage.create({
-        data: {
-          channel: draft.channel,
-          target: draft.target,
-          text: draft.text,
-          phase: draft.phase ?? 0,
-          toolCallId: draft.toolCallId ?? null,
-          kind: draft.kind ?? 'recommendation',
-          replyToMessageId: draft.replyToMessageId ?? null,
-          mentionUserId: draft.mentionUserId ?? null,
-          status,
-        },
-      });
+      const write = async (tx: Prisma.TransactionClient) => {
+        let requestKey: string | null = null;
+        if (draft.execution) {
+          const source = await tx.message.findFirst({
+            where: { id: draft.execution.messageId, userId: draft.execution.userId },
+            include: {
+              user: { select: { channel: true, externalId: true } },
+              group: { select: { externalId: true } },
+            },
+          });
+          if (!source || source.user.channel !== draft.channel)
+            throw new Error('outbound execution source inaccessible');
+          const target = source.group?.externalId ?? source.user.externalId;
+          if (
+            (draft.kind ?? 'recommendation') !== 'lead' &&
+            draft.target !== target &&
+            !(draft.kind === 'notification' && draft.target === source.user.externalId)
+          )
+            throw new Error('outbound execution scope mismatch');
+          requestKey = hashText(
+            JSON.stringify([
+              draft.channel,
+              draft.target,
+              source.id,
+              draft.kind === 'reaction' ? 'reaction' : 'reply',
+            ]),
+          );
+          const existing = await tx.outboundMessage.findUnique({ where: { requestKey } });
+          if (existing) {
+            await trace(tx, {
+              id: existing.id,
+              phase: existing.phase,
+              decision: 'request_reply_replayed',
+            });
+            return existing;
+          }
+        }
+        return tx.outboundMessage.create({
+          data: {
+            channel: draft.channel,
+            target: draft.target,
+            text: draft.text,
+            phase: draft.phase ?? 0,
+            toolCallId: draft.toolCallId ?? null,
+            kind: draft.kind ?? 'recommendation',
+            replyToMessageId: draft.replyToMessageId ?? null,
+            mentionUserId: draft.mentionUserId ?? null,
+            status,
+            requestKey,
+            sourceMessageId: draft.execution?.messageId ?? null,
+          },
+        });
+      };
+      return draft.execution ? withExecutionFence(prisma, draft.execution, write) : write(prisma);
     },
     async claimPending(
       limit: number,

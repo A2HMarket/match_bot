@@ -6,6 +6,7 @@ import { Bot, GrammyError, HttpError } from 'grammy';
 import { createApprovalCallbackHandler } from './approval-callback.js';
 import { createInboundHandler } from './inbound.js';
 import { startOutboundLoop } from './outbound-loop.js';
+import { startInboundDispatch } from './inbound-dispatch.js';
 
 const env = loadEnv();
 const log = createLogger('bot', env.LOG_LEVEL);
@@ -17,6 +18,7 @@ const me = await bot.api.getMe();
 const inbound = createInboundHandler({
   botId: me.id,
   botUsername: me.username,
+  defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
   repos,
   queues,
   logger: log,
@@ -66,10 +68,12 @@ const stopLoop = startOutboundLoop({
   logger: log,
   defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
 });
+const stopInboundDispatch = startInboundDispatch({ repos, queues, logger: log });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopLoop();
+    stopInboundDispatch();
     void bot.stop();
     void closeQueues(queues);
     void disconnectPrisma();

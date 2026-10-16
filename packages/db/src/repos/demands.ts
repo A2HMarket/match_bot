@@ -40,9 +40,17 @@ export function demandsRepo(prisma: PrismaClient) {
         orderBy: { updatedAt: 'desc' },
       });
     },
-    create(
+    async create(
       p: DemandDraft & { userId: string; sourceMessageId: string; isMoveEvent?: boolean },
     ): Promise<Demand> {
+      const existing = await prisma.demand.findFirst({
+        where: {
+          userId: p.userId,
+          category: p.category,
+          sourceMessageIds: { has: p.sourceMessageId },
+        },
+      });
+      if (existing) return existing;
       return prisma.demand.create({
         data: {
           ...draftToCreateData(p),

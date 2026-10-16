@@ -7,6 +7,7 @@ import { taskPlanningInstructions } from './task-instructions.js';
 import { taskPlanningTools } from './tools/plan-task.js';
 import { recordTaskProgressTool } from './tools/record-task-progress.js';
 import { readTaskSourcesTool } from './tools/read-task-sources.js';
+import { saveExecutionCheckpoint } from './execution-checkpoint.js';
 import type { Phase } from '@matchbot/domain';
 import { Agent, Runner } from '@openai/agents';
 import type { AgentDeps, MatchContext } from './context.js';
@@ -34,7 +35,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.16.5';
+export const AGENT_VERSION = '0.16.6';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:
@@ -103,13 +104,21 @@ export function createMatchAgent(
     inputRef?: string;
     taskId?: string;
     taskRefs?: string[];
+    checkpointInput?: string;
   },
 ) {
   const agent = new Agent<MatchContext>({
     name: 'matchAgent',
     model: deps.env.DEEPSEEK_MODEL,
     // 来源推荐已落出站表就结束；无效证据仍回模型修正，不占一个额外的结束回合。
-    toolUseBehavior: (rc, results) => {
+    toolUseBehavior: async (rc, results) => {
+      if (run?.input !== undefined)
+        await saveExecutionCheckpoint(
+          deps,
+          rc.context as MatchContext,
+          run.checkpointInput ?? run.input,
+          AGENT_VERSION,
+        );
       if (run?.taskPlanningOnly)
         return (rc.context as MatchContext).taskUpdate
           ? { isFinalOutput: true, isInterrupted: undefined, finalOutput: 'task prepared' }

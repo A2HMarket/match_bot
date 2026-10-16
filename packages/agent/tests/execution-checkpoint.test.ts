@@ -1,0 +1,145 @@
+import { taskSchema } from '@matchbot/domain';
+import { assistantMessage, functionCall, ScriptedModel } from '@openai/agents/testing';
+import { describe, expect, it, vi } from 'vitest';
+import { createMatchAgent } from '../src/agent.js';
+import {
+  restoreExecutionCheckpoint,
+  saveExecutionCheckpoint,
+} from '../src/execution-checkpoint.js';
+import type { AgentDeps, MatchContext } from '../src/context.js';
+
+function fixture() {
+  const task = taskSchema.parse({
+    id: 'task',
+    ownerUserId: 'user',
+    scope: { channel: 'telegram', chatId: '-1' },
+    objective: '找书桌',
+    category: 'second_hand',
+    status: 'active',
+    revision: 1,
+    requirementsVersion: 1,
+    goals: [],
+    evidence: [],
+    pendingQuestion: null,
+    blockReason: null,
+    delivery: { status: 'none', level: 'none' },
+    userConfirmation: null,
+  });
+  const ctx: MatchContext = {
+    userId: 'user',
+    chatId: '-1',
+    groupId: 'group',
+    channel: 'telegram',
+    phase: 2,
+    sourceMessageId: 'message',
+    recentReplies: [],
+    task,
+    execution: {
+      userId: 'user',
+      messageId: 'message',
+      token: '00000000-0000-4000-8000-000000000001',
+      fence: 1,
+    },
+    marketPlan: {
+      intent: 'second_hand',
+      needs: [{ id: 'desk', terms: ['书桌'] }],
+      preferences: [],
+    },
+    marketListings: [
+      {
+        ref: 'm1',
+        id: 'desk',
+        title: 'E14书桌',
+        description: '书桌£45，伦敦E14自提',
+        priceLabel: '£45',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        url: 'https://a2hmarket.ai/listings/desk',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ],
+    marketDetailIds: ['desk'],
+    sourceReviewCache: { proof: true },
+    taskProgressVersion: 1,
+    runDeadlineAt: 1,
+  };
+  let snapshot = '';
+  const saveCheckpoint = vi.fn((p: { snapshot: string }) => {
+    snapshot = p.snapshot;
+    return Promise.resolve(true);
+  });
+  const deps = {
+    env: { SNAPSHOT_KEY: 'checkpoint-test-secret-12345', DEEPSEEK_MODEL: 'deepseek-flash' },
+    repos: { executions: { saveCheckpoint }, traces: { create: () => Promise.resolve({}) } },
+    answerRequests: true,
+  } as unknown as AgentDeps;
+  return { ctx, deps, saveCheckpoint, snapshot: () => snapshot };
+}
+describe('execution research checkpoints', () => {
+  it('encrypts tool results and restores them without restoring an old execution token or deadline', async () => {
+    const f = fixture();
+    await saveExecutionCheckpoint(f.deps, f.ctx, '找书桌', 'version');
+    expect(f.snapshot()).not.toContain('E14');
+    const fresh: MatchContext = {
+      ...f.ctx,
+      marketListings: [],
+      runDeadlineAt: 999,
+      execution: { ...f.ctx.execution!, fence: 2, token: '00000000-0000-4000-8000-000000000002' },
+    };
+    const restored = restoreExecutionCheckpoint(f.deps, fresh, '找书桌', f.snapshot(), 'version');
+    expect(restored.marketListings?.[0]?.id).toBe('desk');
+    expect(restored.marketDetailIds).toEqual(['desk']);
+    expect(restored.execution?.fence).toBe(2);
+    expect(restored.runDeadlineAt).toBe(999);
+  });
+  it('rejects another input, scope or requirement version and invalidates policy verdicts across versions', async () => {
+    const f = fixture();
+    await saveExecutionCheckpoint(f.deps, f.ctx, '找书桌', 'old');
+    for (const ctx of [
+      { ...f.ctx, userId: 'another' },
+      { ...f.ctx, chatId: '-elsewhere' },
+      { ...f.ctx, task: { ...f.ctx.task!, requirementsVersion: 2 } },
+    ])
+      expect(() =>
+        restoreExecutionCheckpoint(f.deps, ctx, '找书桌', f.snapshot(), 'old'),
+      ).toThrow();
+    expect(() => restoreExecutionCheckpoint(f.deps, f.ctx, '找房', f.snapshot(), 'old')).toThrow(
+      'scope',
+    );
+    const restored = restoreExecutionCheckpoint(f.deps, f.ctx, '找书桌', f.snapshot(), 'new');
+    expect(restored.sourceReviewCache).toBeUndefined();
+    expect(restored.taskProgressVersion).toBeUndefined();
+  });
+  it('awaits the SDK tool-use behavior checkpoint before asking for the next model turn', async () => {
+    const f = fixture(),
+      model = new ScriptedModel([
+        [functionCall('do_nothing', { reason: 'fixture' }, { callId: 'one' })],
+        [assistantMessage('done')],
+      ]);
+    let release: (() => void) | undefined;
+    f.saveCheckpoint.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          release = () => resolve(true);
+        }),
+    );
+    const { agent, runner } = createMatchAgent(
+      { ...f.deps, modelProvider: { getModel: () => model } },
+      { phase: 2, input: '找书桌' },
+    );
+    const pending = runner.run(agent, '找书桌', { context: f.ctx, maxTurns: 3 });
+    for (let attempt = 0; attempt < 50 && !release; attempt++)
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(release).toBeTypeOf('function');
+    expect(model.calls).toHaveLength(1);
+    release?.();
+    await pending;
+    expect(model.calls).toHaveLength(2);
+  });
+});

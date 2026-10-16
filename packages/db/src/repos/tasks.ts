@@ -15,6 +15,7 @@ import {
 } from '@matchbot/domain';
 import { z } from 'zod';
 import { Prisma, type PrismaClient, type Task } from '../generated/client.js';
+import { inTransaction } from '../execution-fence.js';
 
 const id = z.string().min(1).max(160);
 const accessSchema = z.strictObject({
@@ -53,6 +54,20 @@ const userTurnSchema = mutationSchema.extend({
     .nullable(),
 });
 const progressSchema = mutationSchema.extend({ sourceMessageId: id, progress: taskProgressSchema });
+const plannedTurnSchema = z
+  .strictObject({
+    access: accessSchema,
+    sourceMessageId: id,
+    expectedRevision: z.number().int().nonnegative(),
+    taskId: id.nullable(),
+    creation: createSchema.omit({ access: true, sourceMessageId: true }).nullable(),
+    patch: taskRequirementPatchSchema.nullable(),
+    outcome: userTurnSchema.shape.outcome,
+  })
+  .refine(
+    (p) => (p.taskId !== null) !== (p.creation !== null),
+    'exactly one task source is required',
+  );
 export type TaskMutationResult =
   { kind: 'applied' | 'replayed'; task: UserTask } | { kind: 'conflict' | 'not_found' };
 
@@ -193,6 +208,47 @@ export function tasksRepo(prisma: PrismaClient) {
   }
   return {
     findById,
+    async findAppliedTurn(input: {
+      access: TaskAccess;
+      sourceMessageId: string;
+    }): Promise<UserTask | null> {
+      const p = z.object({ access: accessSchema, sourceMessageId: id }).parse(input);
+      await requireMessage(prisma, p.access, p.sourceMessageId);
+      const rows = await prisma.task.findMany({
+        where: {
+          ...scopeWhere(p.access),
+          events: { some: { sourceMessageId: p.sourceMessageId, kind: 'user_turn' } },
+        },
+        take: 2,
+      });
+      if (rows.length > 1) throw new Error('multiple task bindings for one request');
+      return rows[0] ? readTask(rows[0]) : null;
+    },
+    async planTurn(raw: z.input<typeof plannedTurnSchema>): Promise<TaskMutationResult> {
+      const input = plannedTurnSchema.parse(raw);
+      return inTransaction(prisma, async (tx) => {
+        const r = tasksRepo(tx as PrismaClient);
+        const current = input.creation
+          ? await r.create({
+              ...input.creation,
+              access: input.access,
+              sourceMessageId: input.sourceMessageId,
+            })
+          : input.taskId
+            ? await r.findById({ access: input.access, id: input.taskId })
+            : null;
+        if (!current) return { kind: 'not_found' };
+        return r.applyUserTurn({
+          access: input.access,
+          id: current.id,
+          expectedRevision: input.expectedRevision,
+          sourceMessageId: input.sourceMessageId,
+          operationKey: input.sourceMessageId + ':task',
+          patch: input.patch,
+          outcome: input.outcome,
+        });
+      });
+    },
     async findOpenByScope(input: TaskAccess): Promise<UserTask[]> {
       const access = accessSchema.parse(input);
       const rows = await prisma.task.findMany({

@@ -158,22 +158,19 @@ async function applyProposal(p: {
     userId: ctx.userId,
     scope: { channel: ctx.channel ?? 'telegram', chatId: ctx.chatId },
   };
-  const current =
-    selection.kind === 'new'
-      ? await deps.repos.tasks.create({
-          access,
-          sourceMessageId: ctx.sourceMessageId,
-          intentKey: 'primary',
-          objective: selected.objective,
-          category: selected.category,
-          counterparty,
-        })
-      : selected;
-  const result = await deps.repos.tasks.applyUserTurn({
+  const result = await deps.repos.tasks.planTurn({
     access,
-    id: current.id,
-    expectedRevision: current.revision,
-    operationKey: ctx.sourceMessageId + ':task',
+    taskId: selection.kind === 'new' ? null : selected.id,
+    creation:
+      selection.kind === 'new'
+        ? {
+            intentKey: 'primary',
+            objective: selected.objective,
+            category: selected.category,
+            counterparty,
+          }
+        : null,
+    expectedRevision: selected.revision,
     sourceMessageId: ctx.sourceMessageId,
     patch,
     outcome: args.outcome ? { intent: args.outcome.intent, goalIds: args.outcome.goalIds } : null,

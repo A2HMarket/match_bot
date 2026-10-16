@@ -33,6 +33,14 @@ enum DemandStatus {
   expired
 }
 
+enum ExecutionStatus {
+  accepted
+  running
+  waiting_approval
+  completed
+  failed
+}
+
 enum TaskStatus {
   active
   waiting_user
@@ -90,6 +98,9 @@ model User {
   lastSeenAt   DateTime @map("last_seen_at") @db.Timestamptz
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  executionLeaseToken String? @map("execution_lease_token")
+  executionLeaseExpiresAt DateTime? @map("execution_lease_expires_at") @db.Timestamptz
+  executionFence Int @default(0) @map("execution_fence")
 
   messages     Message[]
   demands      Demand[]
@@ -132,12 +143,29 @@ model Message {
   lang       String?
   receivedAt DateTime @map("received_at") @db.Timestamptz
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  executionKey String? @unique @map("execution_key")
+  executionStatus ExecutionStatus? @map("execution_status")
+  executionPhase Int @default(0) @map("execution_phase")
+  executionAttempts Int @default(0) @map("execution_attempts")
+  executionFence Int? @map("execution_fence")
+  executionSnapshot String? @map("execution_snapshot")
+  executionError String? @map("execution_error")
+  executionQueuedAt DateTime? @map("execution_queued_at") @db.Timestamptz
+  replyToMessageId String? @map("reply_to_message_id")
+  isAddressedToBot Boolean @default(false) @map("is_addressed_to_bot")
+  replyToBotText String? @map("reply_to_bot_text")
+  taskId String? @map("task_id")
+  taskRequirementsVersion Int? @map("task_requirements_version")
 
   group Group? @relation(fields: [groupId], references: [id])
   user  User   @relation(fields: [userId], references: [id])
+  task Task? @relation(fields: [taskId],references: [id],onDelete: SetNull)
+  runStates RunState[]
+  outbounds OutboundMessage[]
 
   @@unique([groupId, externalId])
   @@index([userId, receivedAt])
+  @@index([userId,executionStatus,receivedAt])
   @@map("messages")
 }
 
@@ -187,6 +215,7 @@ model Task {
 
   user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   events TaskEvent[]
+  messages Message[]
 
   @@unique([userId, channel, chatId, sourceMessageId, intentKey])
   @@index([userId, channel, chatId, status])
@@ -330,9 +359,11 @@ model RunState {
   expiresAt     DateTime       @map("expires_at") @db.Timestamptz
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
   consumedAt    DateTime?      @map("consumed_at") @db.Timestamptz
+  messageId String? @map("message_id")
 
   user      User       @relation(fields: [userId], references: [id])
   approvals Approval[]
+  message Message? @relation(fields: [messageId],references: [id],onDelete: SetNull)
 
   @@index([status, expiresAt])
   @@map("run_states")
@@ -371,6 +402,9 @@ model OutboundMessage {
   attemptCount Int          @default(0) @map("attempt_count")
   nextAttemptAt DateTime?   @map("next_attempt_at") @db.Timestamptz
   externalMessageId String? @map("external_message_id")
+  sourceMessageId String? @map("source_message_id")
+  requestKey String? @unique @map("request_key")
+  sourceMessage Message? @relation(fields: [sourceMessageId],references: [id],onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([target, kind, sentAt])

@@ -14,6 +14,7 @@ import type { AgentDeps, MatchContext } from './context.js';
 import { createPgSession } from './session.js';
 import { restoreSearchContext } from './restore-search-context.js';
 import { prepareTaskTurn } from './task-preparation.js';
+import { restoreExecutionCheckpoint } from './execution-checkpoint.js';
 
 export type RunOutcome =
   { kind: 'completed'; toolsCalled: string[] } | { kind: 'interrupted'; runStateId: string };
@@ -43,7 +44,16 @@ export async function runInbound(p: {
   deps: AgentDeps;
   ctx: MatchContext;
   input: string;
+  checkpoint?: string | null;
 }): Promise<RunOutcome> {
+  if (p.ctx.execution) {
+    if (
+      p.ctx.execution.userId !== p.ctx.userId ||
+      p.ctx.execution.messageId !== p.ctx.sourceMessageId
+    )
+      throw new Error('execution context identity mismatch');
+    p = { ...p, deps: { ...p.deps, repos: p.deps.repos.forExecution(p.ctx.execution) } };
+  }
   p.ctx.runDeadlineAt = Date.now() + RUN_TIMEOUT_MS;
   const signal = AbortSignal.timeout(RUN_TIMEOUT_MS);
   const session = createPgSession({
@@ -51,6 +61,9 @@ export async function runInbound(p: {
     userId: p.ctx.userId,
     isolatePreviousTurns: !!p.deps.answerRequests,
   });
+  const recovery = p.ctx.execution
+    ? await p.deps.repos.executions.recoveryFlags(p.ctx.execution)
+    : null;
   if (p.deps.taskRequests) {
     if (!p.deps.answerRequests) throw new Error('taskRequests requires answerRequests');
     bindCurrentRequest(p.ctx, p.input);
@@ -62,6 +75,32 @@ export async function runInbound(p: {
   }
   if (p.deps.answerRequests) {
     bindCurrentRequest(p.ctx, p.input);
+    if (p.checkpoint && p.ctx.execution) {
+      try {
+        Object.assign(
+          p.ctx,
+          restoreExecutionCheckpoint(p.deps, p.ctx, p.input, p.checkpoint, AGENT_VERSION),
+        );
+        const restoredDemandId = p.ctx.demandId;
+        bindCurrentRequest(p.ctx, p.input);
+        if (restoredDemandId) p.ctx.demandId = restoredDemandId;
+      } catch (error) {
+        await p.deps.repos.traces.create({
+          kind: 'gate',
+          inputRef: p.ctx.sourceMessageId,
+          phase: p.ctx.phase,
+          latencyMs: 0,
+          costMicro: 0,
+          output: {
+            gate: 'execution_checkpoint',
+            decision: 'discarded',
+            errorKind: error instanceof Error ? error.name : 'unknown',
+          },
+        });
+      }
+    }
+    if (recovery?.outboundBlocked) p.ctx.outboundBlocked = true;
+    if (recovery?.answerInputExhausted) p.ctx.answerInputExhausted = true;
     if (
       p.ctx.currentRequest &&
       (p.ctx.taskUpdate?.kind === 'ambiguous' || p.ctx.taskUpdate?.kind === 'unbound')
@@ -86,6 +125,8 @@ export async function runInbound(p: {
       costMicro: 0,
     });
   }
+  if (recovery?.outboundBlocked || recovery?.answerInputExhausted)
+    return respondRequestStatus(p, session);
   if (p.deps.marketSearch) {
     p.ctx.marketTarget = resolveTaskMarketTarget(p.ctx.task, p.input);
     await p.deps.repos.traces.create({
@@ -101,6 +142,7 @@ export async function runInbound(p: {
   const { agent, runner } = createMatchAgent(p.deps, {
     phase: p.ctx.phase,
     input: p.ctx.currentRequest?.text ?? p.input,
+    checkpointInput: p.input,
     finalAnswerOnly: ambiguous,
     inputRef: p.ctx.sourceMessageId,
     ...(p.ctx.task ? { taskId: p.ctx.task.id } : {}),
@@ -341,6 +383,7 @@ async function settle(
       userId: ctx.userId,
       chatId: ctx.chatId,
       phase: ctx.phase,
+      ...(ctx.execution ? { messageId: ctx.execution.messageId } : {}),
       snapshot: encrypt(result.state.toString(), snapshotKey(deps)),
       agentVersion: AGENT_VERSION,
       sdkVersion: SDK_VERSION,

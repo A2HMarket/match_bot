@@ -9,6 +9,31 @@ export async function prepareTaskTurn(p: {
   signal: AbortSignal;
 }): Promise<boolean> {
   try {
+    if (p.ctx.execution) {
+      const task = await p.deps.repos.tasks.findAppliedTurn({
+        access: {
+          userId: p.ctx.userId,
+          scope: { channel: p.ctx.channel ?? 'telegram', chatId: p.ctx.chatId },
+        },
+        sourceMessageId: p.ctx.sourceMessageId,
+      });
+      if (task) {
+        p.ctx.task = task;
+        p.ctx.taskUpdate = {
+          kind:
+            task.status === 'completed' || task.status === 'cancelled' ? task.status : 'continued',
+        };
+        await p.deps.repos.traces.create({
+          kind: 'gate',
+          inputRef: p.ctx.sourceMessageId,
+          phase: p.ctx.phase,
+          latencyMs: 0,
+          costMicro: 0,
+          output: { gate: 'task_preparation', decision: 'recovered_applied_turn', taskId: task.id },
+        });
+        return true;
+      }
+    }
     p.ctx.taskCandidates = await p.deps.repos.tasks.findOpenByScope({
       userId: p.ctx.userId,
       scope: { channel: p.ctx.channel ?? 'telegram', chatId: p.ctx.chatId },

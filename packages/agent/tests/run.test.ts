@@ -229,6 +229,10 @@ describe('runInbound', () => {
           }),
       ),
     };
+    Object.assign(tasks, {
+      planTurn: (p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
+        tasks.applyUserTurn(p),
+    });
     await runInbound({
       deps: {
         ...deps,

@@ -7,6 +7,7 @@ export function runStatesRepo(prisma: PrismaClient) {
       userId: string;
       chatId: string;
       phase: Phase;
+      messageId?: string;
       snapshot: string;
       agentVersion: string;
       sdkVersion: string;

@@ -31,7 +31,7 @@ const workers = [
 
 for (const w of workers) {
   w.on('failed', (job, err) => {
-    d.logger.error({ queue: w.name, jobId: job?.id, err }, 'job failed');
+    d.logger.error({ queue: w.name, jobId: job?.id, errorKind: err.name }, 'job failed');
   });
 }
 

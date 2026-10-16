@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { executionLeaseSchema } from './execution.js';
 import { DEMAND_CATEGORIES } from './demand.js';
 
 /** 出站渠道。Phase 0 只有 telegram，whatsapp 是 Phase 2 的占位（架构 §3）。 */
@@ -52,5 +53,7 @@ export const outboundDraftSchema = z.object({
   mentionUserId: z.string().optional(),
   /** Server-selected phase at the gate; legacy rows without this remain held. */
   phase: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
+  /** Server-only execution authority, never a model tool parameter. */
+  execution: executionLeaseSchema.optional(),
 });
 export type OutboundDraft = z.infer<typeof outboundDraftSchema>;

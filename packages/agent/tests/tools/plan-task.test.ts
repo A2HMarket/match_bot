@@ -88,6 +88,19 @@ function fixture(text: string, candidates = [task()]) {
     },
     traces: { create: vi.fn(() => Promise.resolve({})) },
   };
+  Object.assign(repos.tasks, {
+    planTurn: vi.fn(async (p: Parameters<AgentDeps['repos']['tasks']['planTurn']>[0]) => {
+      const current = p.creation
+        ? await repos.tasks.create({
+            ...p.creation,
+            access: p.access,
+            sourceMessageId: p.sourceMessageId,
+          })
+        : rows.get(p.taskId ?? '');
+      if (!current) throw new Error('missing task');
+      return repos.tasks.applyUserTurn({ id: current.id, patch: p.patch, outcome: p.outcome });
+    }),
+  });
   return { ctx, repos, tool: planTaskTool({ repos } as unknown as AgentDeps, text) };
 }
 const base = {
