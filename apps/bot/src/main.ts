@@ -11,7 +11,7 @@ const env = loadEnv();
 const log = createLogger('bot', env.LOG_LEVEL);
 const repos = createRepositories(getPrisma(env.DATABASE_URL));
 const queues = createQueues(env.REDIS_URL);
-const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
+const bot = new Bot(env.TELEGRAM_BOT_TOKEN, { client: { timeoutSeconds: 10 } });
 const me = await bot.api.getMe();
 
 const inbound = createInboundHandler({
@@ -51,12 +51,20 @@ bot.catch((err) => {
   const e = err.error;
   const kind =
     e instanceof GrammyError ? 'telegram' : e instanceof HttpError ? 'network' : 'handler';
-  log.error({ updateId: err.ctx.update.update_id, kind, err: e }, 'update failed');
+  log.error(
+    {
+      updateId: err.ctx.update.update_id,
+      kind,
+      errorKind: e instanceof Error ? e.name : 'unknown',
+    },
+    'update failed',
+  );
 });
 const stopLoop = startOutboundLoop({
   repos,
   sender: createTelegramSender({ bot, logger: log }),
   logger: log,
+  defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
 });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
@@ -68,4 +76,4 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 log.info({ botId: me.id, phase: env.DEFAULT_PHASE }, 'bot started');
-await bot.start();
+await bot.start({ timeout: 5 });

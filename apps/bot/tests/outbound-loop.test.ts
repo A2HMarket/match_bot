@@ -1,28 +1,93 @@
 import { describe, expect, it, vi } from 'vitest';
+import { TelegramSendError } from '@matchbot/channel-telegram';
 import { drainOutbound } from '../src/outbound-loop.js';
 
-describe('drainOutbound', () => {
-  it('sends each pending row and marks sent/failed', async () => {
-    const rows = [
-      { id: 'a', target: '-1', text: 'x' },
-      { id: 'b', target: '-1', text: 'y' },
-    ];
-    const outbound = {
-      claimPending: vi.fn(() => Promise.resolve(rows)),
-      markSent: vi.fn(() => Promise.resolve()),
-      markFailed: vi.fn(() => Promise.resolve()),
-    };
-    const sender = {
-      send: vi.fn((m: { id: string }) =>
-        m.id === 'b' ? Promise.reject(new Error('kicked')) : Promise.resolve(),
-      ),
-    };
-    await drainOutbound({
-      repos: { outbound } as never,
+function setup() {
+  const rows = [
+    { id: 'a', phase: 2, channel: 'telegram', target: '-1', text: 'x', leaseToken: 'fence-a' },
+    { id: 'b', phase: 2, channel: 'telegram', target: '-1', text: 'y', leaseToken: 'fence-b' },
+  ];
+  const outbound = {
+    claimPending: vi
+      .fn()
+      .mockResolvedValueOnce([rows[0]])
+      .mockResolvedValueOnce([rows[1]])
+      .mockResolvedValue([]),
+    recoverExpiredClaims: vi.fn().mockResolvedValue({ requeued: 0, unknown: 0, failed: 0 }),
+    beginSend: vi.fn().mockResolvedValue(true),
+    markSent: vi.fn().mockResolvedValue(true),
+    markFailed: vi.fn().mockResolvedValue(true),
+  };
+  const groups = { findByExternal: vi.fn().mockResolvedValue({ phase: 2, isActive: true }) };
+  const dispatch = vi.fn((id: string) =>
+    Promise.resolve({ kind: 'message' as const, externalMessageId: id === 'a' ? '1' : '2' }),
+  );
+  const sender = {
+    send: vi.fn(async (row: { id: string }, p?: { beforeSend: () => Promise<boolean> }) =>
+      p && !(await p.beforeSend()) ? { kind: 'not_started' as const } : dispatch(row.id),
+    ),
+  };
+  return {
+    outbound,
+    groups,
+    sender,
+    dispatch,
+    p: {
+      repos: { outbound, groups } as never,
       sender,
-      logger: { error: vi.fn() } as never,
-    });
-    expect(outbound.markSent).toHaveBeenCalledWith('a');
-    expect(outbound.markFailed).toHaveBeenCalledWith('b', expect.stringContaining('kicked'));
+      defaultPhase: 2 as const,
+      logger: { error: vi.fn(), warn: vi.fn() } as never,
+    },
+  };
+}
+describe('drainOutbound', () => {
+  it('records real receipts and distinguishes transport uncertainty from a known rejection', async () => {
+    const { p, outbound, dispatch } = setup();
+    dispatch.mockRejectedValueOnce(new TelegramSendError('a', new Error('network')));
+    await drainOutbound(p);
+    expect(outbound.markFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'a',
+        leaseToken: 'fence-a',
+        deliveryState: 'unknown',
+        errorCode: 'network_error',
+      }),
+    );
+    expect(outbound.markSent).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'b', leaseToken: 'fence-b', externalMessageId: '2' }),
+    );
+  });
+  it('does not turn a receipt database failure into a failed-send retry', async () => {
+    const { p, outbound } = setup();
+    outbound.markSent.mockRejectedValueOnce(new Error('db unavailable'));
+    await drainOutbound(p);
+    expect(outbound.markFailed).not.toHaveBeenCalled();
+  });
+  it('does not dispatch after a lost fence or a switch to Phase 0', async () => {
+    const { p, outbound, dispatch, groups } = setup();
+    outbound.beginSend.mockResolvedValueOnce(false);
+    groups.findByExternal
+      .mockResolvedValueOnce({ phase: 2, isActive: true })
+      .mockResolvedValue({ phase: 0, isActive: true });
+    await drainOutbound(p);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(outbound.markSent).not.toHaveBeenCalled();
+  });
+  it('reschedules only a definitive rate-limit rejection', async () => {
+    const { p, outbound, dispatch } = setup();
+    dispatch.mockRejectedValueOnce(
+      new TelegramSendError('a', null, {
+        deliveryState: 'not_sent',
+        errorCode: 'telegram_429',
+        retryAfterSeconds: 2,
+      }),
+    );
+    await drainOutbound(p);
+    const failed = outbound.markFailed.mock.calls[0]?.[0] as {
+      retryAt: Date;
+      deliveryState: string;
+    };
+    expect(failed.deliveryState).toBe('not_sent');
+    expect(failed.retryAt.getTime()).toBeGreaterThan(Date.now());
   });
 });

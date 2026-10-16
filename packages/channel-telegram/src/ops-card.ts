@@ -48,7 +48,10 @@ export function createOpsCardSender(p: { bot: Bot; opsChatId: string }) {
  * 抢 getUpdates（同一 token 并发长轮询会 409，单纯发消息不会）。
  */
 export function createOpsCardSenderFromToken(p: { token: string; opsChatId: string }) {
-  return createOpsCardSender({ bot: new Bot(p.token), opsChatId: p.opsChatId });
+  return createOpsCardSender({
+    bot: new Bot(p.token, { client: { timeoutSeconds: 10 } }),
+    opsChatId: p.opsChatId,
+  });
 }
 
 export function parseApprovalCallback(

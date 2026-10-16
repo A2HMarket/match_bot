@@ -231,6 +231,7 @@ export async function executeOutbound(
   const row = await deps.repos.outbound.create(
     {
       channel: 'telegram',
+      phase: ctx.phase,
       kind: d.kind,
       target: d.target,
       text: formatOutboundText(ctx, d),

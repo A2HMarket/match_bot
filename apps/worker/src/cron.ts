@@ -12,6 +12,7 @@ export const CRON_JOBS = {
   expireDemands: { name: 'expire_demands', every: 24 * 3600e3 },
   expireRunStates: { name: 'expire_run_states', every: 3600e3 },
   deleteInactiveTasks: { name: 'delete_inactive_tasks', every: 6 * 3600e3 },
+  redactDeliveryReceipts: { name: 'redact_delivery_receipts', every: 6 * 3600e3 },
 } as const;
 
 /**
@@ -50,6 +51,14 @@ export async function runCronJob(name: string, repos: Repositories, logger: Logg
           ),
         },
         'deleted inactive tasks',
+      );
+      break;
+    case CRON_JOBS.redactDeliveryReceipts.name:
+      logger.info(
+        {
+          n: await repos.outbound.redactDeliveryReceiptsBefore(new Date(Date.now() - 30 * 86400e3)),
+        },
+        'redacted old delivery receipts',
       );
       break;
     default:

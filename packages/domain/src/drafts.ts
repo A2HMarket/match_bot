@@ -50,5 +50,7 @@ export const outboundDraftSchema = z.object({
   replyToMessageId: z.string().optional(),
   /** 发送时要 @ 的用户（渠道侧 user id）。只存 id，名字由发送端现查，不落库（AGENTS.md §6）。 */
   mentionUserId: z.string().optional(),
+  /** Server-selected phase at the gate; legacy rows without this remain held. */
+  phase: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
 });
 export type OutboundDraft = z.infer<typeof outboundDraftSchema>;

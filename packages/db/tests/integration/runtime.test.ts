@@ -87,12 +87,18 @@ describe('outbound', () => {
     await withTestDb(async (tx) => {
       const r = createRepositories(tx);
       const a = await r.outbound.create(
-        { channel: 'telegram', target: '-1', text: 'x' },
+        { channel: 'telegram', target: '-1', text: 'x', phase: 2 },
         'pending',
       );
       await r.outbound.create({ channel: 'telegram', target: '-1', text: 'y' }, 'dry_run');
-      expect((await r.outbound.claimPending(10)).map((m) => m.id)).toEqual([a.id]);
-      await r.outbound.markSent(a.id);
+      const [claim] = await r.outbound.claimPending(10);
+      expect(claim?.id).toBe(a.id);
+      await r.outbound.beginSend({ id: a.id, leaseToken: claim!.leaseToken! });
+      await r.outbound.markSent({
+        id: a.id,
+        leaseToken: claim!.leaseToken!,
+        externalMessageId: '1',
+      });
       expect(await r.outbound.countSentToTargetSince('-1', new Date(Date.now() - 60e3))).toBe(1);
       expect(await r.outbound.claimPending(10)).toEqual([]);
     });
@@ -101,16 +107,24 @@ describe('outbound', () => {
     await withTestDb(async (tx) => {
       const r = createRepositories(tx);
       const rec = await r.outbound.create(
-        { channel: 'telegram', target: '-2', text: 'r' },
+        { channel: 'telegram', target: '-2', text: 'r', phase: 2 },
         'pending',
       );
       const ask = await r.outbound.create(
-        { channel: 'telegram', target: '-2', text: 'q', kind: 'clarification' },
+        { channel: 'telegram', target: '-2', text: 'q', kind: 'clarification', phase: 2 },
         'pending',
       );
       expect(rec.kind).toBe('recommendation');
-      await r.outbound.markSent(rec.id);
-      await r.outbound.markSent(ask.id);
+      const claims = await r.outbound.claimPending(10);
+      expect(claims.map((row) => row.id)).toEqual(expect.arrayContaining([rec.id, ask.id]));
+      for (const [index, row] of claims.entries()) {
+        await r.outbound.beginSend({ id: row.id, leaseToken: row.leaseToken! });
+        await r.outbound.markSent({
+          id: row.id,
+          leaseToken: row.leaseToken!,
+          externalMessageId: String(index + 1),
+        });
+      }
       const since = new Date(Date.now() - 60e3);
       expect(await r.outbound.countSentToTargetSince('-2', since)).toBe(2);
       expect(await r.outbound.countSentToTargetSince('-2', since, 'recommendation')).toBe(1);

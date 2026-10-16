@@ -1,34 +1,95 @@
-import type { createTelegramSender } from '@matchbot/channel-telegram';
-import type { Repositories } from '@matchbot/db';
+import { TelegramSendError, type createTelegramSender } from '@matchbot/channel-telegram';
+import type { OutboundMessage, Repositories } from '@matchbot/db';
+import type { Phase } from '@matchbot/domain';
+import { resolvePhase } from '@matchbot/gating';
 import type { Logger } from '@matchbot/shared';
 
-/** 消费 outbound_messages 中 status=pending 的行；dry_run 永远不会是 pending（AGENTS.md §3.3 第 4 条）。 */
-export async function drainOutbound(p: {
+type DrainDeps = {
   repos: Repositories;
   sender: ReturnType<typeof createTelegramSender>;
   logger: Logger;
-}): Promise<void> {
-  for (const m of await p.repos.outbound.claimPending(20)) {
+  defaultPhase?: Phase;
+};
+async function isDeliveryAllowed(p: DrainDeps, m: OutboundMessage): Promise<boolean> {
+  if (m.phase !== 1 && m.phase !== 2) return false;
+  const group = await p.repos.groups.findByExternal(m.channel, m.target);
+  if (group && !group.isActive) return false;
+  const phase = resolvePhase({ group, defaultPhase: p.defaultPhase ?? 0 });
+  return phase !== 0 && !(m.phase === 2 && phase === 1);
+}
+/** Claim immediately before each send; a lease is not proof of external delivery. */
+export async function drainOutbound(p: DrainDeps): Promise<void> {
+  await p.repos.outbound.recoverExpiredClaims();
+  for (let count = 0; count < 20; count++) {
+    const [m] = await p.repos.outbound.claimPending(1);
+    if (!m) break;
+    if (!m.leaseToken) {
+      p.logger.error({ outboundMessageId: m.id }, 'outbound claim missing fence');
+      continue;
+    }
+    const identity = { id: m.id, leaseToken: m.leaseToken };
+    let receipt: Awaited<ReturnType<typeof p.sender.send>>;
     try {
-      await p.sender.send(m);
-      await p.repos.outbound.markSent(m.id);
-    } catch (e) {
-      await p.repos.outbound.markFailed(m.id, e instanceof Error ? e.message : String(e));
-      p.logger.error({ outboundMessageId: m.id }, 'send failed');
+      receipt = await p.sender.send(m, {
+        beforeSend: async () => {
+          if (!(await isDeliveryAllowed(p, m))) {
+            await p.repos.outbound.markFailed({
+              ...identity,
+              deliveryState: 'not_sent',
+              errorCode: 'delivery_policy_changed',
+            });
+            return false;
+          }
+          return p.repos.outbound.beginSend(identity);
+        },
+      });
+    } catch (error) {
+      const delivery = error instanceof TelegramSendError ? error : null;
+      await p.repos.outbound.markFailed({
+        ...identity,
+        deliveryState: delivery?.deliveryState ?? 'unknown',
+        errorCode: delivery?.errorCode ?? 'unknown_send_error',
+        ...(delivery?.deliveryState === 'not_sent' && delivery.retryAfterSeconds !== null
+          ? { retryAt: new Date(Date.now() + delivery.retryAfterSeconds * 1000) }
+          : {}),
+      });
+      p.logger.error(
+        { outboundMessageId: m.id, errorKind: delivery?.errorCode ?? 'unknown_send_error' },
+        'send not confirmed',
+      );
+      continue;
+    }
+    if (receipt.kind === 'not_started') continue;
+    // A receipt persistence error is not a failed Telegram send. Leave it for conservative lease recovery.
+    try {
+      const saved = await p.repos.outbound.markSent({
+        ...identity,
+        externalMessageId: receipt.externalMessageId,
+      });
+      if (!saved) p.logger.warn({ outboundMessageId: m.id }, 'outbound receipt fence rejected');
+    } catch (error) {
+      p.logger.error(
+        { outboundMessageId: m.id, errorKind: error instanceof Error ? error.name : 'unknown' },
+        'outbound receipt persistence failed',
+      );
     }
   }
 }
-
-export function startOutboundLoop(
-  p: Parameters<typeof drainOutbound>[0] & { intervalMs?: number },
-): () => void {
+export function startOutboundLoop(p: DrainDeps & { intervalMs?: number }): () => void {
   let running = false;
   const timer = setInterval(() => {
     if (running) return;
     running = true;
-    void drainOutbound(p).finally(() => {
-      running = false;
-    });
+    void drainOutbound(p)
+      .catch((error) => {
+        p.logger.error(
+          { errorKind: error instanceof Error ? error.name : 'unknown' },
+          'outbound poll failed',
+        );
+      })
+      .finally(() => {
+        running = false;
+      });
   }, p.intervalMs ?? 2000);
   return () => clearInterval(timer);
 }

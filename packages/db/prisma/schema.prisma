@@ -52,8 +52,10 @@ enum SupplierPool {
 enum OutboundStatus {
   dry_run
   pending
+  sending
   sent
   failed
+  delivery_unknown
 }
 
 /// 出站消息的用途。频控只数 recommendation（PRD §6.2：像广告的是反复推荐，不是回应追问）。
@@ -355,6 +357,7 @@ model OutboundMessage {
   target     String         // chat id / user id / supplier contact
   text       String
   status     OutboundStatus @default(pending)
+  phase      Int            @default(0)
   kind       OutboundKind   @default(recommendation)
   toolCallId String?        @map("tool_call_id")
   replyToMessageId String? @map("reply_to_message_id") // 群内回帖对应的原消息
@@ -362,9 +365,17 @@ model OutboundMessage {
   error      String?
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
   sentAt     DateTime?      @map("sent_at") @db.Timestamptz
+  leaseToken String?        @map("lease_token")
+  leaseExpiresAt DateTime?  @map("lease_expires_at") @db.Timestamptz
+  attemptStartedAt DateTime? @map("attempt_started_at") @db.Timestamptz
+  attemptCount Int          @default(0) @map("attempt_count")
+  nextAttemptAt DateTime?   @map("next_attempt_at") @db.Timestamptz
+  externalMessageId String? @map("external_message_id")
 
   @@index([status, createdAt])
   @@index([target, kind, sentAt])
+  @@index([status, leaseExpiresAt])
+  @@unique([channel, target, externalMessageId])
   @@map("outbound_messages")
 }
 

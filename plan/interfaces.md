@@ -355,3 +355,5 @@ P25来源进展契约（实施中）：Task.nextStep记录动作/责任方/缺�
 TaskCriterion.conflictingEvidenceRefs可保留同一条件下其他候选的反证，与整体supported及其支持出处并存；实际展示按具体来源判断，不让后读的坏候选覆盖好候选。条件改动同时作废两类判断，但保留历史摘录用于有界复查。sourceCoherence及证据判定字段均不在规划提议schema内。JevClient.evaluate可接收服务端deadlineAt限制网络超时和429重试；不能把截止时间放进模型自选参数，也不能因为超时或trace写入失败自动放行出站。
 
 0.16.5：模型标unknown而提供原句时可以核验正反两种来源假设；双通过或均未通过仍unknown，不将任意未知自动升级。无constraintKey的主体检查由服务器统一为来源层面的对象识别，其余用户验收条件须有constraint绑定，不能把真实世界结果混成单帖信息条件。travel_origin只证明用户给出的出发地点，来源kind=user_statement，不证明行程耗时或提供方条件。
+
+P26投递契约：OutboundDraft新增可选phase，由executeOutbound从可信ctx填充，旧缺省0行保持待核对。outbound.claimPending(limit,{now?,leaseMs?})原子转sending并返回leaseToken；beginSend({id,leaseToken,now?})在HTTP前设起点并拒绝过期/旧令牌。markSent改收{id,leaseToken,externalMessageId,now?}，普通消息须有数字消息编号、reaction为null；可确认同令牌delivery_unknown或重复回执。markFailed改收{id,leaseToken,deliveryState:'not_sent'|'unknown',errorCode,retryAt?,now?}，仅明确未发送且未超尝试预算的可延后重试。recoverExpiredClaims对未开始者安全重排，已开始者保持不确定；变更与trace同事务。sender.send必须传beforeSend回调，返回message/reaction回执或not_started，异常只带标准错误码/发送确定性。后续Task/审批关联不得绕开此路径。

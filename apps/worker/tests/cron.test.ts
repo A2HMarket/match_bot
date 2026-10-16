@@ -7,6 +7,7 @@ function repos() {
     demands: { expireOlderThan: vi.fn(() => Promise.resolve(2)) },
     runStates: { expireOld: vi.fn(() => Promise.resolve(1)) },
     tasks: { deleteInactiveBefore: vi.fn((_cutoff: Date) => Promise.resolve(2)) },
+    outbound: { redactDeliveryReceiptsBefore: vi.fn((_cutoff: Date) => Promise.resolve(1)) },
   };
 }
 const logger = () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() });
@@ -33,6 +34,7 @@ describe('runCronJob', () => {
     [CRON_JOBS.expireDemands.name, 'demands', 'expireOlderThan'],
     [CRON_JOBS.expireRunStates.name, 'runStates', 'expireOld'],
     ['delete_inactive_tasks', 'tasks', 'deleteInactiveBefore'],
+    ['redact_delivery_receipts', 'outbound', 'redactDeliveryReceiptsBefore'],
   ])('%s calls the matching repository method', async (name, repo, method) => {
     const r = repos();
     await runCronJob(name, r as never, logger() as never);
