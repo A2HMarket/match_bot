@@ -100,6 +100,12 @@ export function reviseTaskRequirements(p: {
   for (const item of [...patch.goals, ...patch.constraints])
     if (!source.text.includes(item.sourceQuote))
       throw new TaskTransitionError('requirement change must quote the current user source');
+  const answersPendingQuestion =
+    task.pendingQuestion &&
+    patch.constraints.some(
+      (c) =>
+        c.key === task.pendingQuestion!.constraintKey && c.goalId === task.pendingQuestion!.goalId,
+    );
   let changed = false;
   for (const { sourceQuote: _quote, ...definition } of patch.goals) {
     const index = task.goals.findIndex((goal) => goal.id === definition.id);
@@ -154,15 +160,10 @@ export function reviseTaskRequirements(p: {
     }
     task.status = 'active';
     task.delivery = { status: 'none', level: 'none' };
+    task.pendingQuestion = null;
     task.blockReason = null;
   }
-  if (
-    task.pendingQuestion &&
-    patch.constraints.some(
-      (c) =>
-        c.key === task.pendingQuestion!.constraintKey && c.goalId === task.pendingQuestion!.goalId,
-    )
-  ) {
+  if (answersPendingQuestion) {
     task.pendingQuestion = null;
     task.status = 'active';
   }

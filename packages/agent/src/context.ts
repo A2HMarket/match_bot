@@ -39,6 +39,7 @@ export interface MatchContext {
   /** 用户在对 bot 说话（回复 bot / @bot），以及被回复的那条 bot 消息原文。 */
   addressedToBot?: boolean;
   replyToBotText?: string;
+  replyToMessageId?: string;
   requestCategory?: DemandCategory;
   /** Server-selected, owner/scope-checked task; never accept an arbitrary model-provided snapshot. */
   task?: UserTask;

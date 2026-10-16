@@ -6,6 +6,10 @@ import {
   confirmTaskGoal,
   reviseTaskRequirements,
   recordTaskProgress,
+  queueTaskDelivery,
+  recordTaskDeliveryReceipt,
+  taskDeliveryDraftSchema,
+  beginTaskUserTurn,
   taskProgressSchema,
   taskRequirementPatchSchema,
   taskPayloadSchema,
@@ -54,6 +58,10 @@ const userTurnSchema = mutationSchema.extend({
     .nullable(),
 });
 const progressSchema = mutationSchema.extend({ sourceMessageId: id, progress: taskProgressSchema });
+const queuedDeliverySchema = mutationSchema.extend({
+  outboundMessageId: id,
+  delivery: taskDeliveryDraftSchema.omit({ id: true }),
+});
 const plannedTurnSchema = z
   .strictObject({
     access: accessSchema,
@@ -131,7 +139,12 @@ function assertReplay(actual: string, expected: string): void {
 type Mutation = z.infer<typeof mutationSchema> & {
   requestHash: string;
   kind:
-    'status_changed' | 'requirements_revised' | 'goal_confirmed' | 'user_turn' | 'source_progress';
+    | 'status_changed'
+    | 'requirements_revised'
+    | 'goal_confirmed'
+    | 'user_turn'
+    | 'source_progress'
+    | 'delivery_changed';
   actorKind: 'agent' | 'user' | 'system';
   sourceMessageId?: string;
   compute: (task: UserTask, source: Awaited<ReturnType<typeof requireMessage>> | null) => UserTask;
@@ -208,6 +221,79 @@ export function tasksRepo(prisma: PrismaClient) {
   }
   return {
     findById,
+    async findLatestUserMessageId(raw: { access: TaskAccess; id: string }): Promise<string | null> {
+      const p = mutationSchema.pick({ access: true, id: true }).parse(raw);
+      const event = await prisma.taskEvent.findFirst({
+        where: {
+          taskId: p.id,
+          kind: 'user_turn',
+          sourceMessageId: { not: null },
+          task: scopeWhere(p.access),
+        },
+        orderBy: { revision: 'desc' },
+      });
+      return event?.sourceMessageId ?? null;
+    },
+    async findReplyAnchor(raw: {
+      access: TaskAccess;
+      externalMessageId: string;
+    }): Promise<UserTask | null> {
+      const p = z.object({ access: accessSchema, externalMessageId: id }).parse(raw);
+      const out = await prisma.outboundMessage.findFirst({
+        where: {
+          channel: p.access.scope.channel,
+          target: p.access.scope.chatId,
+          status: 'sent',
+          externalMessageId: p.externalMessageId,
+          sourceMessage: { userId: p.access.userId },
+          task: {
+            ...scopeWhere(p.access),
+            status: { notIn: ['completed', 'cancelled', 'expired'] },
+          },
+        },
+        include: { task: true },
+      });
+      return out?.task ? readTask(out.task) : null;
+    },
+    async queueDelivery(raw: z.input<typeof queuedDeliverySchema>): Promise<TaskMutationResult> {
+      const p = queuedDeliverySchema.parse(raw);
+      return commitMutation(prisma, {
+        ...p,
+        kind: 'delivery_changed',
+        actorKind: 'system',
+        requestHash: fingerprint(p),
+        compute: (task) =>
+          queueTaskDelivery({ task, outboundMessageId: p.outboundMessageId, ...p.delivery }),
+      });
+    },
+    async recordDeliveryReceipt(
+      raw: z.input<typeof mutationSchema> & {
+        outboundMessageId: string;
+        requirementsVersion: number;
+        status: 'sent' | 'unknown' | 'failed';
+      },
+    ): Promise<TaskMutationResult> {
+      const p = mutationSchema
+        .extend({
+          outboundMessageId: id,
+          requirementsVersion: z.number().int().nonnegative(),
+          status: z.enum(['sent', 'unknown', 'failed']),
+        })
+        .parse(raw);
+      return commitMutation(prisma, {
+        ...p,
+        kind: 'delivery_changed',
+        actorKind: 'system',
+        requestHash: fingerprint(p),
+        compute: (task) =>
+          recordTaskDeliveryReceipt({
+            task,
+            outboundMessageId: p.outboundMessageId,
+            requirementsVersion: p.requirementsVersion,
+            status: p.status,
+          }),
+      });
+    },
     async findAppliedTurn(input: {
       access: TaskAccess;
       sourceMessageId: string;
@@ -405,7 +491,7 @@ export function tasksRepo(prisma: PrismaClient) {
                 next: p.outcome.intent === 'achieved' ? 'completed' : 'cancelled',
               });
           }
-          return { ...task, revision: current.revision + 1 };
+          return { ...beginTaskUserTurn(task), revision: current.revision + 1 };
         },
       });
     },

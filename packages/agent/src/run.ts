@@ -438,6 +438,14 @@ async function rebuildContext(
         ['completed', 'cancelled', 'expired'].includes(task.status))
     )
       throw new ObsoleteResumeError();
+    if (
+      task &&
+      (await deps.repos.tasks.findLatestUserMessageId({
+        access: { userId: user.id, scope: { channel: user.channel, chatId: runState.chatId } },
+        id: task.id,
+      })) !== message.id
+    )
+      throw new ObsoleteResumeError();
     return {
       execution,
       userId: user.id,

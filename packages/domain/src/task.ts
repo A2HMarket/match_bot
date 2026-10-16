@@ -130,6 +130,7 @@ export const taskSchema = z.strictObject({
   delivery: z.strictObject({
     status: z.enum(['none', 'queued', 'sent', 'unknown', 'failed']),
     level: z.enum(['none', 'partial', 'ready']),
+    outboundMessageId: id.optional(),
   }),
   userConfirmation: userConfirmationSchema.nullable(),
 });

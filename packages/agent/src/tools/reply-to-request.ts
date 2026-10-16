@@ -342,6 +342,7 @@ export function replyToRequestTool(deps: AgentDeps) {
         kind: args.kind === 'clarification' ? 'clarification' : 'recommendation',
         target: ctx.chatId,
         text,
+        taskQuestionText: args.text,
         supplierSummaries: evidence,
         inputRef: ctx.sourceMessageId,
         ...(market.length ? { disclaimer: 'market' as const } : {}),

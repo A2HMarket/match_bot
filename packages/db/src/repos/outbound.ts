@@ -4,6 +4,13 @@ import { z } from 'zod';
 import { hashText } from '@matchbot/shared';
 import { withExecutionFence } from '../execution-fence.js';
 import { Prisma, type OutboundMessage, type PrismaClient } from '../generated/client.js';
+import { tasksRepo } from './tasks.js';
+import {
+  lockOutboundTask,
+  canSendTaskReply,
+  queueOutboundTask,
+  recordOutboundTaskReceipt,
+} from '../task-delivery-store.js';
 
 const fence = z.object({
   id: z.string().min(1),
@@ -48,6 +55,8 @@ export function outboundRepo(prisma: PrismaClient) {
   return {
     create(raw: OutboundDraft, status: 'dry_run' | 'pending'): Promise<OutboundMessage> {
       const draft = outboundDraftSchema.parse(raw);
+      if (draft.taskDelivery && !draft.execution)
+        throw new Error('task delivery requires a fenced source request');
       const write = async (tx: Prisma.TransactionClient) => {
         let requestKey: string | null = null;
         if (draft.execution) {
@@ -84,8 +93,27 @@ export function outboundRepo(prisma: PrismaClient) {
             });
             return existing;
           }
+          if (draft.taskDelivery) {
+            const selected = await tasksRepo(tx as PrismaClient).findById({
+              access: { userId: source.userId, scope: { channel: draft.channel, chatId: target } },
+              id: draft.taskDelivery.id,
+            });
+            if (
+              draft.target !== target ||
+              draft.kind === 'reaction' ||
+              draft.kind === 'lead' ||
+              !selected ||
+              selected.requirementsVersion !== draft.taskDelivery.requirementsVersion ||
+              ['completed', 'cancelled', 'expired'].includes(selected.status)
+            )
+              throw new Error('outbound task scope or requirements mismatch');
+            await tx.message.update({
+              where: { id: source.id },
+              data: { taskId: selected.id, taskRequirementsVersion: selected.requirementsVersion },
+            });
+          }
         }
-        return tx.outboundMessage.create({
+        const row = await tx.outboundMessage.create({
           data: {
             channel: draft.channel,
             target: draft.target,
@@ -98,8 +126,13 @@ export function outboundRepo(prisma: PrismaClient) {
             status,
             requestKey,
             sourceMessageId: draft.execution?.messageId ?? null,
+            taskId: draft.taskDelivery?.id ?? null,
+            taskRequirementsVersion: draft.taskDelivery?.requirementsVersion ?? null,
           },
         });
+        if (draft.taskDelivery && status === 'pending')
+          await queueOutboundTask(tx, row, draft.taskDelivery);
+        return row;
       };
       return draft.execution ? withExecutionFence(prisma, draft.execution, write) : write(prisma);
     },
@@ -151,6 +184,20 @@ export function outboundRepo(prisma: PrismaClient) {
         now = p.now ?? new Date();
       return atomic(async (tx) => {
         const row = await tx.outboundMessage.findUnique({ where: { id: p.id } });
+        await lockOutboundTask(tx, row);
+        if (row && !(await canSendTaskReply(tx, row))) {
+          await tx.outboundMessage.updateMany({
+            where: {
+              id: p.id,
+              leaseToken: p.leaseToken,
+              status: 'sending',
+              attemptStartedAt: null,
+            },
+            data: { status: 'failed', error: 'obsolete_task_reply', leaseExpiresAt: null },
+          });
+          await trace(tx, { id: p.id, phase: row.phase, decision: 'obsolete_task_reply' });
+          return false;
+        }
         const result = await tx.outboundMessage.updateMany({
           where: {
             id: p.id,
@@ -175,6 +222,7 @@ export function outboundRepo(prisma: PrismaClient) {
         now = p.now ?? new Date();
       return atomic(async (tx) => {
         const row = await tx.outboundMessage.findUnique({ where: { id: p.id } });
+        await lockOutboundTask(tx, row);
         if (
           row?.status === 'sent' &&
           row.leaseToken === p.leaseToken &&
@@ -212,6 +260,7 @@ export function outboundRepo(prisma: PrismaClient) {
           phase: row.phase,
           decision: result.count ? 'receipt_recorded' : 'receipt_fence_rejected',
         });
+        if (result.count) await recordOutboundTaskReceipt(tx, row, 'sent');
         return result.count === 1;
       });
     },
@@ -220,6 +269,7 @@ export function outboundRepo(prisma: PrismaClient) {
         now = p.now ?? new Date();
       return atomic(async (tx) => {
         const row = await tx.outboundMessage.findUnique({ where: { id: p.id } });
+        await lockOutboundTask(tx, row);
         const canRetry =
           p.deliveryState === 'not_sent' &&
           p.retryAt !== undefined &&
@@ -245,6 +295,12 @@ export function outboundRepo(prisma: PrismaClient) {
           phase: row?.phase ?? 0,
           decision: result.count ? status : 'failure_fence_rejected',
         });
+        if (result.count && row && status !== 'pending')
+          await recordOutboundTaskReceipt(
+            tx,
+            row,
+            status === 'delivery_unknown' ? 'unknown' : 'failed',
+          );
         return result.count === 1;
       });
     },
@@ -257,6 +313,7 @@ export function outboundRepo(prisma: PrismaClient) {
         });
         const totals = { requeued: 0, unknown: 0, failed: 0 };
         for (const row of rows) {
+          await lockOutboundTask(tx, row);
           const status = row.attemptStartedAt
             ? 'delivery_unknown'
             : row.attemptCount >= MAX_ATTEMPTS
@@ -288,6 +345,12 @@ export function outboundRepo(prisma: PrismaClient) {
           else if (status === 'delivery_unknown') totals.unknown++;
           else totals.failed++;
           await trace(tx, { id: row.id, phase: row.phase, decision: 'expired_' + status });
+          if (status !== 'pending')
+            await recordOutboundTaskReceipt(
+              tx,
+              row,
+              status === 'delivery_unknown' ? 'unknown' : 'failed',
+            );
         }
         return totals;
       });

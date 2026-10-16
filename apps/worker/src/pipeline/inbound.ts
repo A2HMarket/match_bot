@@ -192,6 +192,7 @@ export async function processInbound(
       ...(group?.rateLimitPerDay != null ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
       ...(msg.addressedToBot ? { addressedToBot: true } : {}),
       ...(msg.replyToBotText ? { replyToBotText: msg.replyToBotText } : {}),
+      ...(msg.replyToMessageId ? { replyToMessageId: msg.replyToMessageId } : {}),
       recentReplies: [],
       ...(open ? { demandId: open.id, demand: toDemandDraft(open) } : {}),
     };

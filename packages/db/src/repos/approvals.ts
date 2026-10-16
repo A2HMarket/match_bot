@@ -184,6 +184,13 @@ export function approvalsRepo(prisma: PrismaClient) {
               message.task.channel !== user.channel ||
               message.task.requirementsVersion !== message.taskRequirementsVersion ||
               ['completed', 'cancelled', 'expired'].includes(message.task.status)));
+        const latestTurn = message?.taskId
+          ? await tx.taskEvent.findFirst({
+              where: { taskId: message.taskId, kind: 'user_turn', sourceMessageId: { not: null } },
+              orderBy: { revision: 'desc' },
+            })
+          : null;
+        const superseded = !!latestTurn && latestTurn.sourceMessageId !== message?.id;
         const terminal =
           !message ||
           message.executionStatus === 'completed' ||
@@ -203,8 +210,8 @@ export function approvalsRepo(prisma: PrismaClient) {
               },
             })
           : null;
-        if (invalid || terminal || outbox || next || approval.resumeAttempts >= 3) {
-          const failed = invalid || approval.resumeAttempts >= 3;
+        if (invalid || superseded || terminal || outbox || next || approval.resumeAttempts >= 3) {
+          const failed = invalid || superseded || approval.resumeAttempts >= 3;
           await tx.approval.update({
             where: { id: approval.id },
             data: {

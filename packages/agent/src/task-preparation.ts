@@ -34,6 +34,16 @@ export async function prepareTaskTurn(p: {
         return true;
       }
     }
+    if (p.ctx.replyToMessageId) {
+      const anchor = await p.deps.repos.tasks.findReplyAnchor({
+        access: {
+          userId: p.ctx.userId,
+          scope: { channel: p.ctx.channel ?? 'telegram', chatId: p.ctx.chatId },
+        },
+        externalMessageId: p.ctx.replyToMessageId,
+      });
+      if (anchor) p.ctx.taskAnchorId = anchor.id;
+    }
     p.ctx.taskCandidates = await p.deps.repos.tasks.findOpenByScope({
       userId: p.ctx.userId,
       scope: { channel: p.ctx.channel ?? 'telegram', chatId: p.ctx.chatId },

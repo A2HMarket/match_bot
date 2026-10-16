@@ -9,3 +9,4 @@ export * from './task-routing.js';
 export * from './task-requirements.js';
 export * from './task-progress.js';
 export * from './execution.js';
+export * from './task-delivery.js';

@@ -20,3 +20,5 @@
 入站阶段进展：消息先落库、未完成补投、用户租约/fencing、每批工具加密checkpoint及同请求出站幂等已接入。真实SDK进程SIGKILL后恢复，最终仍1Task/1用户变更/1搜索/1dry_run；新旧进程不同，租约实际到期。全检89文件/765测试通过，详见docs/evaluations/2026-10-17-request-execution-ledger.md。审批恢复尚未接入同一租约；问题送达与最终验收/发布仍未完成。
 
 审批阶段进展：决定/条件consume/待恢复意图/trace同事务；Redis失败可从DB补投。恢复已接同一用户fence，按原消息/当前Task版本/Agent与SDK版本/作用域恢复，不读最新其他需求；限次重试，已排队出站/新中断可收敛。全检91文件/776测试通过；实际SDK+独立进程SIGKILL、事务回滚、Redis失败证明通过。详见docs/evaluations/2026-10-17-approval-resume-ledger.md。审批卡本身的持久投递、问题/Task送达回写、快照清理及最终多轮验收仍未完成，不关闭整个P26。
+
+任务回执阶段进展：复用Task与出站，排队/拟发问题及sent/unknown/failed同事务关联；Phase0不假送达，只有已发问题才waiting_user。外部消息编号按owner/会话解析回复anchor；新轮次（含同条件）取代旧拟发与审批，发送前复核。全检95文件/803测试，任务域分支280/280；SDK两任务接话和PG回执测试通过；入站/审批真实进程证明复跑通过。真实DeepSeek/Jev房源v13两轮8/8，仅这一场景回归，不计三核心或Telegram。详见docs/evaluations/2026-10-17-task-delivery-receipts.md。剩余：审批卡持久投递、快照清理、日期/布尔语义负例、完整质量门与最终验收发布。

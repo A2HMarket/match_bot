@@ -146,14 +146,25 @@ try {
     '预算不能增加，包账单更好，猫一定要能养。',
   ].entries()) {
     if (process.argv[3] === 'first' && index > 0) break;
-    const message = await repos.messages.create({
+    const accepted = await repos.executions.accept({
       userId: user.id,
       groupId: group.id,
-      externalId: 'turn-' + index,
-      text: input,
-      receivedAt: new Date(),
+      phase: 0,
+      message: {
+        channel: 'telegram',
+        userId: user.externalId,
+        chatId: group.externalId,
+        messageId: 'turn-' + index,
+        text: input,
+        receivedAt: new Date().toISOString(),
+        addressedToBot: true,
+      },
     });
+    const message = accepted.message,
+      claim = await repos.executions.claim({ userId: user.id, messageId: message.id });
+    if (claim.kind !== 'acquired') throw new Error('preview execution claim unavailable');
     const ctx: MatchContext = {
+      execution: claim.lease,
       userId: user.id,
       chatId: group.externalId,
       channel: 'telegram',
@@ -167,6 +178,11 @@ try {
     const before = await prisma.outboundMessage.count({ where: { target: group.externalId } });
     try {
       const result = await runInbound({ deps, ctx, input });
+      await repos.executions.finish({
+        lease: claim.lease,
+        status: result.kind === 'interrupted' ? 'waiting_approval' : 'completed',
+        ...(result.kind === 'interrupted' ? { runStateId: result.runStateId } : {}),
+      });
       await processor.forceFlush();
       const drafts = await prisma.outboundMessage.findMany({
         where: { target: group.externalId },
@@ -210,6 +226,11 @@ try {
         'answer preview turn completed',
       );
     } catch (e) {
+      await repos.executions.finish({
+        lease: claim.lease,
+        status: 'failed',
+        errorCode: 'preview_failed',
+      });
       results.push({
         index,
         input,

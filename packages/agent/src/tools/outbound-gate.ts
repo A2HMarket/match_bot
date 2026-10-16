@@ -4,6 +4,7 @@ import { renderRequestStatus } from '../request-status.js';
 import { hashText } from '@matchbot/shared';
 import type { RunContext } from '@openai/agents';
 import type { AgentDeps, MatchContext } from '../context.js';
+import { taskDeliveryForOutbound } from '../task-outbound.js';
 
 export interface OutboundDraftInput {
   /** 用途；决定是否计入频控。每个出站工具必须显式给出。 */
@@ -26,6 +27,8 @@ export interface OutboundDraftInput {
     'catalogue' | 'web' | 'xhs' | 'market'; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
   replyToMessageId?: string;
   mentionUserId?: string;
+  /** Original short question/advice before generated evidence cards and source links. */
+  taskQuestionText?: string;
 }
 
 /**
@@ -233,6 +236,9 @@ export async function executeOutbound(
       channel: 'telegram',
       phase: ctx.phase,
       ...(ctx.execution ? { execution: ctx.execution } : {}),
+      ...(taskDeliveryForOutbound(ctx, d)
+        ? { taskDelivery: taskDeliveryForOutbound(ctx, d)! }
+        : {}),
       kind: d.kind,
       target: d.target,
       text: formatOutboundText(ctx, d),
