@@ -55,6 +55,53 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it.each(['answer', 'partial', 'no_match', 'clarification', 'unavailable'])(
+    'rejects an invented search failure even when labelled %s',
+    async (kind) => {
+      const { d, c, t } = setup(0);
+      c.informationQueries = ['GP registration'];
+      c.sourceFailures = ['processing:jev_unavailable'];
+      const result = await t.invoke(
+        { context: c } as never,
+        JSON.stringify({
+          kind,
+          text: '我这边的房源搜索没能正常跑起来，你手上有具体想核对的房源吗？',
+          refs: ['k1'],
+        }),
+      );
+      expect(result).toContain('No recorded source failure');
+      expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    '如果搜索失败，可以稍后再试。你更方便周六还是周日？',
+    '房源不能养猫。你是否还考虑其他区域？',
+    'If the search fails, try again later. Which day works?',
+  ])(
+    'keeps conditional advice and property constraints distinct from source outages: %s',
+    async (text) => {
+      const { d, c, t } = setup(0);
+      await t.invoke(
+        { context: c } as never,
+        JSON.stringify({ kind: 'clarification', text, refs: [] }),
+      );
+      expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    },
+  );
+  it('allows a factual source failure while rejecting conditional wording placed after an invented outage', async () => {
+    const { d, c, t } = setup(0);
+    const input = {
+      kind: 'clarification',
+      text: '搜索接口报错，如果稍后恢复可以再查。你更方便哪天？',
+      refs: [],
+    };
+    expect(await t.invoke({ context: c } as never, JSON.stringify(input))).toContain(
+      'No recorded source failure',
+    );
+    c.sourceFailures = ['information:timeout'];
+    await t.invoke({ context: c } as never, JSON.stringify(input));
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
   it('requires an actual search before claiming a marketplace search failed or found nothing', async () => {
     const { d, c } = setup(0);
     bindCurrentRequest(c, 'E14收书桌，50镑以内');

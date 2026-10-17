@@ -6,6 +6,7 @@ import { buildMarketChoices } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
+import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -251,6 +252,12 @@ export function replyToRequestTool(deps: AgentDeps) {
           .trim(),
       };
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
+      if (hasUnrecordedSourceFailureClaim(args.text, ctx.sourceFailures))
+        return {
+          error:
+            'No recorded source failure; do not invent a search outage. Use the server research receipts and available evidence, or ask a necessary question without claiming the search failed.',
+          kind: 'research_required',
+        };
       if (
         args.kind === 'no_match' &&
         deps.answerRequests &&
@@ -377,15 +384,6 @@ export function replyToRequestTool(deps: AgentDeps) {
           !/免费|free/i.test(evidence.join('\n'))
         )
           return { error: 'invalid answer: free admission requires source evidence' };
-        if (
-          args.kind === 'no_match' &&
-          !ctx.sourceFailures?.length &&
-          /接口.{0,8}(?:报错|失败|不可用)|(?:搜索|查询).{0,5}(?:报错|失败|无法连接)/.test(args.text)
-        )
-          return {
-            error:
-              'No recorded source failure; do not invent a search outage. Explain only the actual search outcome.',
-          };
         if (args.kind === 'no_match')
           text =
             (zh

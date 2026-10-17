@@ -1,0 +1,48 @@
+/Users/huanghaibin/.codex/worktrees/task-agent-baseline/match_bot/node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0___b62f7862fab1b0c6f4232c86a00bc859/node_modules/@prisma/client/src/runtime/core/errorRendering/throwValidationException.ts:46
+  throw new PrismaClientValidationError(messageWithContext, { clientVersion })
+        ^
+
+PrismaClientValidationError: 
+Invalid `prisma.outboundMessage.findMany()` invocation in
+/Users/huanghaibin/Workspace/match_bot/scripts/poc/p27-task-agent/baseline-conversation-preview.mts:201:47
+
+  198 };
+  199 const result = await runInbound({ deps, ctx, input: turn.input });
+  200 await processor.forceFlush();
+→ 201 const rows = await prisma.outboundMessage.findMany({
+        where: {
+          sourceMessageId: "cmvbsvg8m00022dbgqgqy98z5",
+          ~~~~~~~~~~~~~~~
+      ?   AND?: OutboundMessageWhereInput | OutboundMessageWhereInput[],
+      ?   OR?: OutboundMessageWhereInput[],
+      ?   NOT?: OutboundMessageWhereInput | OutboundMessageWhereInput[],
+      ?   id?: StringFilter | String,
+      ?   channel?: EnumChannelFilter | Channel,
+      ?   target?: StringFilter | String,
+      ?   text?: StringFilter | String,
+      ?   status?: EnumOutboundStatusFilter | OutboundStatus,
+      ?   kind?: EnumOutboundKindFilter | OutboundKind,
+      ?   toolCallId?: StringNullableFilter | String | Null,
+      ?   replyToMessageId?: StringNullableFilter | String | Null,
+      ?   mentionUserId?: StringNullableFilter | String | Null,
+      ?   error?: StringNullableFilter | String | Null,
+      ?   createdAt?: DateTimeFilter | DateTime,
+      ?   sentAt?: DateTimeNullableFilter | DateTime | Null
+        },
+        orderBy: {
+          createdAt: "asc"
+        }
+      })
+
+Unknown argument `sourceMessageId`. Available options are marked with ?.
+    at throwValidationException (/Users/huanghaibin/.codex/worktrees/task-agent-baseline/match_bot/node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0___b62f7862fab1b0c6f4232c86a00bc859/node_modules/@prisma/client/src/runtime/core/errorRendering/throwValidationException.ts:46:9)
+    at vn.handleRequestError (/Users/huanghaibin/.codex/worktrees/task-agent-baseline/match_bot/node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0___b62f7862fab1b0c6f4232c86a00bc859/node_modules/@prisma/client/src/runtime/RequestHandler.ts:212:7)
+    at vn.handleAndLogRequestError (/Users/huanghaibin/.codex/worktrees/task-agent-baseline/match_bot/node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0___b62f7862fab1b0c6f4232c86a00bc859/node_modules/@prisma/client/src/runtime/RequestHandler.ts:184:12)
+    at vn.request (/Users/huanghaibin/.codex/worktrees/task-agent-baseline/match_bot/node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0___b62f7862fab1b0c6f4232c86a00bc859/node_modules/@prisma/client/src/runtime/RequestHandler.ts:153:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async a (/Users/huanghaibin/.codex/worktrees/task-agent-baseline/match_bot/node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_react-dom@19.3.0_react@19.3.0___b62f7862fab1b0c6f4232c86a00bc859/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:1014:24)
+    at async <anonymous> (/Users/huanghaibin/Workspace/match_bot/scripts/poc/p27-task-agent/baseline-conversation-preview.mts:201:18) {
+  clientVersion: '7.10.0'
+}
+
+Node.js v22.22.0

@@ -14,6 +14,7 @@ import type { AgentDeps, MatchContext } from './context.js';
 import { createPgSession } from './session.js';
 import { restoreSearchContext } from './restore-search-context.js';
 import { prepareTaskTurn } from './task-preparation.js';
+import { refreshTaskSourceMemory } from './task-source-refresh.js';
 import { restoreExecutionCheckpoint } from './execution-checkpoint.js';
 
 export type RunOutcome =
@@ -146,6 +147,7 @@ export async function runInbound(p: {
     });
   }
   const ambiguous = p.ctx.taskUpdate?.kind === 'ambiguous' || p.ctx.taskUpdate?.kind === 'unbound';
+  if (!ambiguous) await refreshTaskSourceMemory({ ...p, agentVersion: AGENT_VERSION });
   const { agent, runner } = createMatchAgent(p.deps, {
     phase: p.ctx.phase,
     input: p.ctx.currentRequest?.text ?? p.input,

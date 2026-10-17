@@ -117,7 +117,7 @@ describe('runInbound', () => {
     );
     model.assertComplete();
   });
-  it('loads, prepares and updates a persistent task before answering a short followup', async () => {
+  it('refreshes saved sources after planning and before the first answer generation on a short followup', async () => {
     const model = new ScriptedModel([
       [
         functionCall(
@@ -176,6 +176,7 @@ describe('runInbound', () => {
       scope: { channel: 'telegram', chatId: '-1' },
       objective: '找初学者周末羽毛球',
       category: 'other',
+      counterparty: 'peer',
       status: 'active',
       revision: 0,
       goals: [
@@ -202,7 +203,16 @@ describe('runInbound', () => {
           origin: { kind: 'user', sourceMessageId: 'first' },
         },
       ],
-      evidence: [],
+      evidence: [
+        {
+          id: 'saved',
+          goalId: 'activity',
+          kind: 'source_excerpt',
+          sourceRef: 'market:badminton',
+          summary: '历史活动价格£40',
+          observedAt: '2026-10-16T00:00:00Z',
+        },
+      ],
       pendingQuestion: null,
       blockReason: null,
       delivery: { status: 'none', level: 'none' },
@@ -233,12 +243,41 @@ describe('runInbound', () => {
       planTurn: (p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
         tasks.applyUserTurn(p),
     });
+    const detail = vi.fn(() =>
+      Promise.resolve({
+        id: 'badminton',
+        title: 'E14初学者周末羽毛球',
+        description: 'E14初学者周末羽毛球搭子，当前活动价格£45',
+        tradeType: 'PEER',
+        status: 'ON_SALE',
+        tags: [],
+        priceLabel: '£45',
+        url: 'https://a2hmarket.ai/listings/badminton',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      }),
+    );
+    const getResponse = model.getResponse.bind(model);
+    const generations: Array<{ detailReads: number; instructions: string }> = [];
+    vi.spyOn(model, 'getResponse').mockImplementation((request) => {
+      // The planning call runs first. Every subsequent generation must see the refreshed public source.
+      generations.push({
+        detailReads: detail.mock.calls.length,
+        instructions: JSON.stringify(request.systemInstructions),
+      });
+      return getResponse(request);
+    });
     await runInbound({
       deps: {
         ...deps,
         repos: { ...repos, tasks },
         answerRequests: true,
         taskRequests: true,
+        marketSearch: { detail, find: vi.fn() },
       } as never,
       ctx: ctx(2),
       input: '半小时以内',
@@ -248,6 +287,8 @@ describe('runInbound', () => {
       scope: { channel: 'telegram', chatId: '-1' },
     });
     expect(tasks.applyUserTurn).toHaveBeenCalledOnce();
+    expect(generations[1]).toEqual(expect.objectContaining({ detailReads: 1 }));
+    expect(generations[1]!.instructions).toContain('当前活动价格£45');
     expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('30 minutes');
     expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('E14');
     expect(repos.outbound.create).toHaveBeenCalledOnce();

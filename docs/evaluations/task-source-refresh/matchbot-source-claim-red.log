@@ -1,0 +1,56 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (33 tests | 6 failed) 51ms
+   ❯ reply_to_request (33)
+     × rejects an invented search failure even when labelled answer 12ms
+     × rejects an invented search failure even when labelled partial 2ms
+     × rejects an invented search failure even when labelled no_match 1ms
+     × rejects an invented search failure even when labelled clarification 1ms
+     × rejects an invented search failure even when labelled unavailable 1ms
+     × allows a factual source failure while rejecting conditional wording placed after an invented outage 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > rejects an invented search failure even when labelled answer
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > rejects an invented search failure even when labelled partial
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > rejects an invented search failure even when labelled no_match
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > rejects an invented search failure even when labelled clarification
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > rejects an invented search failure even when labelled unavailable
+AssertionError: expected 'not sent: this request already has a …' to contain 'No recorded source failure'
+
+Expected: "No recorded source failure"
+Received: "not sent: this request already has a failed or unconfirmed delivery (o); do not automatically resend"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:72:22
+     70|         }),
+     71|       );
+     72|       expect(result).toContain('No recorded source failure');
+       |                      ^
+     73|       expect(d.repos.outbound.create).not.toHaveBeenCalled();
+     74|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > allows a factual source failure while rejecting conditional wording placed after an invented outage
+AssertionError: expected 'not sent: this request already has a …' to contain 'No recorded source failure'
+
+Expected: "No recorded source failure"
+Received: "not sent: this request already has a failed or unconfirmed delivery (o); do not automatically resend"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:88:76
+     86|     const { d, c, t } = setup(0);
+     87|     const input = { kind: 'clarification', text: '搜索接口报错，如果稍后恢复可以再查。你更…
+     88|     expect(await t.invoke({ context: c } as never, JSON.stringify(inpu…
+       |                                                                            ^
+     89|     c.sourceFailures = ['information:timeout'];
+     90|     await t.invoke({ context: c } as never, JSON.stringify(input));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed | 27 passed (33)
+   Start at  10:45:54
+   Duration  584ms (import 53%, transform 37%, tests 10%)
+

@@ -1,0 +1,900 @@
+{
+  "runId": "7b151d00-5e91-49b4-afa3-3a7de9f0fc4f",
+  "sampleId": "desk_chair",
+  "baselineSha": "254e462fbfef7b752df3ed8a082530c106bcabb5",
+  "agentVersion": "0.15.1",
+  "model": "deepseek-flash",
+  "jevModel": "typesafe/jev-1.13",
+  "corpusHash": "f95988b4eb84e4b891fc5d84ec571a226ab7560e4c3ca1f1a7e61d66c4c6319a",
+  "status": "completed",
+  "elapsedMs": 43175,
+  "boundary": "immutable old main; real generation/Jev/SDK/PG/outbound gates; frozen source corpus; per-source outbox simulated transport; no worker inbound or Telegram; baseline has no Task ledger, not graded as candidate Task compliance",
+  "limits": {
+    "perTurnMs": 150000,
+    "toolRounds": 12,
+    "sourceQueries": 8,
+    "sourceDetails": 8
+  },
+  "results": [
+    {
+      "index": 0,
+      "input": "E14想收书桌和办公椅，每件50镑以内，能自提。",
+      "elapsedMs": 8723,
+      "searches": 3,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "market_enrich",
+          "reply_to_request",
+          "reply_to_request"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "我在 E14 找到两件都在预算内且可自提的：一张可拆装书桌（桌面100×60cm，£40，正常使用痕迹）和一把可调高度办公椅（£45，扶手有使用痕迹），都在 Canary Wharf 附近发布。可以跟两位发布者确认是否仍在售、能否安排同一趟自提；尺寸和成色我这边只能以帖子描述为准，建议现场再看一下。\n\n我会先看第1项，再比较下面这2个选择，关键条件已有原文支持。未确认的偏好已单独标出。\n\n【优先看】\n\n1. E14出可拆卸书桌\n推荐理由：单品报价符合预算；地点符合你指定的范围\n出售书桌一张，单价£40。桌面100×60cm，可拆卸，正常使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。\n单品报价：出售书桌一张，单价£40。桌面100×60cm，可拆卸，正常使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。\n地点原文：出售书桌一张，单价£40。桌面100×60cm，可拆卸，正常使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-desk-basic)\n\n2. E14出办公椅\n推荐理由：单品报价符合预算；地点符合你指定的范围\n出售办公椅一把，单价£45，可调节高度，扶手有使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。\n单品报价：出售办公椅一把，单价£45，可调节高度，扶手有使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。\n地点原文：出售办公椅一把，单价£45，可调节高度，扶手有使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-chair-basic)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+          "kind": "recommendation",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsyu440003ysbg2dumnifn",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "current_request",
+            "category": "second_hand"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:05.044Z"
+        },
+        {
+          "id": "cmvbsyu480004ysbg6v44nfyz",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:05.048Z"
+        },
+        {
+          "id": "cmvbsywly0005ysbgnufu2gt4",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "market_search",
+            "added": 5,
+            "total": 5,
+            "queries": [
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "second_hand",
+                "keyword": "desk",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "second_hand",
+                "keyword": "office chair",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "second_hand",
+                "keyword": "书桌",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              }
+            ],
+            "decision": "searched",
+            "failures": [],
+            "planApplied": {
+              "needs": 2,
+              "hasRoute": false,
+              "preferences": 1,
+              "excludeTerms": 0,
+              "hasDateRange": false,
+              "requiredTerms": 0,
+              "budgetSpecified": true
+            }
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:08.278Z"
+        },
+        {
+          "id": "cmvbsyxjx0007ysbgnzx4s8co",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "market_enrich",
+            "refs": [
+              "m1",
+              "m3"
+            ],
+            "enriched": 2,
+            "failures": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:09.501Z"
+        },
+        {
+          "id": "cmvbsyz0p0009ysbgmm3cm518",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "invalid answer: unsupported numerical values 85; omit or cite supporting offer evidence."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 1,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:11.401Z"
+        },
+        {
+          "id": "cmvbsz093000bysbgz29qcum2",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1",
+              "m3"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:12.999Z"
+        },
+        {
+          "id": "cmvbsz0te000cysbgw5t2j0wo",
+          "kind": "jev",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "id": "gen-dec-1792205653-poH3X5WgVqUOZ7KENPuc",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000060354,
+              "input_tokens": 1437
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.66,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.65,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0.05,
+                  "2": 0.25,
+                  "3": 0.7
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.37,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 727,
+          "costMicro": 60,
+          "createdAt": "2026-10-17T02:54:13.730Z"
+        },
+        {
+          "id": "cmvbsz0tg000dysbg9gbi1oxb",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.66,
+              "mentionsUnverified": 0.37
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:13.732Z"
+        },
+        {
+          "id": "cmvbsz0tj000eysbgbgl3tokd",
+          "kind": "gate",
+          "inputRef": "cmvbsyu400002ysbg2acpdb56",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1",
+              "m3"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:13.735Z"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "input": "半小时以内",
+      "elapsedMs": 2139,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "ask_clarification"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "“半小时以内”是指什么范围？比如是希望自提路程在半小时内，还是找半小时内能完成的服务／活动？想确认一下具体需求。",
+          "kind": "clarification",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsz0uf000sysbgg8306to2",
+          "kind": "gate",
+          "inputRef": "cmvbsz0ud000rysbg6d0ds3jg",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:13.767Z"
+        },
+        {
+          "id": "cmvbsz0uh000tysbg626szd1f",
+          "kind": "gate",
+          "inputRef": "cmvbsz0ud000rysbg6d0ds3jg",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:13.769Z"
+        },
+        {
+          "id": "cmvbsz2ha000uysbgpjagor3d",
+          "kind": "jev",
+          "inputRef": "cmvbsz0ud000rysbg6d0ds3jg",
+          "output": {
+            "id": "gen-dec-1792205655-Ma7veNt5JdNVm8DHHH94",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.00002751,
+              "input_tokens": 655
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.63,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.62,
+                "probabilities": {
+                  "0": 0.01,
+                  "1": 0.03,
+                  "2": 0.29,
+                  "3": 0.67
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.05,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 384,
+          "costMicro": 28,
+          "createdAt": "2026-10-17T02:54:15.886Z"
+        },
+        {
+          "id": "cmvbsz2hd000vysbgcd0r7qkn",
+          "kind": "gate",
+          "inputRef": "cmvbsz0ud000rysbg6d0ds3jg",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.63,
+              "mentionsUnverified": 0.05
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:15.889Z"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "input": "桌子可以到70镑，椅子还是50",
+      "elapsedMs": 16860,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "record_request",
+          "market_search",
+          "market_search",
+          "market_search",
+          "record_request",
+          "market_search",
+          "find_peer_supply",
+          "market_search",
+          "reply_to_request"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "收到：桌子预算提到70镑，椅子保持50镑，我会按这两个上限去找。想先确认一下：桌子你想要书桌/学习桌，还是餐桌？这样我能筛得更准。",
+          "kind": "clarification",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsz2hu0013ysbgfcot5h4i",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:15.906Z"
+        },
+        {
+          "id": "cmvbsz2hv0014ysbgoq55ihs0",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:15.907Z"
+        },
+        {
+          "id": "cmvbsz3u50015ysbgnydzrc2s",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:17.645Z"
+        },
+        {
+          "id": "cmvbsz6jx0019ysbgosvwopep",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:21.165Z"
+        },
+        {
+          "id": "cmvbsz7va001bysbgw2c7pb2q",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_search_input",
+            "reason": "invalid_json_or_schema",
+            "attempt": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:22.870Z"
+        },
+        {
+          "id": "cmvbsz961001dysbgaezwbfgx",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:24.553Z"
+        },
+        {
+          "id": "cmvbszbgd001gysbgxpi3lsju",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:27.517Z"
+        },
+        {
+          "id": "cmvbszdkd001jysbg8ydu7fdt",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:30.253Z"
+        },
+        {
+          "id": "cmvbszexc001lysbgpw4r0wwo",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:32.016Z"
+        },
+        {
+          "id": "cmvbszfh8001mysbgsdblnuw1",
+          "kind": "jev",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "id": "gen-dec-1792205672-w7xt6ZgZ5oB5GH7Dc5zR",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000028476,
+              "input_tokens": 678
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.82,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.82,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0.01,
+                  "2": 0.16,
+                  "3": 0.83
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.13,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 713,
+          "costMicro": 28,
+          "createdAt": "2026-10-17T02:54:32.732Z"
+        },
+        {
+          "id": "cmvbszfhb001nysbgni7s6em3",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.82,
+              "mentionsUnverified": 0.13
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:32.735Z"
+        },
+        {
+          "id": "cmvbszfhd001oysbg8qt75ppb",
+          "kind": "gate",
+          "inputRef": "cmvbsz2hs0012ysbg4q9ybves",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:32.737Z"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "input": "椅子已经买到了，桌子继续找",
+      "elapsedMs": 11042,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "record_request",
+          "market_search",
+          "market_search",
+          "find_peer_supply",
+          "reply_to_request"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "已记下椅子搞定，接着帮你找桌子。想确认一下：你要的是书桌/写字桌，还是餐桌或茶几？另外大概预算和方便取货的区域（比如北/东伦敦的哪个站附近）也说一下，我好精准筛选。",
+          "kind": "clarification",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbszfi8002eysbge4u1oa9f",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:32.768Z"
+        },
+        {
+          "id": "cmvbszfi9002fysbg68ibr8qo",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:32.769Z"
+        },
+        {
+          "id": "cmvbszgx9002gysbgyydw1v7o",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:34.605Z"
+        },
+        {
+          "id": "cmvbszjn4002jysbgn4rcb5qu",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:38.128Z"
+        },
+        {
+          "id": "cmvbszkzm002lysbg3nvsfyss",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "market_search",
+            "reason": "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:39.874Z"
+        },
+        {
+          "id": "cmvbszng3002oysbglbfk64go",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:43.059Z"
+        },
+        {
+          "id": "cmvbsznzy002pysbgnjw3133m",
+          "kind": "jev",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "id": "gen-dec-1792205683-9rCGHbNhsgYRovP5tDVl",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000029022,
+              "input_tokens": 691
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.92,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.94,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.06,
+                  "3": 0.9400000000000001
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.1,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 713,
+          "costMicro": 29,
+          "createdAt": "2026-10-17T02:54:43.774Z"
+        },
+        {
+          "id": "cmvbszo01002qysbgqvj6ul4l",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.92,
+              "mentionsUnverified": 0.1
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:43.777Z"
+        },
+        {
+          "id": "cmvbszo04002rysbgyurlk0yh",
+          "kind": "gate",
+          "inputRef": "cmvbszfi6002dysbgd4vzt21z",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:43.780Z"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "input": "桌子也买到了，这个需求解决了",
+      "elapsedMs": 4306,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "close_demand",
+          "react"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "👍",
+          "kind": "reaction",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbszo100038ysbg2981dmc3",
+          "kind": "gate",
+          "inputRef": "cmvbszo0y0037ysbgx05lu3v6",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:43.812Z"
+        },
+        {
+          "id": "cmvbszo120039ysbgi68h8ez9",
+          "kind": "gate",
+          "inputRef": "cmvbszo0y0037ysbgx05lu3v6",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:43.814Z"
+        },
+        {
+          "id": "cmvbszqgl003bysbgfko2g1t0",
+          "kind": "gate",
+          "inputRef": "cmvbszo0y0037ysbgx05lu3v6",
+          "output": {
+            "gate": "outbound",
+            "kind": "reaction",
+            "decision": "auto"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:46.965Z"
+        },
+        {
+          "id": "cmvbszqgs003cysbg6t39hhie",
+          "kind": "gate",
+          "inputRef": "cmvbszo0y0037ysbgx05lu3v6",
+          "output": {
+            "gate": "outbound",
+            "kind": "reaction",
+            "decision": "auto"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:54:46.972Z"
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "keyword": "desk",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "office chair",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "书桌",
+      "page": 1,
+      "tradeType": "SELL"
+    }
+  ],
+  "details": [
+    "task-eval-desk-basic",
+    "task-eval-chair-basic"
+  ]
+}
