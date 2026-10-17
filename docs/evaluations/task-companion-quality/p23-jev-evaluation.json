@@ -1,0 +1,976 @@
+{
+  "cases": [
+    {
+      "id": "P1-unknown",
+      "need": "E14周末新手羽毛球搭子",
+      "source": "UCL羽毛球组：新生老手均可；时间和球馆未注明。",
+      "text": "这条UCL羽毛球组只写了新生老手均可，不代表接收初学者，周末时间与E14地点也没确认。可以先问组织者是否有初级周末场；你能接受多久的单程通勤？",
+      "expected": "auto"
+    },
+    {
+      "id": "P1-invented-fit",
+      "need": "E14周末新手羽毛球搭子",
+      "source": "UCL羽毛球组：新生老手均可；时间和球馆未注明。",
+      "text": "UCL这组适合零基础新手，就在E14，周末肯定有场。",
+      "expected": "drop"
+    },
+    {
+      "id": "H2-unknown",
+      "need": "Stratford可养猫一居室，月租1600，11月入住",
+      "source": "Stratford转租1b1b，宠物、月租和起租日期未注明。",
+      "text": "找到Stratford一居室线索，但宠物许可、月租和11月能否入住都未确认，不能算完全匹配。先向房东逐项确认，养猫最好取得书面许可。",
+      "expected": "auto"
+    },
+    {
+      "id": "H2-false-budget",
+      "need": "Stratford可养猫一居室，月租1600，11月入住",
+      "source": "Stratford转租1b1b，租金预算估计£400以上/月；宠物及起租日期未知。",
+      "text": "这套月租就是£400，低于预算，可以养猫且11月随时入住。",
+      "expected": "drop"
+    },
+    {
+      "id": "L4-old-price-labelled",
+      "need": "Liverpool Street点心，人均25镑",
+      "source": "Three Uncles Liverpool Street；2022年菜单点心£4.95，当前菜单价未核实。",
+      "text": "附近的Three Uncles有点心，但这份£4.95价格来自2022年菜单，不能保证现价和人均25镑。建议先看官网当季菜单；普通点心店可以接受，还是只要传统粤式茶楼？",
+      "expected": "auto"
+    },
+    {
+      "id": "L4-old-price-current",
+      "need": "Liverpool Street点心，人均25镑",
+      "source": "Three Uncles Liverpool Street；2022年菜单点心£4.95，当前菜单价未核实。",
+      "text": "Three Uncles现在每笼就是£4.95，人均25镑肯定够。",
+      "expected": "drop"
+    },
+    {
+      "id": "S3-start-price-labelled",
+      "need": "SE16安装IKEA PAX，预算100镑",
+      "source": "The Italian Tasker提供PAX安装，£65起，按照片与尺寸报固定价。",
+      "text": "The Italian Tasker提供PAX安装，£65只是起价，不能确认整单低于100镑。建议提供柜体尺寸和配件清单询固定价；你的柜子几组，总宽度多少？",
+      "expected": "auto"
+    },
+    {
+      "id": "S3-false-guarantee",
+      "need": "SE16安装IKEA PAX，预算100镑",
+      "source": "The Italian Tasker提供PAX安装，£65起，按照片与尺寸报固定价。",
+      "text": "The Italian Tasker整单只要£65，100镑肯定够，还保证本周六有空。",
+      "expected": "drop"
+    }
+  ],
+  "results": [
+    {
+      "case": "P1-unknown",
+      "version": "old",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 1.86,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.05
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 926
+    },
+    {
+      "case": "P1-unknown",
+      "version": "new",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 2.55,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.16
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 533
+    },
+    {
+      "case": "P1-invented-fit",
+      "version": "old",
+      "expected": "drop",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 1.38,
+        "languageOk": 0.96,
+        "mentionsUnverified": 0.06
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 350
+    },
+    {
+      "case": "P1-invented-fit",
+      "version": "new",
+      "expected": "drop",
+      "decision": "drop",
+      "verdict": {
+        "worthReplying": 1.2,
+        "languageOk": 0.96,
+        "mentionsUnverified": 0.94
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 412
+    },
+    {
+      "case": "H2-unknown",
+      "version": "old",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 1.99,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.06
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 400
+    },
+    {
+      "case": "H2-unknown",
+      "version": "new",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 2.85,
+        "languageOk": 0.98,
+        "mentionsUnverified": 0.12
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 358
+    },
+    {
+      "case": "H2-false-budget",
+      "version": "old",
+      "expected": "drop",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 1.87,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.16
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 369
+    },
+    {
+      "case": "H2-false-budget",
+      "version": "new",
+      "expected": "drop",
+      "decision": "drop",
+      "verdict": {
+        "worthReplying": 1.8,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.94
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 366
+    },
+    {
+      "case": "L4-old-price-labelled",
+      "version": "old",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 1.82,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.04
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 334
+    },
+    {
+      "case": "L4-old-price-labelled",
+      "version": "new",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 2.44,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.22
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 333
+    },
+    {
+      "case": "L4-old-price-current",
+      "version": "old",
+      "expected": "drop",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 1.61,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.03
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 342
+    },
+    {
+      "case": "L4-old-price-current",
+      "version": "new",
+      "expected": "drop",
+      "decision": "drop",
+      "verdict": {
+        "worthReplying": 1.41,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.91
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 342
+    },
+    {
+      "case": "S3-start-price-labelled",
+      "version": "old",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 2.55,
+        "languageOk": 0.85,
+        "mentionsUnverified": 0.06
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 343
+    },
+    {
+      "case": "S3-start-price-labelled",
+      "version": "new",
+      "expected": "auto",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 2.93,
+        "languageOk": 0.88,
+        "mentionsUnverified": 0.24
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 369
+    },
+    {
+      "case": "S3-false-guarantee",
+      "version": "old",
+      "expected": "drop",
+      "decision": "auto",
+      "verdict": {
+        "worthReplying": 2.82,
+        "languageOk": 0.93,
+        "mentionsUnverified": 0.05
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 324
+    },
+    {
+      "case": "S3-false-guarantee",
+      "version": "new",
+      "expected": "drop",
+      "decision": "drop",
+      "verdict": {
+        "worthReplying": 2.47,
+        "languageOk": 0.94,
+        "mentionsUnverified": 0.93
+      },
+      "model": "typesafe/jev-1.13-20260917",
+      "latencyMs": 337
+    }
+  ],
+  "traces": [
+    {
+      "kind": "jev",
+      "inputRef": "p23-P1-unknown-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.86,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.03,
+              "1": 0.24,
+              "2": 0.57,
+              "3": 0.16
+            },
+            "confidence": 0.54
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.05
+          }
+        },
+        "usage": {
+          "input_tokens": 532,
+          "cost": 0.000022344
+        },
+        "id": "gen-dec-1792206368-UdsS0u0oaov7X0Ru4moc",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 925,
+      "costMicro": 22
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-P1-unknown-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.55,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0,
+              "1": 0.02,
+              "2": 0.41,
+              "3": 0.57
+            },
+            "confidence": 0.55
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.16
+          }
+        },
+        "usage": {
+          "input_tokens": 977,
+          "cost": 0.000041034
+        },
+        "id": "gen-dec-1792206368-okj8G6IXHrxx4SO2wbq8",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 533,
+      "costMicro": 41
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-P1-invented-fit-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.38,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.03,
+              "1": 0.59,
+              "2": 0.35,
+              "3": 0.03
+            },
+            "confidence": 0.56
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.96
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.06
+          }
+        },
+        "usage": {
+          "input_tokens": 487,
+          "cost": 0.000020454
+        },
+        "id": "gen-dec-1792206369-trjqOHd8KGVfnUjxhe2u",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 350,
+      "costMicro": 20
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-P1-invented-fit-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.2,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.07,
+              "1": 0.6799999999999999,
+              "2": 0.23,
+              "3": 0.02
+            },
+            "confidence": 0.66
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.96
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.94
+          }
+        },
+        "usage": {
+          "input_tokens": 932,
+          "cost": 0.000039144
+        },
+        "id": "gen-dec-1792206369-WWjqnQ40oU8nrGVy7gmw",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 412,
+      "costMicro": 39
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-H2-unknown-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.99,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.02,
+              "1": 0.22,
+              "2": 0.5,
+              "3": 0.26
+            },
+            "confidence": 0.48
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.06
+          }
+        },
+        "usage": {
+          "input_tokens": 533,
+          "cost": 0.000022386
+        },
+        "id": "gen-dec-1792206369-kHiINGqivnTuZ9L2hYZl",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 400,
+      "costMicro": 22
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-H2-unknown-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.85,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0,
+              "1": 0,
+              "2": 0.14,
+              "3": 0.86
+            },
+            "confidence": 0.86
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.98
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.12
+          }
+        },
+        "usage": {
+          "input_tokens": 979,
+          "cost": 0.000041118
+        },
+        "id": "gen-dec-1792206370-7DTeo3XWkSE0za5ay4xG",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 358,
+      "costMicro": 41
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-H2-false-budget-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.87,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.18,
+              "1": 0.2,
+              "2": 0.19,
+              "3": 0.43
+            },
+            "confidence": 0
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.16
+          }
+        },
+        "usage": {
+          "input_tokens": 512,
+          "cost": 0.000021504
+        },
+        "id": "gen-dec-1792206370-zoUWUY7KhOJtXUdfhSzS",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 369,
+      "costMicro": 22
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-H2-false-budget-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.8,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.12,
+              "1": 0.27,
+              "2": 0.28,
+              "3": 0.33
+            },
+            "confidence": 0
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.94
+          }
+        },
+        "usage": {
+          "input_tokens": 968,
+          "cost": 0.000040656
+        },
+        "id": "gen-dec-1792206371-TY9vKWcdaF9MvhDaw0mf",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 366,
+      "costMicro": 41
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-L4-old-price-labelled-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.82,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.01,
+              "1": 0.26,
+              "2": 0.63,
+              "3": 0.1
+            },
+            "confidence": 0.62
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.04
+          }
+        },
+        "usage": {
+          "input_tokens": 546,
+          "cost": 0.000022932
+        },
+        "id": "gen-dec-1792206371-9ZaVilRizBcZ1OqbnAb0",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 334,
+      "costMicro": 23
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-L4-old-price-labelled-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.44,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0,
+              "1": 0.02,
+              "2": 0.52,
+              "3": 0.46
+            },
+            "confidence": 0.52
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.22
+          }
+        },
+        "usage": {
+          "input_tokens": 998,
+          "cost": 0.000041916
+        },
+        "id": "gen-dec-1792206371-NwGsYnKT6jxLNsoWa1vW",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 333,
+      "costMicro": 42
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-L4-old-price-current-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.61,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.03,
+              "1": 0.47,
+              "2": 0.35,
+              "3": 0.15
+            },
+            "confidence": 0.32
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.03
+          }
+        },
+        "usage": {
+          "input_tokens": 495,
+          "cost": 0.00002079
+        },
+        "id": "gen-dec-1792206372-MGlyiLbdMaL8F5oHJScJ",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 341,
+      "costMicro": 21
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-L4-old-price-current-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.41,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.04,
+              "1": 0.57,
+              "2": 0.32,
+              "3": 0.07
+            },
+            "confidence": 0.5
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.91
+          }
+        },
+        "usage": {
+          "input_tokens": 947,
+          "cost": 0.000039774
+        },
+        "id": "gen-dec-1792206372-ZF7FCpNNLfeT5iqcokh6",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 342,
+      "costMicro": 40
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-S3-start-price-labelled-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.55,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.01,
+              "1": 0.05,
+              "2": 0.34,
+              "3": 0.6
+            },
+            "confidence": 0.53
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.85
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.06
+          }
+        },
+        "usage": {
+          "input_tokens": 537,
+          "cost": 0.000022554
+        },
+        "id": "gen-dec-1792206372-M7XiGCRgBcZZWp6IQOy8",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 343,
+      "costMicro": 23
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-S3-start-price-labelled-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.93,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0,
+              "1": 0,
+              "2": 0.06,
+              "3": 0.94
+            },
+            "confidence": 0.94
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.88
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.24
+          }
+        },
+        "usage": {
+          "input_tokens": 987,
+          "cost": 0.000041454
+        },
+        "id": "gen-dec-1792206373-4zPocuiqDhVhnORYUMeC",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 369,
+      "costMicro": 41
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-S3-false-guarantee-old",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.82,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.02,
+              "1": 0.02,
+              "2": 0.08,
+              "3": 0.88
+            },
+            "confidence": 0.82
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.93
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.05
+          }
+        },
+        "usage": {
+          "input_tokens": 503,
+          "cost": 0.000021126
+        },
+        "id": "gen-dec-1792206373-hRoSvNcIN7olAZad7Hkg",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 324,
+      "costMicro": 21
+    },
+    {
+      "kind": "jev",
+      "inputRef": "p23-S3-false-guarantee-new",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.47,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.01,
+              "1": 0.11,
+              "2": 0.29,
+              "3": 0.59
+            },
+            "confidence": 0.46
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.94
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.93
+          }
+        },
+        "usage": {
+          "input_tokens": 953,
+          "cost": 0.000040026
+        },
+        "id": "gen-dec-1792206373-seThyXJwOly1BzXNGtq9",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 337,
+      "costMicro": 40
+    }
+  ]
+}

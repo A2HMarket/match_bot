@@ -1,0 +1,50 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts (13 tests | 2 failed) 6ms
+   × rejects identity inferred from anonymous offers: 下一步分别向两位发帖人确认取货地址。 2ms
+   × rejects identity inferred from anonymous offers: 这两名房东分别有两套房。 1ms
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (38 tests | 1 failed) 48ms
+   ❯ reply_to_request (38)
+     × recognizes the actual Xiaohongshu failure key when explaining a failed source query 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/seller-identity-claims.test.ts > rejects identity inferred from anonymous offers: 下一步分别向两位发帖人确认取货地址。
+ FAIL  packages/agent/tests/seller-identity-claims.test.ts > rejects identity inferred from anonymous offers: 这两名房东分别有两套房。
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts:11:46
+      9|   'Different sellers posted these, so arrange two pickups.',
+     10| ])('rejects identity inferred from anonymous offers: %s', (text) => {
+     11|   expect(hasUnqualifiedSellerIdentity(text)).toBe(true);
+       |                                              ^
+     12| });
+     13| it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > recognizes the actual Xiaohongshu failure key when explaining a failed source query
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:179:37
+    177|       kind: 'unavailable', refs: [], text: '小红书搜索失败，这次没能核对到展览信息，可以稍后重试…
+    178|     }));
+    179|     expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+       |                                     ^
+    180|   });
+    181|   it('supplies the selected post timestamp and London check date to Je…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  3 failed | 48 passed (51)
+   Start at  11:15:37
+   Duration  563ms (import 50%, transform 39%, tests 10%, worker 1%)
+

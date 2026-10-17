@@ -22,7 +22,7 @@ import {
   taskConversationsSchema,
 } from '../../../packages/eval/src/task-contract.js';
 import { drainOutbound } from '../../../apps/bot/src/outbound-loop.js';
-import { waitForPreviewOutbounds } from './preview-delivery.mjs';
+import { waitForPreviewOutbounds, previewExternalMessageId } from './preview-delivery.mjs';
 
 const sampleId = z.enum(['desk_chair', 'cat_housing', 'beginner_bad']).parse(process.argv[2]);
 const output = process.argv[3] ?? '/tmp/matchbot-task-conversation-' + sampleId + '.json';
@@ -144,7 +144,7 @@ const save = (status: string) =>
         sampleId,
         sourceFingerprint,
         agentVersion: AGENT_VERSION,
-        harnessVersion: 'receipt-wait-v2',
+        harnessVersion: 'stable-receipt-v3',
         model: env.DEEPSEEK_MODEL,
         jevModel: env.JEV_MODEL,
         status,
@@ -190,8 +190,7 @@ try {
     }
     return all;
   };
-  let previousReply: string | undefined,
-    receipt = 1000;
+  let previousReply: string | undefined;
   for (const [index, turn] of sample.turns.entries()) {
     const before = await snapshots(),
       beforeQueries = queries.length,
@@ -246,7 +245,7 @@ try {
             if (!(await options.beforeSend())) return { kind: 'not_started' };
             return row.kind === 'reaction'
               ? { kind: 'reaction', externalMessageId: null }
-              : { kind: 'message', externalMessageId: String(++receipt) };
+              : { kind: 'message', externalMessageId: previewExternalMessageId(row.id) };
           },
         },
       });

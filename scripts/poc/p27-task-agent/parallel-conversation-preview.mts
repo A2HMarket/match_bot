@@ -16,7 +16,7 @@ import { DEFAULT_THRESHOLDS } from '../../../packages/gating/src/index.js';
 import { loadEnv, createLogger } from '../../../packages/shared/src/index.js';
 import { marketListingSchema } from '../../../packages/websearch/src/market.js';
 import { drainOutbound } from '../../../apps/bot/src/outbound-loop.js';
-import { waitForPreviewOutbounds } from './preview-delivery.mjs';
+import { waitForPreviewOutbounds, previewExternalMessageId } from './preview-delivery.mjs';
 const fixtureBytes = readFileSync(
   'packages/eval/fixtures/task-agent/parallel-conversation.json',
   'utf8',
@@ -149,7 +149,6 @@ try {
     },
     ids = new Map<string, string>(),
     anchors = new Map<string, string>();
-  let receipt = 1000;
   for (const [index, turn] of fixture.turns.entries()) {
     const before = await Promise.all(
         [...ids].map(async ([alias, id]) => ({
@@ -207,7 +206,7 @@ try {
           if (!(await options.beforeSend())) return { kind: 'not_started' };
           return row.kind === 'reaction'
             ? { kind: 'reaction', externalMessageId: null }
-            : { kind: 'message', externalMessageId: String(++receipt) };
+            : { kind: 'message', externalMessageId: previewExternalMessageId(row.id) };
         },
       },
     });

@@ -1,0 +1,41 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ apps/worker/tests/deps.test.ts (1 test | 1 failed) 4ms
+   × enables persisted task execution in the actual worker assembly used by inbound and resume 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/worker/tests/deps.test.ts > enables persisted task execution in the actual worker assembly used by inbound and resume
+ZodError: [
+  {
+    "code": "invalid_value",
+    "values": [
+      "trace",
+      "debug",
+      "info",
+      "warn",
+      "error"
+    ],
+    "path": [
+      "LOG_LEVEL"
+    ],
+    "message": "Invalid option: expected one of \"trace\"|\"debug\"|\"info\"|\"warn\"|\"error\""
+  }
+]
+ ❯ apps/worker/tests/deps.test.ts:8:42
+      6| afterAll(disconnectPrisma);
+      7| it('enables persisted task execution in the actual worker assembly use…
+      8|   const deps = buildDeps({env: envSchema.parse({
+       |                                          ^
+      9|     DATABASE_URL: 'postgresql://matchbot:matchbot@127.0.0.1:5432/match…
+     10|     REDIS_URL: 'redis://127.0.0.1:6379/15', DEEPSEEK_API_KEY: 'synthet…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  11:26:14
+   Duration  728ms (transform 52%, import 47%, tests 1%)
+

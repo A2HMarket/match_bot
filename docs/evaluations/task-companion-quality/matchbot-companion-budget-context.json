@@ -1,0 +1,242 @@
+{
+  "boundary": "synthetic user/source data, real Jev, no business reads or Telegram",
+  "request": {
+    "text": "桌子可以到70镑，椅子还是50\n当前目标：书桌；办公椅\n书桌 / 验收条件 (hard): 来源描述的对象或邀约：书桌\n书桌 / 验收条件 (hard): 核对当前条件：budget\n书桌 / 验收条件 (hard): 核对当前条件：self_collect\n书桌 / 验收条件 (hard): 核对当前条件：area\n书桌 / 验收条件 (hard): 核对当前条件：max_travel_minutes\n办公椅 / 验收条件 (hard): 来源描述的对象或邀约：办公椅\n办公椅 / 验收条件 (hard): 核对当前条件：budget\n办公椅 / 验收条件 (hard): 核对当前条件：self_collect\n办公椅 / 验收条件 (hard): 核对当前条件：area\n办公椅 / 验收条件 (hard): 核对当前条件：max_travel_minutes\n共同条件 / budget (hard): GBP 50 (item)\n共同条件 / self_collect (hard): yes\n共同条件 / area (hard): E14\n共同条件 / max_travel_minutes (hard): 30 minutes\n书桌 / budget (hard): GBP 70 (item)\n办公椅 / budget (hard): GBP 50 (item)",
+    "demand": {
+      "category": "second_hand",
+      "confidence": 1,
+      "need": "书桌；办公椅",
+      "lang": "zh",
+      "fromPostcode": "E14"
+    },
+    "isActionable": true
+  },
+  "results": [
+    {
+      "id": "restated-item-caps",
+      "text": "书桌£40、椅子£45都在你新的预算内（£70／£50），同在E14支持自提；具体路程能否在30分钟内还需确认。",
+      "expected": "auto",
+      "verdict": {
+        "ok": true,
+        "worthReplying": 2.75,
+        "languageOk": 0.98,
+        "mentionsUnverified": 0.29
+      },
+      "decision": "auto"
+    },
+    {
+      "id": "swapped-item-caps",
+      "text": "你给的预算是书桌50镑、椅子70镑。两件都符合这个上限。",
+      "expected": "drop",
+      "verdict": {
+        "ok": true,
+        "worthReplying": 1.37,
+        "languageOk": 0.98,
+        "mentionsUnverified": 0.71
+      },
+      "decision": "drop"
+    },
+    {
+      "id": "invented-price",
+      "text": "书桌售价£25，椅子£30，两件便宜又方便。",
+      "expected": "drop",
+      "verdict": {
+        "ok": true,
+        "worthReplying": 1.38,
+        "languageOk": 0.96,
+        "mentionsUnverified": 0.91
+      },
+      "decision": "drop"
+    },
+    {
+      "id": "unknown-travel-labelled",
+      "text": "两件报价符合各自预算；具体自提地址和路程尚未核实，不能确认半小时内能到。",
+      "expected": "auto",
+      "verdict": {
+        "ok": true,
+        "worthReplying": 2.41,
+        "languageOk": 0.97,
+        "mentionsUnverified": 0.19
+      },
+      "decision": "auto"
+    }
+  ],
+  "traces": [
+    {
+      "kind": "jev",
+      "inputRef": "synthetic-restated-item-caps",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.75,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0,
+              "1": 0.01,
+              "2": 0.22,
+              "3": 0.77
+            },
+            "confidence": 0.76
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.98
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.29
+          }
+        },
+        "usage": {
+          "input_tokens": 1424,
+          "cost": 0.000059808
+        },
+        "id": "gen-dec-1792206368-Gcp0Tuq3Y2QjyhBgUCaB",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 723,
+      "costMicro": 60
+    },
+    {
+      "kind": "jev",
+      "inputRef": "synthetic-swapped-item-caps",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.37,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.22,
+              "1": 0.4,
+              "2": 0.18,
+              "3": 0.2
+            },
+            "confidence": 0.2
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.98
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.71
+          }
+        },
+        "usage": {
+          "input_tokens": 1399,
+          "cost": 0.000058758
+        },
+        "id": "gen-dec-1792206368-iNJifZVB3uCY4RyDz6q3",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 333,
+      "costMicro": 59
+    },
+    {
+      "kind": "jev",
+      "inputRef": "synthetic-invented-price",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 1.38,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0.27,
+              "1": 0.3,
+              "2": 0.22,
+              "3": 0.21
+            },
+            "confidence": 0.09
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.96
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.91
+          }
+        },
+        "usage": {
+          "input_tokens": 1391,
+          "cost": 0.000058422
+        },
+        "id": "gen-dec-1792206368-gNK6nCU94Xhmsql8xpvy",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 526,
+      "costMicro": 58
+    },
+    {
+      "kind": "jev",
+      "inputRef": "synthetic-unknown-travel-labelled",
+      "output": {
+        "ok": true,
+        "answers": {
+          "worth_replying": {
+            "type": "score",
+            "score": 2.41,
+            "legend": {
+              "0": "Not useful or off-topic",
+              "1": "Marginal",
+              "2": "Useful",
+              "3": "Clearly useful and specific"
+            },
+            "probabilities": {
+              "0": 0,
+              "1": 0.06,
+              "2": 0.47,
+              "3": 0.47
+            },
+            "confidence": 0.47
+          },
+          "language_ok": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "mentions_unverified": {
+            "type": "noul",
+            "noul": 0.19
+          }
+        },
+        "usage": {
+          "input_tokens": 1404,
+          "cost": 0.000058968
+        },
+        "id": "gen-dec-1792206369-BtWhyxMM7Bwtc0e6HMq3",
+        "provider": "TypeSafe",
+        "model": "typesafe/jev-1.13-20260917"
+      },
+      "phase": 0,
+      "latencyMs": 332,
+      "costMicro": 59
+    }
+  ]
+}

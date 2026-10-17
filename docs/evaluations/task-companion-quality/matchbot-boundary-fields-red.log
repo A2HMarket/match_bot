@@ -1,0 +1,53 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts (15 tests | 2 failed) 9ms
+   × rejects an action or background promise without a capability/receipt: I have already booked it for you. 2ms
+   × checks authored questions and intros but not a quoted provider or a user demand summary 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/reply-boundaries.test.ts > rejects an action or background promise without a capability/receipt: I have already booked it for you.
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts:14:43
+     12|   'I have already booked it for you.',
+     13| ])('rejects an action or background promise without a capability/recei…
+     14|   expect(hasUnsupportedActionClaim(text)).toBe(true);
+       |                                           ^
+     15| });
+     16| it('checks authored questions and intros but not a quoted provider or …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/reply-boundaries.test.ts > checks authored questions and intros but not a quoted provider or a user demand summary
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts:17:68
+     15| });
+     16| it('checks authored questions and intros but not a quoted provider or …
+     17|   expect(hasUnsupportedModelAction({ question: '我会继续留意，你方便哪天？' })).toB…
+       |                                                                    ^
+     18|   expect(hasUnsupportedModelAction({ intro: '我会继续留意' })).toBe(true);
+     19|   expect(hasUnsupportedModelAction({ sources: [{ text: '我会继续留意' }], de…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 13 passed (15)
+   Start at  11:04:44
+   Duration  150ms (transform 53%, import 25%, tests 15%, worker 7%)
+

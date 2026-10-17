@@ -373,3 +373,5 @@ Task新owner消息通过beginTaskUserTurn清理旧拟发/问题/下一步，条�
 P27真实多轮修复契约（0.16.16，分支未发布）：`confirmTaskOutcome({task,goalIds,actor})`统一验证/应用用户确认；非空goalIds只确认相应分项，但所有required目标都由本人确认achieved后会完成整体任务，保留最后确认来源且不把未知来源条件标为supported。`confirmTaskGoal`单项原语仍不关闭其他目标。准备工具和仓储使用相同聚合原语，完成时原子关闭关联Demand。明确总预算不增加但仅提议账单偏好时，单个既有住房月预算保留原金额并更新all_in范围；偏好包账单本身不改变范围。`record_task_progress`返回与出站同源的eligible refs/排除项及未知条件，修复推荐输入时仍须保留所有门；不默默替模型删候选或复写已被Jev拒绝的回答。出站来源证据补充对应原帖/原生帖时间及伦敦核对日期，不用转载创建时间冒充原帖时间。
 
 P25/P27 0.16.20契约：evaluateOutbound增加可选requestContext（仅当前已选Task的CurrentRequest.text，和来源证据分开），保留分项目标预算及用户条件，不改变Jev/阶段/频控或默认失败方向。候选硬反证复用sourceSupport、sourceReviewCache和共享96假设/24批预算；clear仅代表未核实到明确冲突，不写supported。no_match须有真实查询/失败记录，不能自称搜索失败；其他类型的过程陈述尚需补齐。旧进程证明stub按proposedStatus区分正向与反证，断言不变。
+
+P25/P27 0.16.26候选：DeepSeek任务规划及正文显式temperature=0，其他模型配置不改；市场建议最多200字、超限反馈而不从中截断，同一来源卡内去重原文。共享出站输入检查不允许Agent伪称后台监控/外部联系；匿名市场offer没有验证过的卖家身份，正文不得从帖子编号推断人数/同异身份。小红书故障前缀xiaohongshu与解释守卫一致，原文读取失败记录回执。日期范围表示可接受窗口，不代表必须取首日，路程用时不假设往返。worker装配taskRequests=true并留启动版本，实际启用以迁移/进程验收为准。没有新增用户出站工具、数据库个人字段或保留期。

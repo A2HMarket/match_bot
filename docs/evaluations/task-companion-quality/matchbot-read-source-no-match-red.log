@@ -1,0 +1,44 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (36 tests | 2 failed) 49ms
+   ❯ reply_to_request (36)
+     × returns concise-advice feedback instead of silently cutting a market recommendation mid-sentence 12ms
+     × can explain no confirmed match after revisiting saved source details without pretending a broad search 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > returns concise-advice feedback instead of silently cutting a market recommendation mid-sentence
+AssertionError: expected 'invalid answer: offer is unknown, ina…' to contain '200 characters'
+
+Expected: "200 characters"
+Received: "invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: null"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:63:20
+     61|       kind: 'partial', refs: ['m1'], text: '请先确认具体地址和取货时间。'.repeat(20),
+     62|     }));
+     63|     expect(result).toContain('200 characters');
+       |                    ^
+     64|     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+     65|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > can explain no confirmed match after revisiting saved source details without pretending a broad search
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:147:37
+    145|       kind: 'no_match', refs: [], text: '复查的旧线索还不能确认可用，可以再找其他在售信息。',
+    146|     }));
+    147|     expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+       |                                     ^
+    148|   });
+    149|   it('supplies the selected post timestamp and London check date to Je…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 34 passed (36)
+   Start at  11:03:42
+   Duration  563ms (import 53%, transform 36%, tests 10%)
+
