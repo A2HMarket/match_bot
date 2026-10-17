@@ -8,7 +8,7 @@ import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
 import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
-import { claimsCompleteMarketFit } from '../market-summary-claims.js';
+import { claimsCompleteMarketFit, claimsUnverifiedTravelFit } from '../market-summary-claims.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -86,7 +86,12 @@ function renderMarketRefs(
   ctx: MatchContext,
   refs: string[],
   zh: boolean,
-): { text: string; evidence: string[]; hasConfirmedChoice: boolean } | null {
+): {
+  text: string;
+  evidence: string[];
+  hasConfirmedChoice: boolean;
+  hasVerifiedTravel: boolean;
+} | null {
   if (!ctx.marketPlan) return null;
   const listings = (ctx.marketListings ?? []).filter((n) => refs.includes(n.ref));
   if (
@@ -164,6 +169,11 @@ function renderMarketRefs(
   return {
     text: rendered.text,
     hasConfirmedChoice: rendered.choices.primary.length > 0,
+    hasVerifiedTravel: [...rendered.choices.primary, ...rendered.choices.backup].some((row) =>
+      row.assessment.checks.some(
+        (check) => check.label === 'task:路程用时' && check.status === 'met',
+      ),
+    ),
     evidence: selections.map((selection, index) => {
       const listing = usable[index];
       if (!listing) return selection.evidence;
@@ -317,6 +327,15 @@ export function replyToRequestTool(deps: AgentDeps) {
           return {
             error:
               'No selected lead has all essential conditions confirmed. Do not claim a complete fit; name the supported conditions and the remaining unknown instead.',
+          };
+        if (
+          ctx.task?.constraints.some((c) => c.key === 'max_travel_minutes') &&
+          !rendered.hasVerifiedTravel &&
+          claimsUnverifiedTravelFit(args.text)
+        )
+          return {
+            error:
+              'Journey duration has not been verified. Do not reassure that the trip should/probably fits the limit from a shared district. State the missing exact location and how to check it instead.',
           };
         const review = await checkMarketOfferConflicts(deps, ctx, market);
         if (review.kind === 'conflict')

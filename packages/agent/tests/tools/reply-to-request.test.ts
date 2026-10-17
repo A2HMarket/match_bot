@@ -237,6 +237,22 @@ describe('reply_to_request', () => {
       userConfirmation: null,
     });
     c.taskUpdate = { kind: 'continued' };
+    c.task.constraints = [
+      {
+        key: 'max_travel_minutes',
+        strength: 'hard',
+        value: { kind: 'duration', minutes: 30 },
+        origin: { kind: 'user', sourceMessageId: 'prior' },
+      },
+    ];
+    const before = d.repos.outbound.create.mock.calls.length;
+    const reassurance = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ ...args, text: '都在E14，半小时内应该没问题。' }),
+    );
+    expect(reassurance).toContain('Journey duration has not been verified');
+    expect(d.repos.outbound.create.mock.calls).toHaveLength(before);
+
     await t.invoke({ context: c } as never, JSON.stringify(args));
     const brief = (d.repos.outbound.create.mock.calls.at(-1)?.[0] as { text: string }).text;
     expect(brief).not.toContain('【优先看】');

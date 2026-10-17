@@ -11,3 +11,30 @@ export function claimsCompleteMarketFit(text: string): boolean {
     );
   });
 }
+
+export function claimsUnverifiedTravelFit(text: string): boolean {
+  const normalized = text.replace(/[ \t]/g, '');
+  const chinese =
+    /(?:半(?:个)?小时|\d+分钟|[一二两三四五六七八九十]+分钟)(?:以内|内|单程|路程){0,2}(?:应该|大概率|大概|基本|肯定|一定|绝对)?(?:都|也|就)?(?:够|没问题|能到|到得了|可以到)/g;
+  for (const match of normalized.matchAll(chinese)) {
+    const before = normalized.slice(Math.max(0, match.index - 24), match.index);
+    const after = normalized.slice(
+      match.index + match[0].length,
+      match.index + match[0].length + 12,
+    );
+    const isCheck =
+      /(?:是否|能否|确认|核实|问清|不能保证|无法保证|不敢保证|不确定)[^。！？；]{0,14}$/.test(
+        before,
+      ) && !/已(?:经)?(?:确认|核实)[^。！？；]{0,8}$/.test(before);
+    const isUnknown = /(?:还|尚)?(?:没法|无法|不能|未能|没有|未)(?:确认|核实)/.test(after);
+    if (!isCheck && (/应该|大概率|基本|肯定|一定|绝对/.test(match[0]) || !isUnknown)) return true;
+  }
+  const english =
+    /\b(?:you\s+)?(?:should\s+be able to|can|will|should)\s+(?:get|make it|arrive|reach).{0,24}\bwithin\s+\d+\s*(?:minutes?|mins?)\b/gi;
+  return [...text.matchAll(english)].some(
+    (match) =>
+      !/(?:check|confirm|verify|whether|if)[^.!?\n]{0,24}$/i.test(
+        text.slice(Math.max(0, match.index - 36), match.index),
+      ),
+  );
+}
