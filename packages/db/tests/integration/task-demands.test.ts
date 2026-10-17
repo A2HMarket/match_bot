@@ -130,7 +130,7 @@ it('keeps two same-category tasks separate and reuses only the selected task dem
       operationKey: 'owner-solved',
       sourceMessageId: done.id,
       patch: null,
-      outcome: { intent: 'achieved', goalIds: [] },
+      outcome: { intent: 'achieved', goalIds: ['move'] },
     });
     expect(await tx.demand.findUnique({ where: { id: a.id } })).toMatchObject({ status: 'closed' });
     expect(await tx.demand.findUnique({ where: { id: b.id } })).toMatchObject({ status: 'open' });

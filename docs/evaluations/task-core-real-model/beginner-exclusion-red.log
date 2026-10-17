@@ -1,0 +1,70 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/market-strategy.test.ts (40 tests | 4 failed) 27ms
+   ❯ source-grounded market strategy (40)
+     × excludes an explicit beginner conflict: 不接受初学者和零基础 5ms
+     × excludes an explicit beginner conflict: 不收初学者 1ms
+     × excludes an explicit beginner conflict: 谢绝新手 1ms
+     × excludes an explicit beginner conflict: 仅限中级及以上 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > excludes an explicit beginner conflict: 不接受初学者和零基础
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > excludes an explicit beginner conflict: 不收初学者
+AssertionError: expected [] to deep equally contain ObjectContaining{…}
+
+- Expected:
+ObjectContaining {
+  "label": "skill",
+  "status": "mismatch",
+}
+
++ Received:
+[]
+
+ ❯ packages/agent/tests/market-strategy.test.ts:32:27
+     30|     const candidate = { ...listing('伦敦E14，周日下午室内羽毛球。' + restriction), …
+     31|     const result = assessMarketListing(candidate, { intent: 'companion…
+     32|     expect(result.checks).toContainEqual(expect.objectContaining({ lab…
+       |                           ^
+     33|   });
+     34|   it('does not turn a beginner welcome or an unknown level into an exp…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > excludes an explicit beginner conflict: 谢绝新手
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > excludes an explicit beginner conflict: 仅限中级及以上
+AssertionError: expected [ { label: 'preference:初学者', …(2) } ] to deep equally contain ObjectContaining{…}
+
+- Expected:
+ObjectContaining {
+  "label": "skill",
+  "status": "mismatch",
+}
+
++ Received:
+[
+  {
+    "evidence": null,
+    "label": "preference:初学者",
+    "status": "unknown",
+  },
+]
+
+ ❯ packages/agent/tests/market-strategy.test.ts:32:27
+     30|     const candidate = { ...listing('伦敦E14，周日下午室内羽毛球。' + restriction), …
+     31|     const result = assessMarketListing(candidate, { intent: 'companion…
+     32|     expect(result.checks).toContainEqual(expect.objectContaining({ lab…
+       |                           ^
+     33|   });
+     34|   it('does not turn a beginner welcome or an unknown level into an exp…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 36 passed (40)
+   Start at  09:33:16
+   Duration  233ms (transform 56%, import 26%, tests 17%, worker 1%)
+

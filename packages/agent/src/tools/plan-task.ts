@@ -1,10 +1,9 @@
 import {
   TaskTransitionError,
-  confirmTaskGoal,
+  confirmTaskOutcome,
   reviseTaskRequirements,
   selectTask,
   taskSchema,
-  transitionTaskStatus,
   type TaskRequirementPatch,
   type UserTask,
 } from '@matchbot/domain';
@@ -59,7 +58,7 @@ function validateProposal(p: {
   ctx: MatchContext;
   text: string;
 }): void {
-  let task = p.patch
+  const task = p.patch
     ? reviseTaskRequirements({
         task: p.task,
         patch: p.patch,
@@ -69,7 +68,7 @@ function validateProposal(p: {
   if (!p.args.outcome) return;
   const outcome = p.args.outcome;
   for (const goalId of outcome.goalIds.length ? outcome.goalIds : [undefined]) {
-    const actor = groundTaskConfirmation({
+    groundTaskConfirmation({
       task,
       userId: p.ctx.userId,
       messageId: p.ctx.sourceMessageId,
@@ -78,14 +77,17 @@ function validateProposal(p: {
       intent: outcome.intent,
       ...(goalId ? { goalId } : {}),
     });
-    task = goalId
-      ? confirmTaskGoal({ task, goalId, actor })
-      : transitionTaskStatus({
-          task,
-          actor,
-          next: outcome.intent === 'achieved' ? 'completed' : 'cancelled',
-        });
   }
+  confirmTaskOutcome({
+    task,
+    goalIds: outcome.goalIds,
+    actor: {
+      kind: 'user',
+      userId: p.ctx.userId,
+      messageId: p.ctx.sourceMessageId,
+      intent: outcome.intent,
+    },
+  });
 }
 async function applyProposal(p: {
   deps: AgentDeps;

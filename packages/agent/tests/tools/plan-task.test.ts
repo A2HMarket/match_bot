@@ -113,6 +113,26 @@ const base = {
   outcome: null,
 };
 describe('plan_task', () => {
+  it('explains an invalid outcome interpretation so the planner can correct it without erasing completion', async () => {
+    const { tool, ctx } = fixture('房子找好了，不用继续了');
+    const reply = await tool.invoke(
+      new RunContext(ctx),
+      JSON.stringify({
+        ...base,
+        outcome: { intent: 'cancelled', goalIds: [], quote: '不用继续了' },
+      }),
+    );
+    expect(reply).toContain('already solved');
+    expect(ctx.taskUpdate).toBeUndefined();
+    await tool.invoke(
+      new RunContext(ctx),
+      JSON.stringify({
+        ...base,
+        outcome: { intent: 'achieved', goalIds: [], quote: '房子找好了' },
+      }),
+    );
+    expect(ctx.task?.status).toBe('completed');
+  });
   it('persists the counterparty from the original carry offer instead of a lossy task title', async () => {
     const text = '我2026年11月1日伦敦飞上海，有2公斤空余行李，帮我找需求方';
     const { tool, ctx } = fixture(text, []);

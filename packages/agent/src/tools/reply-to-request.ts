@@ -4,6 +4,7 @@ import { makeOutboundTool } from './make-outbound-tool.js';
 import { groupReplyAddressing } from './addressing.js';
 import { buildMarketChoices } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
+import { marketChoiceFeedback } from '../market-choice-feedback.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -151,6 +152,12 @@ function renderMarketRefs(
     evidence: selections.map((selection, index) => {
       const listing = usable[index];
       if (!listing) return selection.evidence;
+      const published = listing.isRepost ? listing.sourcePublishedAt : listing.createdAt;
+      const metadata =
+        '\nSource publication timestamp (not availability): ' +
+        (published ?? 'unknown') +
+        '\nEvidence checked on calendar date Europe/London: ' +
+        new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
       const matched =
         [...choices.primary, ...choices.backup].find((row) => row.listing.ref === listing.ref)
           ?.assessment.needs ?? [];
@@ -161,7 +168,7 @@ function renderMarketRefs(
           !matched.includes(need.id) &&
           mentions(listing.title + '\n' + listing.description, need.terms),
       );
-      if (!excluded) return listing.title + '\n' + listing.description.slice(0, 1600);
+      if (!excluded) return listing.title + '\n' + listing.description.slice(0, 1600) + metadata;
       const ownTerms = ctx
         .marketPlan!.needs.filter((need) => matched.includes(need.id))
         .flatMap((need) => need.terms);
@@ -174,7 +181,14 @@ function renderMarketRefs(
         .split('\n')
         .filter((line) => /^(?:地点|位置|时间|路线|要求|户型|费用)[：:]/.test(line))
         .join('\n');
-      return selection.name + '\n' + (blocks || selection.evidence).slice(0, 1600) + '\n' + common;
+      return (
+        selection.name +
+        '\n' +
+        (blocks || selection.evidence).slice(0, 1600) +
+        '\n' +
+        common +
+        metadata
+      );
     }),
   };
 }
@@ -246,7 +260,8 @@ export function replyToRequestTool(deps: AgentDeps) {
         if (!rendered)
           return {
             error:
-              'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions; choose useful valid leads or no_match',
+              'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: ' +
+              JSON.stringify(marketChoiceFeedback(ctx)),
           };
         if (
           ctx.currentRequest?.demand.category === 'housing' &&

@@ -337,3 +337,23 @@ export function confirmTaskGoal(p: { task: UserTask; goalId: string; actor: Task
   };
   return { ...task, status: 'active', revision: task.revision + 1 };
 }
+
+/** All required parts confirmed by the owner settle the task even when reported in separate turns. */
+export function confirmTaskOutcome(p: {
+  task: UserTask;
+  goalIds: string[];
+  actor: TaskActor;
+}): UserTask {
+  if (!p.goalIds.length)
+    return transitionTaskStatus({
+      task: p.task,
+      actor: p.actor,
+      next: p.actor.kind === 'user' && p.actor.intent === 'achieved' ? 'completed' : 'cancelled',
+    });
+  let task = p.task;
+  for (const goalId of p.goalIds) task = confirmTaskGoal({ task, goalId, actor: p.actor });
+  const required = task.goals.filter((goal) => goal.required);
+  return required.length && required.every((goal) => goal.userConfirmation?.intent === 'achieved')
+    ? transitionTaskStatus({ task, actor: p.actor, next: 'completed' })
+    : task;
+}

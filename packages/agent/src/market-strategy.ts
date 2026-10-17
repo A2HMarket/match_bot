@@ -272,7 +272,7 @@ function assessSharedMarketListing(
     checks.push({ label: 'availability', status: 'mismatch', evidence: matchedItems[0] ?? null });
   if (p.intent === 'companion' && p.preferences.some((term) => /初学|新手|beginner/i.test(term))) {
     const incompatible = lines(n.title + '\n' + n.description).find((line) =>
-      /非新手|不收新手|不适合(?:初学|新手)|(?:建议|建議)(?:中阶|中階)以上|中高级|中高級|no beginners|exclude beginners|not for beginners|beginners not accepted|intermediate (?:or|and) above/i.test(
+      /非新手|(?:不接受|不收|不适合|谢绝)(?:初学者?|新手|零基础)|(?:仅限|只收|只接受)(?:中级|中阶|中階)|(?:建议|建議)(?:中阶|中階)以上|中高级|中高級|no beginners|exclude beginners|not for beginners|beginners not accepted|intermediate (?:or|and) above/i.test(
         line,
       ),
     );

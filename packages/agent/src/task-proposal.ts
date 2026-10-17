@@ -263,6 +263,33 @@ export function normalizeTaskPatch(p: {
       ...(goalId ? { goalId } : {}),
     };
   });
+  // A budget amount can stay unchanged while the owner changes what it must cover.
+  const fixedTotal = p.text.match(
+    /总(?:预算|费用|支出)(?:不能增加|不增加|不变|不能提高|不提高)/,
+  )?.[0];
+  const savedMonthly = p.task.constraints.filter(
+    (c) =>
+      c.key === 'budget' &&
+      c.strength === 'hard' &&
+      c.value.kind === 'money' &&
+      c.value.unit === 'month',
+  );
+  if (
+    p.task.category === 'housing' &&
+    fixedTotal &&
+    savedMonthly.length === 1 &&
+    !constraints.some((c) => c.key === 'budget')
+  ) {
+    const saved = savedMonthly[0]!;
+    constraints.push({
+      key: 'budget',
+      strength: saved.strength,
+      value: saved.value,
+      budgetScope: 'all_in',
+      sourceQuote: fixedTotal,
+      ...(saved.goalId ? { goalId: saved.goalId } : {}),
+    });
+  }
   const unique = constraints.filter(
     (c, index) =>
       !constraints

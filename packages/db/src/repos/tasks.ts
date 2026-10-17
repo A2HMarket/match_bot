@@ -4,6 +4,7 @@ import {
   TASK_STATUSES,
   taskActorSchema,
   confirmTaskGoal,
+  confirmTaskOutcome,
   reviseTaskRequirements,
   recordTaskProgress,
   queueTaskDelivery,
@@ -537,15 +538,7 @@ export function tasksRepo(prisma: PrismaClient) {
               messageId: source.id,
               intent: p.outcome.intent,
             };
-            if (p.outcome.goalIds.length) {
-              for (const goalId of p.outcome.goalIds)
-                task = confirmTaskGoal({ task, goalId, actor });
-            } else
-              task = transitionTaskStatus({
-                task,
-                actor,
-                next: p.outcome.intent === 'achieved' ? 'completed' : 'cancelled',
-              });
+            task = confirmTaskOutcome({ task, goalIds: p.outcome.goalIds, actor });
           }
           return { ...beginTaskUserTurn(task), revision: current.revision + 1 };
         },

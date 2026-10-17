@@ -369,3 +369,5 @@ Task新owner消息通过beginTaskUserTurn清理旧拟发/问题/下一步，条�
 任务检索上下文：TaskGoal.searchTerms是有界的低信任公共检索词（最多12个），只作召回/词面匹配，不作用户要求或证据。rememberSearchTerms按owner/scope、原消息和requirementsVersion验证，在用户锁内CAS/幂等合并；条件改变保留词汇，主题定义重建时重新产生词汇。bindTaskMarketPlan归一化“房源/候选”等描述后缀并复用词汇，避免历史来源复查时丢掉别名。
 
 住房预算口径：TaskConstraint.budgetScope=rent_only/all_in为服务端从当前用户预算原话推导的可选字段，工具参数不能提供；短补充保留旧口径，不把“包账单更好”变成总价硬条件。当前请求及Jev输入保留该口径；租金未含账单时，禁止把未知总支出说成仍在预算内。all_in检索核验不能直接把纯月租报价当已核实总价。明确的带年份入住字段可由代码核对并记录来源事实；无年份、含糊或带条件的字段不由该规则直接确认，整体实体一致性仍经Jev。
+
+P27真实多轮修复契约（0.16.16，分支未发布）：`confirmTaskOutcome({task,goalIds,actor})`统一验证/应用用户确认；非空goalIds只确认相应分项，但所有required目标都由本人确认achieved后会完成整体任务，保留最后确认来源且不把未知来源条件标为supported。`confirmTaskGoal`单项原语仍不关闭其他目标。准备工具和仓储使用相同聚合原语，完成时原子关闭关联Demand。明确总预算不增加但仅提议账单偏好时，单个既有住房月预算保留原金额并更新all_in范围；偏好包账单本身不改变范围。`record_task_progress`返回与出站同源的eligible refs/排除项及未知条件，修复推荐输入时仍须保留所有门；不默默替模型删候选或复写已被Jev拒绝的回答。出站来源证据补充对应原帖/原生帖时间及伦敦核对日期，不用转载创建时间冒充原帖时间。

@@ -9,6 +9,7 @@ import {
 } from '../task-source-evidence.js';
 import { evaluateSourceSupport } from '@matchbot/jev';
 import { hashText } from '@matchbot/shared';
+import { marketChoiceFeedback } from '../market-choice-feedback.js';
 
 /** Source/plan ledger only; sending still uses the original outbound tool and gates. */
 export function recordTaskProgressTool(deps: AgentDeps) {
@@ -82,6 +83,7 @@ export function recordTaskProgressTool(deps: AgentDeps) {
           sourceReviewClaimsUsed: ctx.taskSourceReviewedClaims ?? 0,
           readiness: assessTaskReadiness(result.task),
           next: result.task.nextStep,
+          marketChoices: marketChoiceFeedback(ctx),
           checks: progress.checks.map((c) => ({
             goalId: c.goalId,
             criterionId: c.criterionId,

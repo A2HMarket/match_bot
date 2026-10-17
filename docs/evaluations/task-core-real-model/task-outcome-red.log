@@ -1,0 +1,46 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/domain/tests/task.test.ts (26 tests | 1 failed) 18ms
+   ❯ task outcome contract (11)
+     × completes only after the owner has confirmed every required goal, including separate turns 5ms
+ ❯ packages/agent/tests/tools/plan-task.test.ts (8 tests | 1 failed) 34ms
+   ❯ plan_task (8)
+     × explains an invalid outcome interpretation so the planner can correct it without erasing completion 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/domain/tests/task.test.ts > task outcome contract > completes only after the owner has confirmed every required goal, including separate turns
+TypeError: confirmTaskOutcome is not a function
+ ❯ packages/domain/tests/task.test.ts:67:19
+     65|   it('completes only after the owner has confirmed every required goal…
+     66|     const actor = { kind: 'user' as const, userId: 'user-a', messageId…
+     67|     const first = confirmTaskOutcome({ task: fixture(), goalIds: ['cha…
+       |                   ^
+     68|     expect(first.status).toBe('active');
+     69|     const last = confirmTaskOutcome({ task: first, goalIds: ['desk'], …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/plan-task.test.ts > plan_task > explains an invalid outcome interpretation so the planner can correct it without erasing completion
+AssertionError: expected 'task proposal rejected: verify the sc…' to contain 'already solved'
+
+Expected: "already solved"
+Received: "task proposal rejected: verify the scoped reference, current user source quotes, explicit outcome and unchanged hard conditions; do not invent facts or retry a changed task"
+
+ ❯ packages/agent/tests/tools/plan-task.test.ts:121:19
+    119|       ...base, outcome: { intent: 'cancelled', goalIds: [], quote: '不用…
+    120|     }));
+    121|     expect(reply).toContain('already solved');
+       |                   ^
+    122|     expect(ctx.taskUpdate).toBeUndefined();
+    123|     await tool.invoke(new RunContext(ctx), JSON.stringify({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 32 passed (34)
+   Start at  09:24:41
+   Duration  426ms (import 57%, transform 31%, tests 11%, worker 1%)
+

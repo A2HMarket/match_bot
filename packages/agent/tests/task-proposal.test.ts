@@ -35,6 +35,48 @@ const task = taskSchema.parse({
   userConfirmation: null,
 });
 describe('task proposal normalization', () => {
+  it('retains the amount but updates explicit all-in scope even if the proposal only mentions bills', () => {
+    const housing = taskSchema.parse({
+      ...task,
+      category: 'housing',
+      constraints: [
+        {
+          key: 'budget',
+          strength: 'hard',
+          value: { kind: 'money', amountPence: 160000, unit: 'month' },
+          budgetScope: 'rent_only',
+          origin: { kind: 'user', sourceMessageId: 'old' },
+        },
+      ],
+    });
+    const input = taskPatchProposalSchema.parse({
+      goals: [],
+      constraints: [
+        {
+          key: 'bills',
+          goalId: null,
+          strength: 'preference',
+          value: { kind: 'text', text: '包bills' },
+          sourceQuote: '最好包bills',
+        },
+      ],
+    });
+    const result = normalizeTaskPatch({
+      input,
+      task: housing,
+      text: '最好包bills，但总预算不能增加',
+    });
+    expect(result?.constraints.find((c) => c.key === 'budget')).toMatchObject({
+      budgetScope: 'all_in',
+      value: { kind: 'money', amountPence: 160000, unit: 'month' },
+      sourceQuote: '总预算不能增加',
+    });
+    expect(
+      normalizeTaskPatch({ input, task: housing, text: '最好包bills' })?.constraints.some(
+        (c) => c.key === 'budget',
+      ),
+    ).toBe(false);
+  });
   it('compiles a source-level subject check while preserving an explicit identity-verification requirement', () => {
     const input = taskPatchProposalSchema.parse({
       goals: [

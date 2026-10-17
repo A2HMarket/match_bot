@@ -1,0 +1,35 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/eval/tests/task-contract.test.ts (2 tests | 1 failed) 9ms
+   × grades the effective monthly cap, including goal-scoped budgets and overriding caps 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/eval/tests/task-contract.test.ts > grades the effective monthly cap, including goal-scoped budgets and overriding caps
+AssertionError: expected [ 'monthly_budget' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "monthly_budget",
++ ]
+
+ ❯ packages/eval/tests/task-contract.test.ts:61:19
+     59|     task, before: [], after: [task], replyText: '', owner: 'owner', sc…
+     60|   });
+     61|   expect(grade()).toEqual([]);
+       |                   ^
+     62|   const cap = task.constraints[0]!;
+     63|   cap.value = { kind: 'money', amountPence: 160000, unit: 'item' };
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  09:17:16
+   Duration  198ms (transform 53%, import 39%, tests 6%, worker 2%)
+

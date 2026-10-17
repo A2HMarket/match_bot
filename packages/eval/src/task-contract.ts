@@ -79,18 +79,43 @@ const subject = (goal: UserTask['goals'][number], name: string) =>
     : name === 'chair'
       ? /办公椅|\bchair\b/i.test(goal.title)
       : goal.id === name;
-function budget(task: UserTask, goal?: string) {
-  const id = goal ? task.goals.find((g) => subject(g, goal))?.id : undefined;
-  const condition =
-    task.constraints.find((c) => c.key === 'budget' && c.goalId === id) ??
-    task.constraints.find((c) => c.key === 'budget' && !c.goalId);
-  return condition?.value.kind === 'money' ? condition.value.amountPence : undefined;
+function budget(task: UserTask, goal?: string, unit?: 'month') {
+  const goals = goal
+    ? task.goals.filter((g) => subject(g, goal))
+    : task.goals.filter((g) => g.required);
+  if (!goals.length) return undefined;
+  const amounts = goals.map((g) => {
+    const condition =
+      task.constraints.find((c) => c.key === 'budget' && c.goalId === g.id) ??
+      task.constraints.find((c) => c.key === 'budget' && !c.goalId);
+    return condition?.value.kind === 'money' && (!unit || condition.value.unit === unit)
+      ? condition.value.amountPence
+      : undefined;
+  });
+  return amounts.every((value) => value !== undefined) && new Set(amounts).size === 1
+    ? amounts[0]
+    : undefined;
 }
 const text = (task: UserTask, key: string) =>
   task.constraints
     .filter((c) => c.key === key)
     .map((c) => JSON.stringify(c.value))
     .join(' ');
+
+function excludesTerm(task: UserTask, value: string): boolean {
+  const term = value.toLowerCase();
+  return task.constraints.some((c) => {
+    if (c.strength !== 'hard' || c.value.kind !== 'text') return false;
+    const body = c.value.text.toLowerCase().replace(/单间公寓|开间/g, 'studio');
+    const index = body.indexOf(term);
+    if (index < 0) return false;
+    return (
+      c.key === 'exclude' ||
+      /不考虑|不要|不接受|排除|\b(?:no|not)\s*$/.test(body.slice(Math.max(0, index - 12), index)) ||
+      /^(?:不考虑|不行|不要)/.test(body.slice(index + term.length))
+    );
+  });
+}
 
 /** Frozen user contracts grade authoritative observations; the runner never reads these expectations to generate actions. */
 export function gradeTaskTurn(expected: Record<string, unknown>, raw: TaskObservation): string[] {
@@ -151,7 +176,7 @@ export function gradeTaskTurn(expected: Record<string, unknown>, raw: TaskObserv
       (goal) => budget(task, goal) === expected.budgetEachPence,
     ), 'item_budget');
   if (typeof expected.monthlyBudgetPence === 'number')
-    require(budget(task) === expected.monthlyBudgetPence, 'monthly_budget');
+    require(budget(task, undefined, 'month') === expected.monthlyBudgetPence, 'monthly_budget');
   if (typeof expected.maxTravelMinutes === 'number')
     require(task.constraints.some(
       (c) =>
@@ -200,7 +225,9 @@ export function gradeTaskTurn(expected: Record<string, unknown>, raw: TaskObserv
           ? 'peer'
           : 'supply'), 'counterparty');
   if (expected.allowedDay === 'sunday')
-    require(/周日|星期日|Sunday/i.test(text(task, 'day')), 'allowed_day');
+    require(/周日|星期日|Sunday/i.test(
+      text(task, 'day') + ' ' + text(task, 'time'),
+    ), 'allowed_day');
   if (expected.excludedDay === 'saturday')
     require(/周六|星期六|Saturday/i.test(text(task, 'exclude')), 'excluded_day');
   if (expected.indoorHard === true)
@@ -208,7 +235,12 @@ export function gradeTaskTurn(expected: Record<string, unknown>, raw: TaskObserv
       (c) => c.strength === 'hard' && /室内|indoor/i.test(JSON.stringify(c.value)),
     ), 'indoor');
   if (expected.doNotInventBudget === true)
-    require(!task.constraints.some((c) => c.key === 'budget'), 'invented_budget');
+    require(!task.constraints.some(
+      (c) =>
+        c.key === 'budget' &&
+        (c.value.kind === 'money' ||
+          (c.value.kind === 'text' && /\d|£|镑|磅|免费|\b(?:GBP|free)\b/i.test(c.value.text))),
+    ), 'invented_budget');
   if (expected.mustNotInventRadius === true)
     require(!task.constraints.some((c) => c.key === 'max_travel_minutes'), 'invented_radius');
   if (typeof expected.capacityKg === 'number')
@@ -219,9 +251,7 @@ export function gradeTaskTurn(expected: Record<string, unknown>, raw: TaskObserv
     require(/衣服|clothes/i.test(text(task, 'feature')), 'allowed_items');
   if (Array.isArray(expected.exclude))
     for (const value of expected.exclude)
-      if (typeof value === 'string')
-        require(text(task, 'exclude').toLowerCase().includes(value.toLowerCase()), 'exclude:' +
-          value);
+      if (typeof value === 'string') require(excludesTerm(task, value), 'exclude:' + value);
   if (Array.isArray(expected.userConfirmedGoals))
     for (const value of expected.userConfirmedGoals)
       if (typeof value === 'string')

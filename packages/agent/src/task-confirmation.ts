@@ -1,4 +1,4 @@
-import type { TaskActor, UserTask } from '@matchbot/domain';
+import { TaskTransitionError, type TaskActor, type UserTask } from '@matchbot/domain';
 
 /** PRD §13: the model proposes an interpretation; only current owner text can ground a result. */
 export function groundTaskConfirmation(p: {
@@ -10,7 +10,8 @@ export function groundTaskConfirmation(p: {
   intent: 'achieved' | 'cancelled';
   goalId?: string;
 }): Extract<TaskActor, { kind: 'user' }> {
-  if (p.userId !== p.task.ownerUserId) throw new Error('task outcome requires the owner');
+  if (p.userId !== p.task.ownerUserId)
+    throw new TaskTransitionError('task outcome requires the owner');
   const quote = p.quote.trim();
   const sentence = p.text.split(/[。！!\n；;]/).find((s) => s.includes(quote)) ?? p.text;
   if (
@@ -21,9 +22,9 @@ export function groundTaskConfirmation(p: {
     ) ||
     /[?？]|(?:买到|找好|约好|解决).{0,4}(?:吗|没|没有)(?:$|[，,。])/i.test(sentence)
   )
-    throw new Error('explicit current user confirmation is required');
+    throw new TaskTransitionError('explicit current user confirmation is required');
   if (p.goalId && !p.task.goals.some((g) => g.id === p.goalId))
-    throw new Error('confirmation must identify a known goal');
+    throw new TaskTransitionError('confirmation must identify a known goal');
   const achieved =
     /买到|买好|找到了|找好|租到|租好|解决|搞定|约好|安排好|定好|\b(?:bought|found|sorted|solved|arranged|booked|done)\b/i.test(
       quote,
@@ -35,7 +36,9 @@ export function groundTaskConfirmation(p: {
     quote,
   );
   if (!(p.intent === 'achieved' ? achieved : cancelled))
-    throw new Error('explicit current user confirmation is required');
+    throw new TaskTransitionError(
+      'explicit current user confirmation is required: quote what was already solved with intent=achieved; use cancelled only for stopping an unsolved request',
+    );
   const outstanding = p.task.goals.filter((g) => g.required && !g.userConfirmation);
   if (
     !p.goalId &&
@@ -46,6 +49,6 @@ export function groundTaskConfirmation(p: {
           quote,
         )))
   )
-    throw new Error('whole-task confirmation must cover all remaining goals');
+    throw new TaskTransitionError('whole-task confirmation must cover all remaining goals');
   return { kind: 'user', userId: p.userId, messageId: p.messageId, intent: p.intent };
 }

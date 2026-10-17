@@ -26,6 +26,40 @@ const plan: MarketPlan = {
   requiredArea: ['E14'],
 };
 describe('source-grounded market strategy', () => {
+  it.each(['不接受初学者和零基础', '不收初学者', '谢绝新手', '仅限中级及以上'])(
+    'excludes an explicit beginner conflict: %s',
+    (restriction) => {
+      const candidate = {
+        ...listing('伦敦E14，周日下午室内羽毛球。' + restriction),
+        title: 'E14羽毛球搭子',
+        tradeType: 'PEER' as const,
+      };
+      const result = assessMarketListing(candidate, {
+        intent: 'companion',
+        needs: [{ id: 'bad', terms: ['羽毛球'] }],
+        preferences: ['初学者'],
+        essentialPreferences: ['初学者'],
+      });
+      expect(result.checks).toContainEqual(
+        expect.objectContaining({ label: 'skill', status: 'mismatch' }),
+      );
+    },
+  );
+  it('does not turn a beginner welcome or an unknown level into an explicit skill conflict', () => {
+    for (const statement of ['欢迎初学者和零基础', '水平要求待确认']) {
+      const candidate = {
+        ...listing('伦敦E14羽毛球。' + statement),
+        title: '羽毛球搭子',
+        tradeType: 'PEER' as const,
+      };
+      const result = assessMarketListing(candidate, {
+        intent: 'companion',
+        needs: [{ id: 'bad', terms: ['羽毛球'] }],
+        preferences: ['初学者'],
+      });
+      expect(result.checks.some((c) => c.label === 'skill' && c.status === 'mismatch')).toBe(false);
+    }
+  });
   it('recognises a stated monthly rent excluding bills without treating the rent as all-in', () => {
     const n = {
       ...listing('出租：伦敦Stratford一居室整租\n费用：月租£1550，不含账单\n地点：Stratford'),

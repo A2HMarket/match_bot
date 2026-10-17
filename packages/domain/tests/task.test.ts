@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assessTaskReadiness,
   confirmTaskGoal,
+  confirmTaskOutcome,
   taskSchema,
   transitionTaskStatus,
 } from '../src/task.js';
@@ -61,6 +62,49 @@ function fixture() {
   });
 }
 describe('task outcome contract', () => {
+  it('completes only after the owner has confirmed every required goal, including separate turns', () => {
+    const actor = {
+      kind: 'user' as const,
+      userId: 'user-a',
+      messageId: 'chair-done',
+      intent: 'achieved' as const,
+    };
+    const first = confirmTaskOutcome({ task: fixture(), goalIds: ['chair'], actor });
+    expect(first.status).toBe('active');
+    const last = confirmTaskOutcome({
+      task: first,
+      goalIds: ['desk'],
+      actor: { ...actor, messageId: 'desk-done' },
+    });
+    expect(last.status).toBe('completed');
+    expect(last.userConfirmation?.sourceMessageId).toBe('desk-done');
+    expect(last.goals[1]?.criteria[0]?.status).toBe('unknown');
+    expect(confirmTaskOutcome({ task: fixture(), goalIds: ['desk', 'chair'], actor }).status).toBe(
+      'completed',
+    );
+    expect(confirmTaskOutcome({ task: fixture(), goalIds: [], actor }).status).toBe('completed');
+    expect(
+      confirmTaskOutcome({
+        task: fixture(),
+        goalIds: ['chair'],
+        actor: { ...actor, intent: 'cancelled' },
+      }).status,
+    ).toBe('active');
+    expect(
+      confirmTaskOutcome({ task: fixture(), goalIds: [], actor: { ...actor, intent: 'cancelled' } })
+        .status,
+    ).toBe('cancelled');
+    expect(() =>
+      confirmTaskOutcome({ task: fixture(), goalIds: [], actor: { kind: 'agent' } }),
+    ).toThrow('confirmation');
+    const onlyOptional = fixture();
+    onlyOptional.goals.forEach((g) => {
+      g.required = false;
+    });
+    expect(confirmTaskOutcome({ task: onlyOptional, goalIds: ['chair'], actor }).status).toBe(
+      'active',
+    );
+  });
   it('keeps budget scope typed as monetary information rather than applying it to an unrelated condition', () => {
     const t = fixture();
     t.constraints = [
