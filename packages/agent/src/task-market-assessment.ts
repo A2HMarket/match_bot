@@ -1,6 +1,12 @@
 import type { UserTask } from '@matchbot/domain';
 import type { MarketListing } from '@matchbot/websearch';
-import { assessMarketListing, type MarketAssessment, type MarketPlan } from './market-strategy.js';
+import { assessHousingMoveIn } from './housing-date-evidence.js';
+import {
+  assessMarketListing,
+  normalizeMarketPreference,
+  type MarketAssessment,
+  type MarketPlan,
+} from './market-strategy.js';
 
 const labels: Record<string, string> = {
   budget: '预算',
@@ -40,6 +46,27 @@ export function assessTaskMarketListing(
             c.strength === 'hard' && !['travel_origin', 'role'].includes(c.constraintKey ?? ''),
         )
         .map((c) => {
+          const moveIn =
+            c.constraintKey === 'move_in_date'
+              ? (
+                  task.constraints.find(
+                    (condition) => condition.key === 'move_in_date' && condition.goalId === goal.id,
+                  ) ??
+                  task.constraints.find(
+                    (condition) => condition.key === 'move_in_date' && !condition.goalId,
+                  )
+                )?.value
+              : undefined;
+          const calendar =
+            moveIn?.kind === 'date_range'
+              ? assessHousingMoveIn(listing.title + '\n' + listing.description, moveIn)
+              : undefined;
+          if (calendar?.status === 'mismatch')
+            return {
+              label: 'task:起租时间',
+              status: 'mismatch' as const,
+              evidence: calendar.evidence,
+            };
           const own = c.evidenceRefs
             .map((ref) => task.evidence.find((e) => e.id === ref))
             .filter((e) => e?.sourceRef === 'market:' + listing.id);
@@ -82,7 +109,9 @@ export function assessTaskMarketListing(
         const term = check.label.slice(11);
         const condition = task.constraints.find(
           (c) =>
-            (!c.goalId || c.goalId === goal.id) && c.value.kind === 'text' && c.value.text === term,
+            (!c.goalId || c.goalId === goal.id) &&
+            c.value.kind === 'text' &&
+            normalizeMarketPreference(c.value.text) === normalizeMarketPreference(term),
         );
         return condition && verifiedCondition(condition.key)
           ? { ...check, status: 'met' as const }

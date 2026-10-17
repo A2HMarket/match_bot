@@ -1,6 +1,7 @@
 import { taskProgressSchema, type UserTask, type TaskConstraint } from '@matchbot/domain';
 import { hashText } from '@matchbot/shared';
 import { z } from 'zod';
+import { assessHousingMoveIn } from './housing-date-evidence.js';
 import { isActiveMarketListing } from '@matchbot/websearch';
 import type { MatchContext } from './context.js';
 import { assessMarketListing } from './market-strategy.js';
@@ -32,7 +33,11 @@ type Source = {
   sourceRef: string;
   entityKey: string;
   url: string;
-  computed?: { status: 'met' | 'unknown' | 'mismatch'; evidence: string | null };
+  computed?: {
+    status: 'met' | 'unknown' | 'mismatch';
+    evidence: string | null;
+    decisive?: boolean;
+  };
 };
 export class TaskEvidenceError extends Error {
   constructor(message: string) {
@@ -88,9 +93,19 @@ function getSource(ctx: MatchContext, check: Check, ref: string): Source {
       feature: 'required',
       capacity: 'capacity',
     };
-    const computed = criterion.constraintKey
-      ? assessment.checks.find((c) => c.label === labels[criterion.constraintKey!])
-      : undefined;
+    const moveIn =
+      criterion.constraintKey === 'move_in_date'
+        ? condition(task, check.goalId, 'move_in_date')?.value
+        : undefined;
+    const dateCheck =
+      ctx.marketPlan.intent === 'housing' && moveIn?.kind === 'date_range'
+        ? assessHousingMoveIn(listing.title + '\n' + listing.description, moveIn)
+        : undefined;
+    const computed =
+      dateCheck ??
+      (criterion.constraintKey
+        ? assessment.checks.find((c) => c.label === labels[criterion.constraintKey!])
+        : undefined);
     if (check.status === 'supported' && !assessment.needs.includes(check.goalId))
       throw new TaskEvidenceError('source is not this requested item or activity');
     return {
@@ -235,7 +250,9 @@ export function buildTaskProgress(
       const source = getSource(p.ctx, check, input.ref);
       if (input.quote && !source.text.includes(input.quote))
         throw new TaskEvidenceError('quote is not in the returned source');
-      let quote = input.quote ?? source.computed?.evidence ?? null;
+      let quote = source.computed?.decisive
+        ? source.computed.evidence
+        : (input.quote ?? source.computed?.evidence ?? null);
       if (source.computed && check.status !== 'unknown') {
         const strict = /^(?:budget|area|route_from|route_to|date|capacity)$/.test(
           criterion.constraintKey ?? '',
@@ -380,6 +397,7 @@ export function buildTaskSourceReview(
   const indexes: number[] = [];
   const sourceIndexes: number[] = [];
   const eligible: boolean[] = [];
+  const decisive: Array<boolean | undefined> = [];
   for (const [index, check] of checks.entries()) {
     const goal = ctx.task!.goals.find((g) => g.id === check.goalId)!;
     const criterion = goal.criteria.find((c) => c.id === check.criterionId)!;
@@ -421,6 +439,8 @@ export function buildTaskSourceReview(
           requirement: JSON.stringify({
             criterion: criterion.label,
             condition: condition(ctx.task!, goal.id, criterion.constraintKey)?.value ?? null,
+            budgetScope:
+              condition(ctx.task!, goal.id, criterion.constraintKey)?.budgetScope ?? null,
             counterparty: ctx.task!.counterparty,
           }),
           proposedStatus: status,
@@ -430,6 +450,11 @@ export function buildTaskSourceReview(
         indexes.push(index);
         sourceIndexes.push(sourceIndex);
         eligible.push(canUse);
+        decisive.push(
+          source.computed?.decisive
+            ? source.computed.status === (status === 'supported' ? 'met' : 'mismatch')
+            : undefined,
+        );
       }
     }
   }
@@ -439,5 +464,6 @@ export function buildTaskSourceReview(
     indexes,
     sourceIndexes,
     eligible,
+    decisive,
   };
 }

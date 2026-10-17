@@ -75,6 +75,10 @@ export function taskDeliveryForOutbound(
     );
   if (key && text.length > 500)
     throw new TaskTransitionError('Ask one short task question within 500 characters.');
+  if (key && !draft.text.includes(text))
+    throw new TaskTransitionError(
+      'The question must appear in the actual outbound text. Keep the advice and question short enough that the rendered message preserves them.',
+    );
   const question = key
     ? { constraintKey: key, answerType: answerType(key, text), text, ...(goalId ? { goalId } : {}) }
     : undefined;

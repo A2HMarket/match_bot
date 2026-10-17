@@ -2,6 +2,8 @@ import { taskSchema } from '@matchbot/domain';
 import { describe, expect, it } from 'vitest';
 import { bindTaskMarketPlan, resolveTaskMarketTarget } from '../src/task-market-plan.js';
 import type { MarketPlan } from '../src/market-strategy.js';
+import { assessMarketListing } from '../src/market-strategy.js';
+import type { MarketListing } from '@matchbot/websearch';
 
 function task() {
   return taskSchema.parse({
@@ -52,6 +54,134 @@ const modelPlan: MarketPlan = {
   excludeTerms: [],
 };
 describe('task-bound marketplace plan', () => {
+  it('does not treat a rent-only quote as a verified all-in total', () => {
+    const t = task();
+    t.category = 'housing';
+    t.goals = [{ ...t.goals[0]!, id: 'home', title: '一居室' }];
+    t.constraints = [
+      {
+        key: 'budget',
+        strength: 'hard',
+        value: { kind: 'money', amountPence: 160000, unit: 'month' },
+        budgetScope: 'all_in',
+        origin: { kind: 'user', sourceMessageId: 'initial' },
+      },
+    ];
+    const plan = bindTaskMarketPlan({ intent: 'housing', needs: [], preferences: [] }, t),
+      source: MarketListing = {
+        id: 'flat',
+        title: '伦敦一居室',
+        description: '出租：一居室\n费用：月租£1550，不含账单',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        priceLabel: '£1550/月',
+        url: 'https://a2hmarket.ai/listings/flat',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      };
+    expect(plan.budgetScope).toBe('all_in');
+    expect(assessMarketListing(source, plan).checks.find((c) => c.label === 'budget')?.status).toBe(
+      'unknown',
+    );
+    expect(
+      assessMarketListing(
+        { ...source, description: source.description.replace('不含账单', '包含账单') },
+        plan,
+      ).checks.find((c) => c.label === 'budget')?.status,
+    ).toBe('met');
+  });
+  it('excludes an explicitly cat-forbidden source when the user says cats MUST be allowed', () => {
+    const t = task();
+    t.category = 'housing';
+    t.goals = [{ ...t.goals[0]!, id: 'home', title: '一居室' }];
+    t.constraints = [
+      {
+        key: 'pets',
+        strength: 'hard',
+        value: { kind: 'text', text: '必须允许养猫' },
+        origin: { kind: 'user', sourceMessageId: 'initial' },
+      },
+    ];
+    const plan = bindTaskMarketPlan({ intent: 'housing', needs: [], preferences: [] }, t),
+      source: MarketListing = {
+        id: 'bad',
+        title: '伦敦一居室',
+        description: '出租：一居室\n要求：不允许养猫或其他宠物',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        priceLabel: '£1500/月',
+        url: 'https://a2hmarket.ai/listings/bad',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      };
+    expect(assessMarketListing(source, plan).checks.some((c) => c.status === 'mismatch')).toBe(
+      true,
+    );
+  });
+  it('rebuilds a saved one-bedroom source plan from a descriptive goal title without rejecting the same property', () => {
+    const t = task();
+    t.category = 'housing';
+    t.counterparty = 'supply';
+    t.goals = [{ ...t.goals[0]!, id: 'home', title: '一居室房源' }];
+    t.constraints = [
+      {
+        key: 'budget',
+        strength: 'hard',
+        value: { kind: 'money', amountPence: 160000, unit: 'month' },
+        origin: { kind: 'user', sourceMessageId: 'original' },
+      },
+      {
+        key: 'area',
+        strength: 'hard',
+        value: { kind: 'location', area: 'Stratford' },
+        origin: { kind: 'user', sourceMessageId: 'original' },
+      },
+    ];
+    const plan = bindTaskMarketPlan({ intent: 'housing', needs: [], preferences: [] }, t),
+      source: MarketListing = {
+        id: 'home',
+        title: 'Stratford一居室整租',
+        description: '出租：伦敦Stratford一居室整租\n费用：月租£1550\n要求：允许养猫',
+        priceLabel: '£1550/月',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        url: 'https://a2hmarket.ai/listings/home',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      };
+    expect(assessMarketListing(source, plan).needs).toContain('home');
+    expect(plan.requiredArea).toEqual(['Stratford']);
+    expect(plan.budget).toBe(1600);
+    expect(
+      assessMarketListing(
+        { ...source, title: 'Stratford studio', description: '出租：Studio开间公寓' },
+        plan,
+      ).needs,
+    ).toEqual([]);
+    t.goals[0]!.title = 'one bedroom flat listing';
+    t.goals[0]!.searchTerms = ['一居室', 'one bedroom flat'];
+    expect(
+      assessMarketListing(
+        source,
+        bindTaskMarketPlan({ intent: 'housing', needs: [], preferences: [] }, t),
+      ).needs,
+    ).toContain('home');
+  });
   it('retains the original offering role across short followups', () => {
     const t = task();
     t.objective = '提供帮带空间并寻找需求方';

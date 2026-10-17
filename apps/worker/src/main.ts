@@ -5,10 +5,12 @@ import { runCronJob, scheduleCron } from './cron.js';
 import { buildDeps } from './deps.js';
 import { processInbound } from './pipeline/inbound.js';
 import { processResume } from './pipeline/resume.js';
+import { startApprovalDispatch } from './approval-dispatch.js';
 
 const d = buildDeps();
 const queues = createQueues(d.env.REDIS_URL);
 await scheduleCron(queues);
+const stopApprovalDispatch = startApprovalDispatch(d);
 
 // concurrency 1：同一用户的 run 必须串行（session 与 run_states 都是按用户的状态）。
 // Phase 2 再按 userId 分组并发（计划 Global Constraints）。
@@ -37,6 +39,7 @@ for (const w of workers) {
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
+    stopApprovalDispatch();
     void (async () => {
       await Promise.all(workers.map((w) => w.close()));
       await closeQueues(queues);

@@ -61,6 +61,21 @@ function fixture() {
   });
 }
 describe('task outcome contract', () => {
+  it('keeps budget scope typed as monetary information rather than applying it to an unrelated condition', () => {
+    const t = fixture();
+    t.constraints = [
+      {
+        key: 'budget',
+        strength: 'hard',
+        value: { kind: 'money', amountPence: 160000, unit: 'month' },
+        budgetScope: 'rent_only',
+        origin: { kind: 'user', sourceMessageId: 'input' },
+      },
+    ];
+    expect(assessTaskReadiness(t).ready).toBe(false);
+    t.constraints[0]!.value = { kind: 'text', text: '周末' };
+    expect(() => assessTaskReadiness(t)).toThrow('monetary');
+  });
   it('records a chair bought outside the bot without closing the desk or the whole task', () => {
     const t = confirmTaskGoal({
       task: fixture(),

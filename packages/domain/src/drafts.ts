@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { executionLeaseSchema } from './execution.js';
 import { taskDeliveryDraftSchema } from './task-delivery.js';
 import { DEMAND_CATEGORIES } from './demand.js';
+import { BUDGET_SCOPES } from './task.js';
 
 /** 出站渠道。Phase 0 只有 telegram，whatsapp 是 Phase 2 的占位（架构 §3）。 */
 export const OUTBOUND_CHANNELS = ['telegram', 'whatsapp'] as const;
@@ -28,6 +29,7 @@ export const demandDraftSchema = z.object({
   toPostcode: z.string().max(8).optional(),
   quantity: z.string().max(100).optional(),
   budgetPence: z.number().int().nonnegative().optional(),
+  budgetScope: z.enum(BUDGET_SCOPES).optional(),
   lang: z.string().length(2).optional(),
   confidence: z.number().min(0).max(1),
 });

@@ -9,11 +9,14 @@ type DrainDeps = {
   sender: ReturnType<typeof createTelegramSender>;
   logger: Logger;
   defaultPhase?: Phase;
+  opsChatId?: string;
 };
 async function isDeliveryAllowed(p: DrainDeps, m: OutboundMessage): Promise<boolean> {
   if (m.phase !== 1 && m.phase !== 2) return false;
   const group = await p.repos.groups.findByExternal(m.channel, m.target);
   if (group && !group.isActive) return false;
+  if (m.approvalRunStateId || m.requestKey?.startsWith('approval:'))
+    return m.target === p.opsChatId;
   const phase = resolvePhase({ group, defaultPhase: p.defaultPhase ?? 0 });
   return phase !== 0 && !(m.phase === 2 && phase === 1);
 }
@@ -40,7 +43,15 @@ export async function drainOutbound(p: DrainDeps): Promise<void> {
             });
             return false;
           }
-          return p.repos.outbound.beginSend(identity);
+          return p.repos.outbound.beginSend({
+            ...identity,
+            ...(m.approvalRunStateId || m.requestKey?.startsWith('approval:')
+              ? {
+                  ...(p.opsChatId ? { opsChatId: p.opsChatId } : {}),
+                  defaultPhase: p.defaultPhase ?? 0,
+                }
+              : {}),
+          });
         },
       });
     } catch (error) {

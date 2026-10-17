@@ -10,6 +10,8 @@ import {
   recordTaskDeliveryReceipt,
   taskDeliveryDraftSchema,
   beginTaskUserTurn,
+  rememberTaskSearchTerms,
+  taskSearchHintsSchema,
   taskProgressSchema,
   taskRequirementPatchSchema,
   taskPayloadSchema,
@@ -20,6 +22,7 @@ import {
 import { z } from 'zod';
 import { Prisma, type PrismaClient, type Task } from '../generated/client.js';
 import { inTransaction } from '../execution-fence.js';
+import { lockExecutionUser } from '../execution-fence.js';
 
 const id = z.string().min(1).max(160);
 const accessSchema = z.strictObject({
@@ -61,6 +64,14 @@ const progressSchema = mutationSchema.extend({ sourceMessageId: id, progress: ta
 const queuedDeliverySchema = mutationSchema.extend({
   outboundMessageId: id,
   delivery: taskDeliveryDraftSchema.omit({ id: true }),
+});
+const searchHintsSchema = z.object({
+  access: accessSchema,
+  id,
+  sourceMessageId: id,
+  operationKey: id,
+  requirementsVersion: z.number().int().nonnegative(),
+  hints: taskSearchHintsSchema,
 });
 const plannedTurnSchema = z
   .strictObject({
@@ -144,7 +155,8 @@ type Mutation = z.infer<typeof mutationSchema> & {
     | 'goal_confirmed'
     | 'user_turn'
     | 'source_progress'
-    | 'delivery_changed';
+    | 'delivery_changed'
+    | 'search_terms';
   actorKind: 'agent' | 'user' | 'system';
   sourceMessageId?: string;
   compute: (task: UserTask, source: Awaited<ReturnType<typeof requireMessage>> | null) => UserTask;
@@ -221,6 +233,30 @@ export function tasksRepo(prisma: PrismaClient) {
   }
   return {
     findById,
+    async rememberSearchTerms(raw: z.input<typeof searchHintsSchema>): Promise<TaskMutationResult> {
+      const p = searchHintsSchema.parse(raw);
+      return inTransaction(prisma, async (tx) => {
+        await lockExecutionUser(tx, p.access.userId);
+        const current = await tasksRepo(tx as PrismaClient).findById({
+          access: p.access,
+          id: p.id,
+        });
+        if (!current) return { kind: 'not_found' };
+        return commitMutation(tx as PrismaClient, {
+          ...p,
+          expectedRevision: current.revision,
+          kind: 'search_terms',
+          actorKind: 'agent',
+          requestHash: fingerprint(p),
+          compute: (task) =>
+            rememberTaskSearchTerms({
+              task,
+              requirementsVersion: p.requirementsVersion,
+              hints: p.hints,
+            }),
+        });
+      });
+    },
     async findLatestUserMessageId(raw: { access: TaskAccess; id: string }): Promise<string | null> {
       const p = mutationSchema.pick({ access: true, id: true }).parse(raw);
       const event = await prisma.taskEvent.findFirst({

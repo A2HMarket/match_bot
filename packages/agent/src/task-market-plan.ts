@@ -1,6 +1,11 @@
 import type { TaskConstraint, UserTask } from '@matchbot/domain';
 import { selectMarketTradeType } from '@matchbot/gating';
-import { getMarketCityAliases, type MarketPlan, type MarketRules } from './market-strategy.js';
+import {
+  getMarketCityAliases,
+  normalizeMarketPreference,
+  type MarketPlan,
+  type MarketRules,
+} from './market-strategy.js';
 
 function textValue(c: TaskConstraint): string | null {
   return c.value.kind === 'text' ? c.value.text : c.value.kind === 'location' ? c.value.area : null;
@@ -30,10 +35,12 @@ function rulesForConstraints(
   const qualitative = constraints.filter((c) =>
     /^(?:level|day|time|room_type|pets|feature|condition|requirements|required_terms)$/.test(c.key),
   );
-  const preferences = qualitative.flatMap((c) => (textValue(c) ? [textValue(c)!] : []));
+  const preferences = qualitative.flatMap((c) =>
+    textValue(c) ? [normalizeMarketPreference(textValue(c)!)] : [],
+  );
   const essentialPreferences = qualitative
     .filter((c) => c.strength === 'hard')
-    .flatMap((c) => (textValue(c) ? [textValue(c)!] : []));
+    .flatMap((c) => (textValue(c) ? [normalizeMarketPreference(textValue(c)!)] : []));
   const requiredArea = shared
     .filter((c) => c.key === 'area' && c.strength === 'hard')
     .flatMap((c) => (textValue(c) ? [textValue(c)!] : []));
@@ -62,6 +69,9 @@ function rulesForConstraints(
       .filter((c) => /^(?:exclude|exclude_terms|not_allowed)$/.test(c.key))
       .flatMap((c) => (textValue(c) ? [textValue(c)!] : [])),
     ...(sharedBudget !== undefined ? { budget: sharedBudget } : {}),
+    ...(shared.find((c) => c.key === 'budget')?.budgetScope
+      ? { budgetScope: shared.find((c) => c.key === 'budget')!.budgetScope! }
+      : {}),
     ...(routeFrom && routeTo
       ? { route: { from: getMarketCityAliases(routeFrom), to: getMarketCityAliases(routeTo) } }
       : {}),
@@ -91,7 +101,21 @@ export function bindTaskMarketPlan(plan: MarketPlan, task: UserTask): MarketPlan
       const rules = rulesForConstraints(scoped(goal.id), plan.intent);
       return {
         id: goal.id,
-        terms: [...new Set([goal.title, ...aliases])].slice(0, 12),
+        terms: [
+          ...new Set([
+            goal.title,
+            goal.title
+              .replace(
+                /(?:(?:房源|候选|推荐|信息|线索)|(?:\s+(?:listings?|candidates?|recommendations?|options?)))+$/i,
+                '',
+              )
+              .trim(),
+            ...aliases,
+            ...(goal.searchTerms ?? []),
+          ]),
+        ]
+          .filter(Boolean)
+          .slice(0, 12),
         rules,
         ...(rules.budget !== undefined ? { budget: rules.budget } : {}),
       };

@@ -364,6 +364,7 @@ model RunState {
 
   user      User       @relation(fields: [userId], references: [id])
   approvals Approval[]
+  outboundCard OutboundMessage?
   message Message? @relation(fields: [messageId],references: [id],onDelete: SetNull)
 
   @@index([status, expiresAt])
@@ -411,6 +412,8 @@ model OutboundMessage {
   externalMessageId String? @map("external_message_id")
   sourceMessageId String? @map("source_message_id")
   requestKey String? @unique @map("request_key")
+  approvalRunStateId String? @unique @map("approval_run_state_id")
+  approvalRunState RunState? @relation(fields: [approvalRunStateId], references: [id], onDelete: SetNull)
   taskId String? @map("task_id")
   taskRequirementsVersion Int? @map("task_requirements_version")
   task Task? @relation(fields: [taskId],references: [id],onDelete: SetNull)

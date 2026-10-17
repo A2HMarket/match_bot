@@ -299,7 +299,11 @@ export function executionsRepo(prisma: PrismaClient) {
           return { kind: 'waiting' };
         }
         const reply = await tx.outboundMessage.findFirst({
-          where: { sourceMessageId: message.id, kind: { not: 'reaction' } },
+          where: {
+            sourceMessageId: message.id,
+            kind: { not: 'reaction' },
+            approvalRunStateId: null,
+          },
         });
         if (reply) {
           await tx.message.update({

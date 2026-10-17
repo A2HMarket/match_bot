@@ -73,6 +73,18 @@ async function seed(tx: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
   return { r, user, now, message, task, access, claim, draft };
 }
 describe('task outbound delivery integration', () => {
+  it('rejects question metadata for text absent from the actual outgoing body before any queue state is written', async () =>
+    withTestDb(async (tx) => {
+      const { r, draft, task, access } = await seed(tx);
+      await expect(
+        r.outbound.create({ ...draft, text: '只保留了建议，问题被截掉了。' }, 'pending'),
+      ).rejects.toThrow('actual outbound');
+      expect(await tx.outboundMessage.count()).toBe(0);
+      expect(await r.tasks.findById({ access, id: task.id })).toMatchObject({
+        delivery: { status: 'none' },
+        pendingQuestion: null,
+      });
+    }));
   it('does not resume an approval superseded by a newer owner turn with unchanged requirements', async () =>
     withTestDb(async (tx) => {
       const { r, task, access, user, message, claim } = await seed(tx);

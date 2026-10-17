@@ -22,3 +22,5 @@
 审批阶段进展：决定/条件consume/待恢复意图/trace同事务；Redis失败可从DB补投。恢复已接同一用户fence，按原消息/当前Task版本/Agent与SDK版本/作用域恢复，不读最新其他需求；限次重试，已排队出站/新中断可收敛。全检91文件/776测试通过；实际SDK+独立进程SIGKILL、事务回滚、Redis失败证明通过。详见docs/evaluations/2026-10-17-approval-resume-ledger.md。审批卡本身的持久投递、问题/Task送达回写、快照清理及最终多轮验收仍未完成，不关闭整个P26。
 
 任务回执阶段进展：复用Task与出站，排队/拟发问题及sent/unknown/failed同事务关联；Phase0不假送达，只有已发问题才waiting_user。外部消息编号按owner/会话解析回复anchor；新轮次（含同条件）取代旧拟发与审批，发送前复核。全检95文件/803测试，任务域分支280/280；SDK两任务接话和PG回执测试通过；入站/审批真实进程证明复跑通过。真实DeepSeek/Jev房源v13两轮8/8，仅这一场景回归，不计三核心或Telegram。详见docs/evaluations/2026-10-17-task-delivery-receipts.md。剩余：审批卡持久投递、快照清理、日期/布尔语义负例、完整质量门与最终验收发布。
+
+本轮实现卡片持久投递/版本化发现/固定Ops收件人与来源阶段复核，worker不再直接发卡；统一sender/fence/回执及unknown保守方向。快照三种状态内容与卡片副本7天清理，新fence及新快照受保护。真实SDK+独立发布/恢复进程+SIGKILL+本地HTTP证明通过；截断问题误等待漏洞也已复现并修复。并行修复真实模型v14–v16暴露的历史检索词丢失、预算口径、禁宠和明确日期问题；v17两轮8/8，但不是三核心验收。详见docs/evaluations/2026-10-17-durable-approval-cards-and-search-context.md。P26保持进行中，最终整体验收与发布仍待P27。

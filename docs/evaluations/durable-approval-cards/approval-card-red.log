@@ -1,0 +1,78 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/db/tests/integration/approval-cards.test.ts (4 tests | 4 failed) 155ms
+   ❯ durable approval cards (4)
+     × queues the frozen preview once and leaves the original request waiting for approval 111ms
+     × uses the source phase and fixed current ops recipient, not the ops group default 15ms
+     × holds Phase0, unavailable previews, obsolete versions and changed source policy 15ms
+     × redacts consumed, pending and already-expired snapshot contents and persisted card bodies after expiry 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/db/tests/integration/approval-cards.test.ts > durable approval cards > queues the frozen preview once and leaves the original request waiting for approval
+TypeError: r.runStates.pendingCards is not a function
+ ❯ packages/db/tests/integration/approval-cards.test.ts:17:31
+     15|   it('queues the frozen preview once and leaves the original request w…
+     16|     const { r, runState, message } = await seed(tx), params = { runSta…
+     17|     expect((await r.runStates.pendingCards({ agentVersion: 'test-agent…
+       |                               ^
+     18|     const first = await r.outbound.enqueueApprovalCard(params), again …
+     19|     expect(first).toMatchObject({ approvalRunStateId: runState.id, tar…
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  packages/db/tests/integration/approval-cards.test.ts > durable approval cards > uses the source phase and fixed current ops recipient, not the ops group default
+TypeError: r.outbound.enqueueApprovalCard is not a function
+ ❯ packages/db/tests/integration/approval-cards.test.ts:29:69
+     27|   }));
+     28|   it('uses the source phase and fixed current ops recipient, not the o…
+     29|     const { r, runState } = await seed(tx), card = await r.outbound.en…
+       |                                                                     ^
+     30|     const [claim] = await r.outbound.claimPending(1);
+     31|     if (!card || !claim?.leaseToken) throw new Error('missing card');
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  packages/db/tests/integration/approval-cards.test.ts > durable approval cards > holds Phase0, unavailable previews, obsolete versions and changed source policy
+TypeError: r.runStates.pendingCards is not a function
+ ❯ packages/db/tests/integration/approval-cards.test.ts:38:30
+     36|   it('holds Phase0, unavailable previews, obsolete versions and change…
+     37|     const { r, runState, group } = await seed(tx);
+     38|     expect(await r.runStates.pendingCards({ agentVersion: 'another-ver…
+       |                              ^
+     39|     await tx.group.update({ where: { id: group.id }, data: { phase: 0 …
+     40|     expect(await r.outbound.enqueueApprovalCard({ runStateId: runState…
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  packages/db/tests/integration/approval-cards.test.ts > durable approval cards > redacts consumed, pending and already-expired snapshot contents and persisted card bodies after expiry
+TypeError: r.outbound.enqueueApprovalCard is not a function
+ ❯ packages/db/tests/integration/approval-cards.test.ts:50:35
+     48|   it('redacts consumed, pending and already-expired snapshot contents …
+     49|     const { r, runState } = await seed(tx);
+     50|     const card = await r.outbound.enqueueApprovalCard({ runStateId: ru…
+       |                                   ^
+     51|     await r.approvals.decide({ runStateId: runState.id, reviewer: 'ope…
+     52|     await tx.runState.update({ where: { id: runState.id }, data: { exp…
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  07:06:53
+   Duration  435ms (tests 45%, transform 32%, import 22%)
+

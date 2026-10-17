@@ -62,13 +62,32 @@ export function createExecutionProofStore() {
         approvals: await prisma.approval.findMany(),
       };
     },
+    async expireSnapshots() {
+      await prisma.runState.updateMany({
+        where: { user: { externalId: '999900000002' } },
+        data: { expiresAt: new Date(Date.now() - 1) },
+      });
+      return repos.runStates.expireOld(new Date());
+    },
     async cleanup() {
       const users = await prisma.user.findMany({ where: { externalId: '999900000002' } });
       const ids = users.map((u) => u.id),
         messages = await prisma.message.findMany({ where: { userId: { in: ids } } });
       const runStates = await prisma.runState.findMany({ where: { userId: { in: ids } } });
+      const outbounds = await prisma.outboundMessage.findMany({
+        where: { sourceMessageId: { in: messages.map((m) => m.id) } },
+        select: { id: true },
+      });
       await prisma.decisionTrace.deleteMany({
-        where: { inputRef: { in: [...messages.map((m) => m.id), ...runStates.map((r) => r.id)] } },
+        where: {
+          inputRef: {
+            in: [
+              ...messages.map((m) => m.id),
+              ...runStates.map((r) => r.id),
+              ...outbounds.map((o) => o.id),
+            ],
+          },
+        },
       });
       await prisma.outboundMessage.deleteMany({
         where: { sourceMessageId: { in: messages.map((m) => m.id) } },

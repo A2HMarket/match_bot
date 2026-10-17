@@ -37,6 +37,34 @@ function numericClaims(text: string, referenceCount = 0): string[] {
 function hasSupportedNumber(support: string, value: string): boolean {
   return (support.match(/\d+(?:\.\d+)?/g) ?? []).some((n) => Number(n) === Number(value));
 }
+function claimsUnknownTotalFits(text: string, evidence: string): boolean {
+  if (
+    !/不(?:含|包).{0,6}(?:账单|水电)|(?:excluding|without)\s+bills|bills (?:are )?(?:extra|excluded|not included)/i.test(
+      evidence,
+    )
+  )
+    return false;
+  if (
+    /(?:账单|水电|bills)\s*(?:为|是|每月|约|are|of|per month|[:：])?\s*(?:£|GBP)\s*\d/i.test(
+      evidence,
+    )
+  )
+    return false;
+  return text
+    .split(/[。！？?\n]/)
+    .some(
+      (part) =>
+        /总(?:支出|费用|价|花费)|(?:房租|租金).{0,6}(?:加|\+).{0,6}账单|all[- ]?in|total (?:monthly )?(?:cost|spend|expense)/i.test(
+          part,
+        ) &&
+        /预算(?:范围)?内|不(?:会)?超(?:过)?(?:你的)?预算|没有超(?:过)?(?:你的)?预算|within (?:your |the )?budget|under (?:your |the )?budget/i.test(
+          part,
+        ) &&
+        !/未(?:知|确认|核实|核对)|尚未|不确定|不能(?:确认|保证|核实)|无法(?:确认|保证|核实)|是否|待(?:确认|核实)|需(?:要)?(?:再)?(?:确认|核实)|unknown|unconfirmed|cannot (?:confirm|verify)|whether|not (?:confirmed|known)/i.test(
+          part,
+        ),
+    );
+}
 
 function hasUnsupportedDeparture(text: string, evidence: string): boolean {
   const normalize = (s: string) => s.replace(/^0(?=\d)/, '').replace('：', ':');
@@ -219,6 +247,14 @@ export function replyToRequestTool(deps: AgentDeps) {
           return {
             error:
               'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions; choose useful valid leads or no_match',
+          };
+        if (
+          ctx.currentRequest?.demand.category === 'housing' &&
+          claimsUnknownTotalFits(args.text, rendered.evidence.join('\n'))
+        )
+          return {
+            error:
+              'Rent excludes bills and the total cost is unknown. Do not claim rent plus bills fits the budget; distinguish the verified rent from the unconfirmed total.',
           };
         const support = rendered.evidence.join('\n') + '\n' + (ctx.currentRequest?.text ?? '');
         if (numericClaims(args.text, market.length).some((n) => !hasSupportedNumber(support, n)))

@@ -20,6 +20,40 @@ const msg = {
 } as never;
 
 describe('createTelegramSender', () => {
+  it('sends a frozen approval card through the same fence and attaches only its trusted callback buttons', async () => {
+    const sendMessage = vi.fn().mockResolvedValue({ message_id: 77, chat: { id: -100 } }),
+      sender = createTelegramSender({ bot: { api: { sendMessage } } as never, logger }),
+      card = {
+        ...(msg as object),
+        kind: 'notification',
+        approvalRunStateId: 'rs_1',
+        requestKey: 'approval:rs_1',
+        text: '冻结正文 [原链接](https://example.test)',
+        mentionUserId: '111',
+        replyToMessageId: '222',
+      } as never;
+    expect(await sender.send(card, { beforeSend: () => Promise.resolve(false) })).toEqual({
+      kind: 'not_started',
+    });
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(await sender.send(card, authorized)).toEqual({
+      kind: 'message',
+      externalMessageId: '77',
+    });
+    expect(sendMessage).toHaveBeenCalledWith(
+      -100,
+      '冻结正文 [原链接](https://example.test)',
+      expect.objectContaining<{ reply_markup: unknown }>({ reply_markup: expect.anything() }),
+    );
+    const options = sendMessage.mock.calls[0]?.[2] as {
+      reply_parameters?: unknown;
+      reply_markup: { inline_keyboard: Array<Array<{ callback_data: string }>> };
+    };
+    expect(options.reply_parameters).toBeUndefined();
+    expect(
+      options.reply_markup.inline_keyboard.flat().map((button) => button.callback_data),
+    ).toEqual(['apv:rs_1:approve', 'apv:rs_1:reject', 'apv:rs_1:ignore']);
+  });
   it('uses the supported SDK timeout and treats an unacknowledged send as unknown', async () => {
     const fetchImpl = vi.fn(
       (

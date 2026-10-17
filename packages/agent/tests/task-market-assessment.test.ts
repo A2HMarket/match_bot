@@ -72,6 +72,32 @@ const base = () =>
     userConfirmation: null,
   });
 describe('task-backed offer cards', () => {
+  it('excludes a published later start date instead of calling a known conflict an unverified backup', () => {
+    const task = base();
+    task.constraints.push({
+      key: 'move_in_date',
+      strength: 'hard',
+      value: { kind: 'date_range', from: '2026-11-05', to: '2026-11-05' },
+      origin: { kind: 'user', sourceMessageId: 'input' },
+    });
+    task.goals[0]!.criteria.push({
+      id: 'move',
+      label: '起租日期',
+      constraintKey: 'move_in_date',
+      strength: 'hard',
+      status: 'unknown',
+      evidenceRefs: [],
+    });
+    const result = buildMarketChoices({
+      task,
+      plan: { intent: 'housing', needs: [{ id: 'home', terms: ['一居室'] }], preferences: [] },
+      candidates: [
+        item('a', '出租：一居室\n要求：允许养猫\n入住：2026年11月5日起'),
+        item('b', '出租：一居室\n要求：允许养猫\n入住：2026年11月10日起'),
+      ],
+    });
+    expect([...result.primary, ...result.backup].some((row) => row.listing.id === 'b')).toBe(false);
+  });
   it('resolves a literal preference gap only with this offer’s validated semantic evidence', () => {
     const task = base();
     task.constraints[0]!.value = { kind: 'text', text: '必须允许养猫' };

@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRepositories } from '../../src/repos/index.js';
 import { withTestDb } from './setup.js';
 
 const at = new Date('2026-10-17T00:00:00Z');
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(at);
+});
+afterEach(() => vi.useRealTimers());
 async function setup(tx: Parameters<Parameters<typeof withTestDb>[0]>[0]) {
   const r = createRepositories(tx),
     user = await r.users.upsertByExternal({ channel: 'telegram', externalId: 'execution-user' });

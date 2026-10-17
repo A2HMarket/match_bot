@@ -7,6 +7,7 @@ import {
 } from '@matchbot/websearch';
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
+import { hashText } from '@matchbot/shared';
 import { buildMarketChoices, buildMarketResearchTasks } from '../market-choices.js';
 import { bindTaskMarketPlan } from '../task-market-plan.js';
 import { marketPlanInputSchema, toMarketPlan, rankMarketListings } from '../market-strategy.js';
@@ -178,6 +179,35 @@ export function marketSearchTool(
             hasDateRange: !!ctx.marketPlan.dateRange,
           }
         : null;
+      if (ctx.task && ctx.execution && ctx.marketPlan) {
+        const hints = ctx.marketPlan.needs
+          .filter((n) =>
+            n.terms.some(
+              (term) => !ctx.task!.goals.find((g) => g.id === n.id)?.searchTerms?.includes(term),
+            ),
+          )
+          .map((n) => ({ goalId: n.id, terms: n.terms }));
+        if (hints.length) {
+          hints
+            .flatMap((hint) => hint.terms)
+            .forEach((term) => assertSafeXhsKeyword(term.length < 2 ? term + ' 公开' : term));
+          const result = await deps.repos.tasks.rememberSearchTerms({
+            access: {
+              userId: ctx.userId,
+              scope: { channel: ctx.channel ?? 'telegram', chatId: ctx.chatId },
+            },
+            id: ctx.task.id,
+            sourceMessageId: ctx.sourceMessageId,
+            requirementsVersion: ctx.task.requirementsVersion,
+            operationKey:
+              ctx.sourceMessageId + ':terms:' + hashText(JSON.stringify(hints)).slice(0, 32),
+            hints,
+          });
+          if (result.kind !== 'applied' && result.kind !== 'replayed')
+            return deny('task changed while recording search vocabulary');
+          ctx.task = result.task;
+        }
+      }
       const previous = ctx.marketQueries ?? [];
       const pending: MarketResearchQuery[] = [];
       const keys = new Set(previous.map(getMarketQueryKey));

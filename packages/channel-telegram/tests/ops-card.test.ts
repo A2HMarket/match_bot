@@ -1,5 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createOpsCardSender, parseApprovalCallback, renderApprovalCard } from '../src/ops-card.js';
+import { describe, expect, it } from 'vitest';
+import {
+  approvalKeyboard,
+  parseApprovalCallback,
+  renderApprovalCard,
+  stampApprovalCardText,
+} from '../src/ops-card.js';
 
 const card = {
   runStateId: 'rs_1',
@@ -8,6 +13,12 @@ const card = {
   supplierLines: ['1. Van Co £40/h', '2. Move Ltd £55/h'],
   confidence: 0.94,
 };
+
+it('adds the reviewer stamp when it fits, preserving the full reviewed body when it does not', () => {
+  expect(stampApprovalCardText('完整正文', '✅ 已批准')).toBe('完整正文\n\n✅ 已批准');
+  const full = '字'.repeat(4096);
+  expect(stampApprovalCardText(full, '✅ 已批准')).toBe(full);
+});
 
 describe('renderApprovalCard', () => {
   it('includes title, draft, suppliers and three buttons', () => {
@@ -33,18 +44,7 @@ describe('parseApprovalCallback', () => {
   });
 });
 
-describe('createOpsCardSender', () => {
-  it('sends to ops chat and returns message id', async () => {
-    const sendMessage = vi.fn(() => Promise.resolve({ message_id: 77 }));
-    const r = await createOpsCardSender({
-      bot: { api: { sendMessage } } as never,
-      opsChatId: '-200',
-    }).sendApprovalCard(card);
-    expect(r).toEqual({ messageId: '77' });
-    expect(sendMessage).toHaveBeenCalledWith(
-      -200,
-      expect.any(String),
-      expect.objectContaining<{ reply_markup: unknown }>({ reply_markup: expect.anything() }),
-    );
-  });
+it('refuses a callback identity that cannot fit the trusted approval button', () => {
+  expect(approvalKeyboard('rs_1').inline_keyboard.flat()).toHaveLength(3);
+  expect(() => approvalKeyboard('x'.repeat(100))).toThrow();
 });

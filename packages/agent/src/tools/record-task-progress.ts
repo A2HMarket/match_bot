@@ -166,7 +166,7 @@ async function reviewCoherence(
     criterionId: '__source_coherence',
     goal: goal.title,
     requirement:
-      'All hard information criteria must be coherent for the goal and compatible with overall task conditions.',
+      'Find a coherent option satisfying all HARD criteria and their budgetScope. An unmet/unknown preference is not a veto. Refutations about a DIFFERENT rejected alternative do not invalidate the supported option. Never borrow facts between options; a rent-only quote cannot prove an all-in total.',
     proposedStatus: 'supported' as const,
     sourceId: 'validated_facts',
     quote: goal.title,
@@ -255,6 +255,10 @@ async function reviewSources(
   }));
   for (const item of pending)
     if (!review.eligible[item.index]) ctx.sourceReviewCache[item.key] = false;
+    else if (review.decisive[item.index] !== undefined)
+      ctx.sourceReviewCache[item.key] = review.decisive[item.index]!;
+  if (review.decisive.some((value) => value !== undefined))
+    await trace(deps, ctx, 'explicit_calendar_fact_checked');
   for (let offset = 0; offset < pending.length; offset += 24) {
     const remaining = Math.max(0, 96 - (ctx.taskSourceReviewedClaims ?? 0));
     const batch = pending

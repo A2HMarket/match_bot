@@ -11,7 +11,14 @@ function describeConstraint(constraint: TaskConstraint): string {
   const value = constraint.value;
   switch (value.kind) {
     case 'money':
-      return `GBP ${value.amountPence / 100} (${value.unit})`;
+      return (
+        `GBP ${value.amountPence / 100} (${value.unit})` +
+        (constraint.budgetScope === 'rent_only'
+          ? ' [rent only; bills are separate and total cost is not confirmed]'
+          : constraint.budgetScope === 'all_in'
+            ? ' [all-in total cost, including required bills/fees]'
+            : '')
+      );
     case 'duration':
       return `${value.minutes} minutes`;
     case 'location':
@@ -51,6 +58,8 @@ export function taskCurrentRequest(ctx: MatchContext, input: string): CurrentReq
     ),
   );
   const budgetPence = amounts.size === 1 ? [...amounts][0] : undefined;
+  const scopes = new Set(budgets.map((c) => c?.budgetScope)),
+    scope = scopes.size === 1 ? [...scopes][0] : undefined;
   const area = constraints.find(
     (c) =>
       !c.goalId && (c.key === 'area' || c.key === 'travel_origin') && c.value.kind === 'location',
@@ -66,6 +75,7 @@ export function taskCurrentRequest(ctx: MatchContext, input: string): CurrentReq
     need: need.slice(0, 80),
     lang: /\p{Script=Han}/u.test(input) ? 'zh' : 'en',
     ...(budgetPence !== undefined ? { budgetPence } : {}),
+    ...(scope ? { budgetScope: scope } : {}),
     ...(outcode ? { fromPostcode: outcode } : {}),
   };
   const text = [

@@ -4,6 +4,7 @@ import { Api, GrammyError, type Bot } from 'grammy';
 import { z } from 'zod';
 import type { MessageEntity, ReactionTypeEmoji, User } from 'grammy/types';
 import { formatRecommendation } from './recommendation-format.js';
+import { approvalKeyboard } from './ops-card.js';
 
 type ReactionEmoji = ReactionTypeEmoji['emoji'];
 
@@ -145,8 +146,16 @@ export function createTelegramSender(p: { bot: Bot; logger: Logger }) {
           p.logger.info({ outboundMessageId: m.id }, 'reacted');
           return { kind: 'reaction', externalMessageId: null };
         }
-        const user = m.mentionUserId ? await lookupUser(chatId, m.mentionUserId) : null;
-        const formatted = formatRecommendation(m.text, m.kind);
+        const isApproval = !!m.approvalRunStateId || !!m.requestKey?.startsWith('approval:');
+        if (isApproval && !m.approvalRunStateId)
+          throw new TelegramSendError(m.id, null, {
+            deliveryState: 'not_sent',
+            errorCode: 'invalid_approval_target',
+          });
+        const keyboard = isApproval ? approvalKeyboard(m.approvalRunStateId!) : null;
+        const user =
+          !isApproval && m.mentionUserId ? await lookupUser(chatId, m.mentionUserId) : null;
+        const formatted = isApproval ? { text: m.text } : formatRecommendation(m.text, m.kind);
         const body = user ? withMention(formatted.text, user) : { text: formatted.text };
         const mentionLength = body.text.length - formatted.text.length;
         const entities = [
@@ -160,8 +169,9 @@ export function createTelegramSender(p: { bot: Bot; logger: Logger }) {
         externalStarted = true;
         const result: unknown = await p.bot.api.sendMessage(chatId, body.text, {
           link_preview_options: { is_disabled: true },
+          ...(keyboard ? { reply_markup: keyboard } : {}),
           ...(entities.length ? { entities } : {}),
-          ...(m.replyToMessageId
+          ...(!isApproval && m.replyToMessageId
             ? {
                 // 原消息被删了也照发，只是不挂在它下面
                 reply_parameters: {

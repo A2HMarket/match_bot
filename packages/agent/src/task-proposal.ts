@@ -33,7 +33,7 @@ export const taskPatchProposalSchema = taskRequirementPatchSchema.extend({
     .max(6),
   constraints: z
     .array(
-      taskRequirementPatchSchema.shape.constraints.element.extend({
+      taskRequirementPatchSchema.shape.constraints.element.omit({ budgetScope: true }).extend({
         goalId: reference.nullable(),
         key: keySchema,
       }),
@@ -61,6 +61,40 @@ export class TaskProposalError extends Error {
     super(message);
     this.name = 'TaskProposalError';
   }
+}
+function budgetScope(p: {
+  condition: z.infer<typeof taskPatchProposalSchema>['constraints'][number];
+  key: string;
+  task: UserTask;
+  text: string;
+}): TaskConstraint['budgetScope'] {
+  if (
+    p.key !== 'budget' ||
+    p.task.category !== 'housing' ||
+    p.condition.value.kind !== 'money' ||
+    p.condition.value.unit !== 'month'
+  )
+    return undefined;
+  const clause =
+    p.text.split(/[，,。；;\n]/).find((part) => part.includes(p.condition.sourceQuote)) ??
+    p.condition.sourceQuote;
+  if (
+    /不(?:含|包).{0,8}(?:账单|水电|bills)|(?:excluding|without)\s+bills|rent[- ]?only/i.test(clause)
+  )
+    return 'rent_only';
+  if (
+    /总预算|总费用|总支出|all[- ]?in|total (?:budget|cost)|rent\s*(?:and|\+)\s*bills/i.test(
+      clause,
+    ) ||
+    (!/更好|最好|优先|尽量|prefer|ideally|if possible/i.test(clause) &&
+      /(?:包|含).{0,8}(?:账单|水电|bills)|(?:including|with)\s+bills/i.test(clause))
+  )
+    return 'all_in';
+  if (/月租|房租|租金|\brent(?:al)?\b/i.test(clause)) return 'rent_only';
+  return (
+    p.task.constraints.find((c) => c.key === p.key && (c.goalId ?? null) === p.condition.goalId) ??
+    p.task.constraints.find((c) => c.key === p.key && !c.goalId)
+  )?.budgetScope;
 }
 function canonicalKey(key: string): string {
   return /^(?:max_price_per_item|monthly_rent|rent)$/.test(key)
@@ -220,9 +254,11 @@ export function normalizeTaskPatch(p: {
       now: p.now ?? new Date(),
     });
     checkDateSource({ value: executable, condition: c, key, task: p.task });
+    const scope = budgetScope({ condition: c, key, task: p.task, text: p.text });
     return {
       ...value,
       value: executable,
+      ...(scope ? { budgetScope: scope } : {}),
       key,
       ...(goalId ? { goalId } : {}),
     };

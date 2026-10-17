@@ -8,5 +8,5 @@ export { AGENT_VERSION, createMatchAgent } from './agent.js';
 export { configureModelProvider } from './provider.js';
 export { createTraceProcessor } from './tracing.js';
 export { createPgSession } from './session.js';
-export { runInbound, resumeRun, type RunOutcome } from './run.js';
+export { runInbound, resumeRun, SDK_VERSION, type RunOutcome } from './run.js';
 export type { AgentDeps, MatchContext } from './context.js';

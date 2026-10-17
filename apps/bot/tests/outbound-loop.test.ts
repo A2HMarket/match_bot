@@ -41,6 +41,33 @@ function setup() {
   };
 }
 describe('drainOutbound', () => {
+  it('delivers control cards only to the current fixed ops destination while source checks stay in beginSend', async () => {
+    const { p, outbound, groups, dispatch } = setup(),
+      row = {
+        id: 'card',
+        phase: 1,
+        channel: 'telegram',
+        target: '-200',
+        text: 'frozen preview',
+        leaseToken: 'card-fence',
+        approvalRunStateId: 'rs',
+        requestKey: 'approval:rs',
+      };
+    outbound.claimPending.mockReset().mockResolvedValueOnce([row]).mockResolvedValue([]);
+    groups.findByExternal.mockResolvedValue({ phase: 0, isActive: true });
+    await drainOutbound({ ...p, opsChatId: '-200', defaultPhase: 0 });
+    expect(dispatch).toHaveBeenCalledOnce();
+    expect(outbound.beginSend).toHaveBeenCalledWith({
+      id: 'card',
+      leaseToken: 'card-fence',
+      opsChatId: '-200',
+      defaultPhase: 0,
+    });
+    outbound.claimPending.mockResolvedValueOnce([row]).mockResolvedValue([]);
+    dispatch.mockClear();
+    await drainOutbound({ ...p, opsChatId: '-201', defaultPhase: 0 });
+    expect(dispatch).not.toHaveBeenCalled();
+  });
   it('records real receipts and distinguishes transport uncertainty from a known rejection', async () => {
     const { p, outbound, dispatch } = setup();
     dispatch.mockRejectedValueOnce(new TelegramSendError('a', new Error('network')));

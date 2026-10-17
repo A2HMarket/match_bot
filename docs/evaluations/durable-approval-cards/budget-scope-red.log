@@ -1,0 +1,53 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/task-budget-scope.test.ts (2 tests | 2 failed) 7ms
+   × retains an explicit rent-only budget across a short followup and exposes its scope to the answer and judge 6ms
+   × distinguishes explicit all-in limits from optional bills preferences and leaves ambiguous scope unspecified 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/task-budget-scope.test.ts > retains an explicit rent-only budget across a short followup and exposes its scope to the answer and judge
+AssertionError: expected undefined to be 'rent_only' // Object.is equality
+
+- Expected:
+"rent_only"
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/task-budget-scope.test.ts:10:47
+      8| it('retains an explicit rent-only budget across a short followup and e…
+      9|   const t = task(), result = normalizeTaskPatch({ task: t, input: patc…
+     10|   expect(result?.constraints[0]?.budgetScope).toBe('rent_only');
+       |                                               ^
+     11|   t.constraints = result!.constraints.map(({ sourceQuote: _quote, ...c…
+     12|   const followup = normalizeTaskPatch({ task: t, input: patch('预算不能增加'…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/task-budget-scope.test.ts > distinguishes explicit all-in limits from optional bills preferences and leaves ambiguous scope unspecified
+AssertionError: expected undefined to be 'all_in' // Object.is equality
+
+- Expected:
+"all_in"
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/task-budget-scope.test.ts:19:129
+     17| });
+     18| it('distinguishes explicit all-in limits from optional bills preferenc…
+     19|   expect(normalizeTaskPatch({ task: task(), input: patch('总预算1600镑包含账单…
+       |                                                                                                                                 ^
+     20|   expect(normalizeTaskPatch({ task: task(), input: patch('月租1600'), te…
+     21|   expect(normalizeTaskPatch({ task: task(), input: patch('预算1600'), te…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  08:02:02
+   Duration  188ms (transform 54%, import 38%, tests 6%, worker 2%)
+

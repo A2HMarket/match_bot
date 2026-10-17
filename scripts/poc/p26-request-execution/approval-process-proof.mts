@@ -2,6 +2,7 @@
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { once } from 'node:events';
+import { createServer } from 'node:http';
 import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -14,9 +15,14 @@ import {
   AGENT_VERSION,
   configureModelProvider,
   createTraceProcessor,
+  SDK_VERSION,
 } from '../../../packages/agent/src/index.js';
 import { handleApprovalCallback } from '../../../packages/approval/src/callback.js';
 import { processResume } from '../../../apps/worker/src/pipeline/resume.js';
+import { publishApproval } from '../../../packages/approval/src/publish.js';
+import { dispatchPendingApprovals } from '../../../apps/worker/src/approval-dispatch.js';
+import { drainOutbound } from '../../../apps/bot/src/outbound-loop.js';
+import { createTelegramSender } from '../../../packages/channel-telegram/src/sender.js';
 import { createExecutionProofStore } from '../../../packages/db/tests/integration/execution-proof-store.js';
 import { DEFAULT_THRESHOLDS } from '../../../packages/gating/src/index.js';
 import type { ExecutionLease } from '../../../packages/domain/src/index.js';
@@ -55,7 +61,32 @@ const deps = {
     throw new Error('phase1 must use approval');
   },
 };
-if (mode === 'resume' || mode === 'recover') {
+if (mode === 'publish') {
+  const [inputPath, readyPath] = process.argv.slice(3);
+  try {
+    const job = z
+      .object({ runStateId: z.string() })
+      .parse(JSON.parse(readFileSync(inputPath!, 'utf8')));
+    const cards = { opsChatId: '-999900000003', defaultPhase: 0 as const };
+    if (readyPath)
+      await dispatchPendingApprovals({ repos: store.repos, cards, publishApproval, logger });
+    else {
+      const runState = await store.repos.runStates.findById(job.runStateId);
+      if (!runState) throw new Error('missing synthetic snapshot');
+      await publishApproval({ repos: store.repos, cards, runState });
+    }
+    const state = await store.state(),
+      card = state.outbounds.find((o) => o.approvalRunStateId === job.runStateId);
+    if (!card) throw new Error('card not queued');
+    if (readyPath) {
+      writeFileSync(readyPath, JSON.stringify({ pid: process.pid, cardId: card.id }));
+      await new Promise((resolve) => setTimeout(resolve, 25000));
+    }
+    process.stdout.write(JSON.stringify({ pid: process.pid, cardId: card.id }));
+  } finally {
+    await store.close();
+  }
+} else if (mode === 'resume' || mode === 'recover') {
   const [inputPath, readyPath] = process.argv.slice(3),
     job = z
       .object({ runStateId: z.string(), approvalId: z.string() })
@@ -115,6 +146,38 @@ if (mode === 'resume' || mode === 'recover') {
     dir = mkdtempSync(join(tmpdir(), 'matchbot-approval-proof-')),
     started = Date.now();
   let child: ReturnType<typeof spawn> | undefined;
+  let apiCalls = 0;
+  let expectedCallbacks: string[] = [];
+  const server = createServer((request, response) => {
+    void (async () => {
+      let body = '';
+      for await (const chunk of request) {
+        body += String(chunk);
+        if (body.length > 65536) throw new Error('oversized synthetic request');
+      }
+      const payload = z
+        .object({
+          chat_id: z.literal(-999900000003),
+          text: z.string(),
+          reply_markup: z.object({
+            inline_keyboard: z.array(z.array(z.object({ callback_data: z.string() }))),
+          }),
+        })
+        .parse(JSON.parse(body));
+      if (
+        !payload.text.includes('这次还没找到') ||
+        JSON.stringify(payload.reply_markup.inline_keyboard.flat().map((b) => b.callback_data)) !==
+          JSON.stringify(expectedCallbacks)
+      )
+        throw new Error('incomplete approval card');
+      apiCalls++;
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify({ message_id: 77, chat: { id: -999900000003 } }));
+    })().catch(() => {
+      response.statusCode = 400;
+      response.end(JSON.stringify({ error: 'invalid synthetic request' }));
+    });
+  });
   const watchdog = setTimeout(() => {
     child?.kill('SIGKILL');
     process.exit(2);
@@ -128,8 +191,18 @@ if (mode === 'resume' || mode === 'recover') {
     'packages/db/src/repos/approvals.ts',
     'packages/db/src/repos/executions.ts',
     'packages/db/src/repos/run-states.ts',
+    'packages/db/src/repos/outbound.ts',
+    'packages/db/src/approval-card-store.ts',
+    'packages/domain/src/approval-preview.ts',
+    'packages/db/prisma/schema.prisma',
+    'packages/db/prisma/migrations/20261016231000_durable_approval_cards/migration.sql',
     'packages/approval/src/callback.ts',
+    'packages/approval/src/publish.ts',
+    'packages/channel-telegram/src/sender.ts',
+    'packages/channel-telegram/src/ops-card.ts',
     'apps/worker/src/pipeline/resume.ts',
+    'apps/worker/src/approval-dispatch.ts',
+    'apps/bot/src/outbound-loop.ts',
     'packages/db/tests/integration/execution-proof-store.ts',
     import.meta.filename,
   ])
@@ -181,6 +254,9 @@ if (mode === 'resume' || mode === 'recover') {
         input: message.text,
       });
     if (initial.kind !== 'interrupted') throw new Error('SDK did not suspend');
+    expectedCallbacks = ['approve', 'reject', 'ignore'].map(
+      (decision) => 'apv:' + initial.runStateId + ':' + decision,
+    );
     await store.repos.executions.finish({
       lease: claim.lease,
       status: 'waiting_approval',
@@ -190,6 +266,83 @@ if (mode === 'resume' || mode === 'recover') {
     assert(
       rollback.runState.status === 'pending' && rollback.approvals === 0,
       'consume survived a rolled-back decision',
+    );
+    assert(
+      (
+        await store.repos.runStates.pendingCards({
+          agentVersion: AGENT_VERSION,
+          sdkVersion: SDK_VERSION,
+          defaultPhase: 0,
+        })
+      ).some((rs) => rs.id === initial.runStateId),
+      'unpublished snapshot was not rediscovered',
+    );
+    const cardInput = join(dir, 'card-job.json'),
+      cardReady = join(dir, 'card-ready.json');
+    writeFileSync(cardInput, JSON.stringify({ runStateId: initial.runStateId }));
+    child = spawn(
+      process.execPath,
+      ['--import', 'tsx', import.meta.filename, 'publish', cardInput, cardReady],
+      { stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    const cardDeadline = Date.now() + 15000;
+    while (!existsSync(cardReady)) {
+      if (child.exitCode !== null || Date.now() > cardDeadline)
+        throw new Error('publisher did not persist card');
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    const published = z
+        .object({ pid: z.number(), cardId: z.string() })
+        .parse(JSON.parse(readFileSync(cardReady, 'utf8'))),
+      publisherPid = child.pid;
+    const duplicate = await promisify(execFile)(
+      process.execPath,
+      ['--import', 'tsx', import.meta.filename, 'publish', cardInput],
+      { timeout: 15000, maxBuffer: 65536 },
+    );
+    assert(
+      z.object({ cardId: z.string() }).parse(JSON.parse(duplicate.stdout)).cardId ===
+        published.cardId,
+      'duplicate publisher created another card',
+    );
+    const publisherExit = once(child, 'exit');
+    child.kill('SIGKILL');
+    await publisherExit;
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('missing local transport');
+    const endpoint = 'http://127.0.0.1:' + address.port;
+    const sender = createTelegramSender({
+      logger,
+      bot: {
+        api: {
+          sendMessage: async (chatId: number, text: string, options: unknown) => {
+            const result = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, text, ...(options as object) }),
+              signal: AbortSignal.timeout(3000),
+            });
+            const value: unknown = await result.json();
+            return value;
+          },
+        },
+      } as never,
+    });
+    await drainOutbound({
+      repos: store.repos,
+      sender,
+      logger,
+      defaultPhase: 0,
+      opsChatId: '-999900000003',
+    });
+    const deliveredCard = (await store.state()).outbounds.find((o) => o.id === published.cardId);
+    assert(
+      apiCalls === 1 &&
+        deliveredCard?.status === 'sent' &&
+        deliveredCard.externalMessageId === '77',
+      'card was not delivered once through fenced sender',
     );
     const callback = await handleApprovalCallback({
       repos: store.repos,
@@ -235,9 +388,9 @@ if (mode === 'resume' || mode === 'recover') {
     }
     const queued = await store.state();
     assert(
-      queued.outbounds.length === 1 &&
-        queued.outbounds[0]?.sourceMessageId === message.id &&
-        queued.outbounds[0]?.status === 'pending',
+      queued.outbounds.filter((o) => !o.approvalRunStateId).length === 1 &&
+        queued.outbounds.find((o) => !o.approvalRunStateId)?.sourceMessageId === message.id &&
+        queued.outbounds.find((o) => !o.approvalRunStateId)?.status === 'pending',
       'approved call not fenced to original request',
     );
     const exit = once(child, 'exit');
@@ -261,12 +414,20 @@ if (mode === 'resume' || mode === 'recover') {
       'already-queued approved action reran the model',
     );
     assert(
-      after.outbounds.length === 1 &&
+      after.outbounds.filter((o) => !o.approvalRunStateId).length === 1 &&
         after.approvals.length === 1 &&
         after.approvals[0]?.resumeStatus === 'completed' &&
         after.message?.executionStatus === 'completed' &&
         !after.message.user.executionLeaseToken,
       'approval recovery did not settle once',
+    );
+    const redacted = await store.expireSnapshots(),
+      retained = await store.state();
+    assert(
+      redacted === 1 &&
+        retained.runStates.every((rs) => rs.snapshot === '' && rs.status === 'expired') &&
+        retained.outbounds.find((o) => o.approvalRunStateId)?.text === '[approval content expired]',
+      'expired approval contents remained',
     );
     writeFileSync(
       output,
@@ -277,13 +438,17 @@ if (mode === 'resume' || mode === 'recover') {
           sourceFingerprint,
           elapsedMs: Date.now() - started,
           boundary:
-            'isolated PostgreSQL; actual SDK suspension/resume, independent process, real SIGKILL and lease expiry; scripted model; no provider or Telegram calls',
+            'isolated PostgreSQL; actual SDK suspension/resume, independent publishers and workers, real SIGKILL and lease expiry, fenced sender to local HTTP only; scripted model; no provider or Telegram calls',
           rollback: { runStateStatus: rollback.runState.status, approvalRows: rollback.approvals },
           redisFailure: { callback, durableIntent: true },
           firstPid: child.pid,
           recoveryPid: recovered.pid,
           recoveryModelCalls: recovered.modelCalls,
-          outbounds: after.outbounds.length,
+          outbounds: after.outbounds.filter((o) => !o.approvalRunStateId).length,
+          approvalCards: after.outbounds.filter((o) => !!o.approvalRunStateId).length,
+          publisherPid,
+          approvalApiCalls: apiCalls,
+          expiredContentRedacted: redacted,
           approvals: after.approvals.length,
           requestStatus: after.message?.executionStatus,
         },
@@ -308,6 +473,10 @@ if (mode === 'resume' || mode === 'recover') {
   } finally {
     clearTimeout(watchdog);
     if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    if (server.listening) {
+      server.closeAllConnections();
+      server.close();
+    }
     await store.cleanup();
     await store.close();
     rmSync(dir, { recursive: true, force: true });

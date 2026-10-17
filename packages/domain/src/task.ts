@@ -12,6 +12,7 @@ export const TASK_STATUSES = [
   'expired',
 ] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
+export const BUDGET_SCOPES = ['rent_only', 'all_in'] as const;
 export const TASK_CONSTRAINT_KEYS = [
   'area',
   'travel_origin',
@@ -61,6 +62,7 @@ export const taskConstraintSchema = z.strictObject({
   goalId: id.optional(),
   strength,
   value: valueSchema,
+  budgetScope: z.enum(BUDGET_SCOPES).optional(),
   origin: z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('user'), sourceMessageId: id }),
     z.strictObject({ kind: z.literal('agent_proposal'), acceptedByMessageId: id }),
@@ -80,6 +82,8 @@ export const taskGoalSchema = z.strictObject({
   id,
   title: z.string().min(1).max(300),
   required: z.boolean(),
+  /** Agent retrieval hints only, never a user condition or source fact. */
+  searchTerms: z.array(z.string().min(1).max(60)).max(12).optional(),
   criteria: z.array(taskCriterionSchema).min(1).max(24),
   userConfirmation: userConfirmationSchema.nullable().default(null),
   sourceCoherence: z.enum(['unknown', 'supported', 'conflict']).optional(),
@@ -169,6 +173,9 @@ function assertEvidenceBindings(task: UserTask): void {
   const constraintKeys = task.constraints.map((c) => JSON.stringify([c.goalId ?? null, c.key]));
   if (new Set(constraintKeys).size !== constraintKeys.length)
     throw new TaskTransitionError('constraint keys must be unique per goal');
+  for (const constraint of task.constraints)
+    if (constraint.budgetScope && constraint.value.kind !== 'money')
+      throw new TaskTransitionError('budget scope requires a monetary condition');
   for (const constraint of task.constraints)
     if (constraint.goalId && !goals.has(constraint.goalId))
       throw new TaskTransitionError('constraint must belong to an existing goal');

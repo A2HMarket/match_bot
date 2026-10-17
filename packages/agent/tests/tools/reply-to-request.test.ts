@@ -55,6 +55,56 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('does not claim an unknown rent-plus-bills total fits a rent-only budget', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, 'Stratford找一居室，月租1600镑');
+    c.currentRequest!.demand.budgetScope = 'rent_only';
+    c.marketPlan = {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      budget: 1600,
+      preferences: [],
+      requiredArea: ['Stratford'],
+    };
+    c.marketListings = [
+      {
+        id: 'home',
+        ref: 'm1',
+        title: 'Stratford一居室整租',
+        description: '出租：Stratford一居室整租\n费用：月租£1550，不含账单\n地点：Stratford',
+        priceLabel: '£1550/月',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        url: 'https://a2hmarket.ai/listings/home',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ];
+    const bad = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '实际每月总支出会比房租高，但仍在预算范围内。',
+      }),
+    );
+    expect(bad).toContain('total');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '房租符合预算，账单另算，总支出目前还未核实。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
   it('accepts a structural reference to the first cited option without accepting an invented price', async () => {
     const { d, c, t } = setup(0);
     await t.invoke(

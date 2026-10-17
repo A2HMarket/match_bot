@@ -95,7 +95,7 @@ if (mode === 'first' || mode === 'recover') {
                 intent: 'second_hand',
                 purpose: 'discover',
                 plan: {
-                  needs: [{ id: 'desk', terms: ['书桌'] }],
+                  needs: [{ id: 'desk', terms: ['书桌', 'desk'] }],
                   preferences: [],
                   requiredTerms: [],
                   excludeTerms: [],
@@ -291,6 +291,9 @@ if (mode === 'first' || mode === 'recover') {
     'packages/db/src/execution-fence.ts',
     'packages/db/src/repos/index.ts',
     'packages/db/src/repos/tasks.ts',
+    'packages/domain/src/task-search-terms.ts',
+    'packages/agent/src/task-market-plan.ts',
+    'packages/agent/src/tools/market-search.ts',
     'packages/db/src/repos/outbound.ts',
     'packages/db/prisma/schema.prisma',
     'packages/agent/src/run.ts',
@@ -389,6 +392,14 @@ if (mode === 'first' || mode === 'recover') {
       'recovery did not record exactly one shadow reply',
     );
     assert(!after.message.user.executionLeaseToken, 'user lease was not released');
+    const restoredTasks = await store.repos.tasks.findOpenByScope({
+      userId: seeded.user.id,
+      scope: { channel: 'telegram', chatId: seeded.group.externalId },
+    });
+    assert(
+      restoredTasks[0]?.goals[0]?.searchTerms?.includes('desk'),
+      'public search vocabulary was not retained through process recovery',
+    );
     writeFileSync(
       output,
       JSON.stringify(
@@ -408,6 +419,7 @@ if (mode === 'first' || mode === 'recover') {
           outbounds: after.outbounds.length,
           executionAttempts: after.message.executionAttempts,
           snapshotEncrypted: !after.message.executionSnapshot?.includes('书桌'),
+          searchVocabularyRetained: true,
         },
         null,
         2,

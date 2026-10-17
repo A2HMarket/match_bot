@@ -35,7 +35,7 @@ function resolveSdkVersion(): string {
     return 'unknown';
   }
 }
-const SDK_VERSION = resolveSdkVersion();
+export const SDK_VERSION = resolveSdkVersion();
 
 class ObsoleteResumeError extends Error {
   constructor() {

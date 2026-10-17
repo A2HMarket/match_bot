@@ -2,8 +2,8 @@
 export { toInboundMessage } from './inbound.js';
 export { createTelegramSender, TelegramSendError } from './sender.js';
 export {
-  createOpsCardSender,
-  createOpsCardSenderFromToken,
+  approvalKeyboard,
+  stampApprovalCardText,
   parseApprovalCallback,
   renderApprovalCard,
   type ApprovalCard,

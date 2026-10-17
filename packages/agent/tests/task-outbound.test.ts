@@ -54,7 +54,7 @@ describe('server task outbound metadata', () => {
     const ctx = context(),
       d = {
         ...draft(),
-        text: 'generated cards and sources',
+        text: '最多接受多久单程通勤？\n\ngenerated cards and sources',
         taskQuestionText: '最多接受多久单程通勤？',
       };
     expect(taskDeliveryForOutbound(ctx, d)).toEqual({
@@ -69,6 +69,15 @@ describe('server task outbound metadata', () => {
     });
     expect(ctx.task?.pendingQuestion).toBeNull();
     expect(ctx.task?.delivery.status).toBe('none');
+  });
+  it('does not mark a question delivered when rendering truncated it out of the actual message', () => {
+    expect(() =>
+      taskDeliveryForOutbound(context(), {
+        ...draft(),
+        text: '只保留了前面的建议…',
+        taskQuestionText: '前面的建议很长，最多接受多久单程通勤？',
+      }),
+    ).toThrow('actual');
   });
   it('requires a missing-field plan for a question, and rejects already supplied fields or oversized questions', () => {
     const ctx = context();

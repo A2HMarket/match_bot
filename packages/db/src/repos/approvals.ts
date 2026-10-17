@@ -197,7 +197,11 @@ export function approvalsRepo(prisma: PrismaClient) {
           message.executionStatus === 'failed';
         const outbox = message
           ? await tx.outboundMessage.findFirst({
-              where: { sourceMessageId: message.id, kind: { not: 'reaction' } },
+              where: {
+                sourceMessageId: message.id,
+                kind: { not: 'reaction' },
+                approvalRunStateId: null,
+              },
             })
           : null;
         const next = message

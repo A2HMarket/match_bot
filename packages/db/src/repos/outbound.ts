@@ -5,6 +5,7 @@ import { hashText } from '@matchbot/shared';
 import { withExecutionFence } from '../execution-fence.js';
 import { Prisma, type OutboundMessage, type PrismaClient } from '../generated/client.js';
 import { tasksRepo } from './tasks.js';
+import { approvalCardEligibility, opsChatSchema, phaseSchema } from '../approval-card-store.js';
 import {
   lockOutboundTask,
   canSendTaskReply,
@@ -22,6 +23,16 @@ const receipt = fence.extend({
     .string()
     .regex(/^[1-9]\d{0,29}$/)
     .nullable(),
+});
+const startFence = fence.extend({
+  opsChatId: opsChatSchema.optional(),
+  defaultPhase: phaseSchema.optional(),
+});
+const cardParams = z.object({
+  runStateId: z.string().min(1).max(160),
+  opsChatId: opsChatSchema,
+  defaultPhase: phaseSchema,
+  now: z.date().optional(),
 });
 const failure = fence.extend({
   deliveryState: z.enum(['not_sent', 'unknown']),
@@ -53,6 +64,60 @@ export function outboundRepo(prisma: PrismaClient) {
   const atomic = <T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> =>
     typeof prisma.$transaction === 'function' ? prisma.$transaction(fn) : fn(prisma);
   return {
+    /** Existing HITL control notification: fixed ops recipient, server snapshot, never model-selected text/target. */
+    async enqueueApprovalCard(raw: z.input<typeof cardParams>): Promise<OutboundMessage | null> {
+      const p = cardParams.parse(raw);
+      return atomic(async (tx) => {
+        const eligible = await approvalCardEligibility(tx, {
+          runStateId: p.runStateId,
+          defaultPhase: p.defaultPhase,
+          now: p.now ?? new Date(),
+        });
+        const existing = await tx.outboundMessage.findUnique({
+          where: { approvalRunStateId: p.runStateId },
+        });
+        if (existing) {
+          await trace(tx, {
+            id: existing.id,
+            phase: existing.phase,
+            decision: 'approval_card_replayed',
+          });
+          return existing;
+        }
+        if (!eligible.ok) {
+          const rs = await tx.runState.findUnique({ where: { id: p.runStateId } });
+          if (rs?.status === 'pending' && eligible.obsolete) {
+            await tx.runState.update({ where: { id: rs.id }, data: { status: 'expired' } });
+            if (rs.messageId)
+              await tx.message.updateMany({
+                where: { id: rs.messageId, userId: rs.userId, executionStatus: 'waiting_approval' },
+                data: { executionStatus: 'failed', executionError: 'approval_unavailable' },
+              });
+          }
+          await trace(tx, {
+            id: p.runStateId,
+            phase: rs?.phase ?? 0,
+            decision: 'card_held_' + eligible.reason,
+          });
+          return null;
+        }
+        const row = await tx.outboundMessage.create({
+          data: {
+            channel: 'telegram',
+            target: p.opsChatId,
+            text: eligible.text,
+            kind: 'notification',
+            status: 'pending',
+            phase: eligible.phase,
+            sourceMessageId: eligible.source.id,
+            approvalRunStateId: eligible.runState.id,
+            requestKey: 'approval:' + eligible.runState.id,
+          },
+        });
+        await trace(tx, { id: row.id, phase: row.phase, decision: 'approval_card_queued' });
+        return row;
+      });
+    },
     create(raw: OutboundDraft, status: 'dry_run' | 'pending'): Promise<OutboundMessage> {
       const draft = outboundDraftSchema.parse(raw);
       if (draft.taskDelivery && !draft.execution)
@@ -107,6 +172,11 @@ export function outboundRepo(prisma: PrismaClient) {
               ['completed', 'cancelled', 'expired'].includes(selected.status)
             )
               throw new Error('outbound task scope or requirements mismatch');
+            if (
+              draft.taskDelivery.question &&
+              !draft.text.includes(draft.taskDelivery.question.text)
+            )
+              throw new Error('task question is absent from actual outbound text');
             await tx.message.update({
               where: { id: source.id },
               data: { taskId: selected.id, taskRequirementsVersion: selected.requirementsVersion },
@@ -179,11 +249,41 @@ export function outboundRepo(prisma: PrismaClient) {
         return rows;
       });
     },
-    async beginSend(raw: z.input<typeof fence>): Promise<boolean> {
-      const p = fence.parse(raw),
+    async beginSend(raw: z.input<typeof startFence>): Promise<boolean> {
+      const p = startFence.parse(raw),
         now = p.now ?? new Date();
       return atomic(async (tx) => {
         const row = await tx.outboundMessage.findUnique({ where: { id: p.id } });
+        if (row && (row.approvalRunStateId || row.requestKey?.startsWith('approval:'))) {
+          const eligible = row.approvalRunStateId
+            ? await approvalCardEligibility(tx, {
+                runStateId: row.approvalRunStateId,
+                defaultPhase: p.defaultPhase ?? 0,
+                now,
+              })
+            : null;
+          const recipient = await tx.group.findUnique({
+            where: { channel_externalId: { channel: 'telegram', externalId: row.target } },
+            select: { isActive: true },
+          });
+          if (!eligible?.ok || row.target !== p.opsChatId || recipient?.isActive === false) {
+            await tx.outboundMessage.updateMany({
+              where: {
+                id: row.id,
+                leaseToken: p.leaseToken,
+                status: 'sending',
+                attemptStartedAt: null,
+              },
+              data: { status: 'failed', error: 'approval_card_unavailable', leaseExpiresAt: null },
+            });
+            await trace(tx, {
+              id: row.id,
+              phase: row.phase,
+              decision: 'approval_card_fence_rejected',
+            });
+            return false;
+          }
+        }
         await lockOutboundTask(tx, row);
         if (row && !(await canSendTaskReply(tx, row))) {
           await tx.outboundMessage.updateMany({

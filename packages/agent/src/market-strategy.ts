@@ -1,11 +1,13 @@
 import { isActiveMarketListing, hasLondonEvidence } from '@matchbot/websearch';
 import { z } from 'zod';
+import { BUDGET_SCOPES } from '@matchbot/domain';
 import type { MarketListing, MarketIntent } from '@matchbot/websearch';
 export type MarketNeed = { id: string; terms: string[]; budget?: number; rules?: MarketRules };
 export type MarketRules = {
   preferences: string[];
   essentialPreferences?: string[];
   budget?: number;
+  budgetScope?: (typeof BUDGET_SCOPES)[number];
   requiredTerms?: string[];
   excludeTerms?: string[];
   dateRange?: { from: string; to: string };
@@ -14,6 +16,18 @@ export type MarketRules = {
   capacityKg?: number;
 };
 export type MarketPlan = MarketRules & { intent: MarketIntent; needs: MarketNeed[] };
+export function normalizeMarketPreference(text: string): string {
+  const core = text
+    .replace(
+      /^(?:(?:必须|一定要|务必|需要|希望|最好|优先|must|prefer(?:ably)?|need to|have to)\s*)+/i,
+      '',
+    )
+    .trim();
+  return /猫|\bcats?\b/i.test(core) &&
+    !/不.{0,6}猫|无猫|禁止.{0,6}猫|no\s+cats?|without\s+cats?|not.{0,8}cats?/i.test(core)
+    ? '猫'
+    : core;
+}
 export type MarketCheck = {
   label: string;
   status: 'met' | 'unknown' | 'mismatch';
@@ -454,11 +468,23 @@ function assessSharedMarketListing(
       evidence: price?.text ?? null,
     });
   if (p.route) checks.push(routeCheck(n, p.route));
+  const budgetCheck = checks.find((check) => check.label === 'budget');
+  if (
+    p.budgetScope === 'all_in' &&
+    budgetCheck?.status === 'met' &&
+    (!/全包|包(?:含)?\s*(?:bill|账单|水电)|含\s*(?:bill|账单|水电)|all[- ]?in|bills (?:are )?included|including bills/i.test(
+      n.description + '\n' + (n.priceLabel ?? ''),
+    ) ||
+      /不(?:包|含)\s*(?:bill|账单|水电)|(?:excluding|without) bills|bills (?:are )?not included/i.test(
+        n.description,
+      ))
+  )
+    budgetCheck.status = 'unknown';
   const preferenceSource = focusName && matchedItems.length ? matchedItems.join('\n') : subject;
   for (const preference of p.preferences) {
     const escaped = preference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const petCondition = /^(?:猫|养猫|可养猫|宠物|允许宠物|允许养猫|pets?|cats?)$/i.test(
-      preference,
+      normalizeMarketPreference(preference),
     );
     const contradiction = petCondition
       ? lines(preferenceSource).find(
@@ -570,6 +596,7 @@ export const marketPlanInputSchema = z.object({
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).nullable(),
 });
 export const marketRulesSchema = marketPlanInputSchema.omit({ needs: true }).extend({
+  budgetScope: z.enum(BUDGET_SCOPES).optional(),
   budget: z.number().finite().nonnegative().max(100000).optional(),
   route: z.object({ from: terms.min(1), to: terms.min(1) }).optional(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).optional(),

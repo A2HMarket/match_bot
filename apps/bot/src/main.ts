@@ -1,4 +1,4 @@
-import { createTelegramSender } from '@matchbot/channel-telegram';
+import { createTelegramSender, stampApprovalCardText } from '@matchbot/channel-telegram';
 import { createRepositories, disconnectPrisma, getPrisma } from '@matchbot/db';
 import { closeQueues, createQueues } from '@matchbot/queue';
 import { createLogger, loadEnv } from '@matchbot/shared';
@@ -43,7 +43,7 @@ bot.on('callback_query:data', async (ctx) => {
   await ctx.answerCallbackQuery({ text: r.toast });
   // 处理过的卡去掉按钮并盖戳，防止重复点击，也让群里其他运营看到结论
   if (r.stamp && q.message && 'text' in q.message && q.message.text) {
-    await ctx.editMessageText(`${q.message.text}\n\n${r.stamp}`, {
+    await ctx.editMessageText(stampApprovalCardText(q.message.text, r.stamp), {
       reply_markup: { inline_keyboard: [] },
     });
   }
@@ -67,6 +67,7 @@ const stopLoop = startOutboundLoop({
   repos,
   sender: createTelegramSender({ bot, logger: log }),
   logger: log,
+  opsChatId: env.TELEGRAM_OPS_CHAT_ID,
   defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
 });
 const stopInboundDispatch = startInboundDispatch({ repos, queues, logger: log });
