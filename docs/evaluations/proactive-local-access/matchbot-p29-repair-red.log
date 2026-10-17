@@ -1,0 +1,56 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/source-operation-claims.test.ts (9 tests | 1 failed) 5ms
+   ❯ purchase access claims (9)
+     × keeps uncertainty and practical questions: 这个目录不保证有货。 3ms
+ ❯ packages/agent/tests/task-outbound.test.ts (15 tests | 1 failed) 10ms
+   ❯ server task outbound metadata (15)
+     × does not lose a practical question just because an explanatory sentence follows it 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/source-operation-claims.test.ts > purchase access claims > keeps uncertainty and practical questions: 这个目录不保证有货。
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ packages/agent/tests/source-operation-claims.test.ts:17:46
+     15|     '是否有货请先问门店',
+     16|   ])('keeps uncertainty and practical questions: %s', (text) =>
+     17|     expect(hasGuaranteedPurchaseClaim(text)).toBe(false),
+       |                                              ^
+     18|   );
+     19| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/task-outbound.test.ts > server task outbound metadata > does not lose a practical question just because an explanatory sentence follows it
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/task-outbound.test.ts:56:48
+     54|     const ctx=context();ctx.task!.nextStep={action:'deliver',owner:'ag…
+     55|     const d={...draft(),kind:'recommendation' as const,text:'你是现在急用，还是…
+     56|     expect(()=>taskDeliveryForOutbound(ctx,d)).toThrow('Record');
+       |                                                ^
+     57|     ctx.task!.nextStep={action:'ask_user',owner:'agent',constraintKey:…
+     58|     expect(taskDeliveryForOutbound(ctx,d)?.question?.constraintKey).to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 22 passed (24)
+   Start at  22:12:22
+   Duration  247ms (transform 64%, import 27%, tests 7%, worker 3%)
+

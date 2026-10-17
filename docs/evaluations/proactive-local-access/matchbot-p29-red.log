@@ -1,0 +1,92 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/current-request.test.ts (9 tests | 3 failed) 14ms
+   ❯ current request binding (9)
+     × routes medicine access to public information despite an item-category guess: 狗岛找止疼药 5ms
+     × routes medicine access to public information despite an item-category guess: E14想买止痛药 1ms
+     × routes medicine access to public information despite an item-category guess: Isle of Dogs pharmacy for painkillers 1ms
+ ❯ packages/agent/tests/tools/reply-request-status.test.ts (9 tests | 1 failed) 22ms
+   ❯ reply_request_status (9)
+     × asks about the practical obstacle instead of making the user choose an official fact to research 10ms
+ ❯ packages/agent/tests/tools/market-search.test.ts (37 tests | 1 failed) 67ms
+   ❯ market research tools (13)
+     × redirects an unsupported retail request to information research without telling it to repeat legacy writes 13ms
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (40 tests | 1 failed) 57ms
+   ❯ reply_to_request (40)
+     × does not turn published opening hours into guaranteed medicine access 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/current-request.test.ts > current request binding > routes medicine access to public information despite an item-category guess: 狗岛找止疼药
+ FAIL  packages/agent/tests/current-request.test.ts > current request binding > routes medicine access to public information despite an item-category guess: E14想买止痛药
+ FAIL  packages/agent/tests/current-request.test.ts > current request binding > routes medicine access to public information despite an item-category guess: Isle of Dogs pharmacy for painkillers
+AssertionError: expected 'second_hand' to be 'other' // Object.is equality
+
+Expected: "other"
+Received: "second_hand"
+
+ ❯ packages/agent/tests/current-request.test.ts:9:49
+      7|     const ctx = { userId:'u', chatId:'c', groupId:null, phase:0, sourc…
+      8|     bindCurrentRequest(ctx,input);
+      9|     expect(ctx.currentRequest?.demand.category).toBe('other');
+       |                                                 ^
+     10|   });
+     11|   it('does not collapse different effective item budgets back to the s…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  packages/agent/tests/tools/market-search.test.ts > market research tools > redirects an unsupported retail request to information research without telling it to repeat legacy writes
+AssertionError: expected 'not allowed: upsert_demand with housi…' to contain 'search_information'
+
+Expected: "search_information"
+Received: "not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search"
+
+ ❯ packages/agent/tests/tools/market-search.test.ts:88:20
+     86|     const d=deps(),c=ctx({demand:{category:'other',need:'狗岛找止疼药',confi…
+     87|     const result=await marketSearchTool({...d,answerRequests:true} as …
+     88|     expect(result).toContain('search_information');
+       |                    ^
+     89|     expect(result).not.toContain('upsert_demand');
+     90|     expect(d.marketSearch.find).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  packages/agent/tests/tools/reply-request-status.test.ts > reply_request_status > asks about the practical obstacle instead of making the user choose an official fact to research
+AssertionError: expected '还没核实到能推荐的合适线索，有些关键条件还不清楚。\n\n下一步应优先核对…' to contain '出行不方便'
+
+- Expected
++ Received
+
+- 出行不方便
++ 还没核实到能推荐的合适线索，有些关键条件还不清楚。
++
++ 下一步应优先核对官方现价、开放时间或时刻表，把已确认的信息和未知条件分开。你希望先补全哪一项信息？
+
+ ❯ packages/agent/tests/tools/reply-request-status.test.ts:53:24
+     51|     await t.invoke(new RunContext(c),'{}');
+     52|     const draft=d.repos.outbound.create.mock.calls[0]?.[0] as {text:st…
+     53|     expect(draft.text).toContain('出行不方便');
+       |                        ^
+     54|     expect(draft.text).not.toMatch(/时刻表|先补全哪|https?:|止疼药|狗岛|\d/);
+     55|     expect(c.outboundBlocked).toBe(true);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > does not turn published opening hours into guaranteed medicine access
+AssertionError: expected 'not sent: this request already has a …' to contain 'Stock'
+
+Expected: "Stock"
+Received: "not sent: this request already has a failed or unconfirmed delivery (o); do not automatically resend"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:63:20
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+
+ Test Files  4 failed (4)
+      Tests  6 failed | 89 passed (95)
+   Start at  22:04:32
+   Duration  728ms (import 48%, transform 44%, tests 8%)
+
