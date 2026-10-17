@@ -22,7 +22,7 @@ describe('market choice practical details', () => {
       availableFrom: null,
       availableUntil: null,
     };
-    const { text } = renderMarketChoiceReply({
+    const input: Parameters<typeof renderMarketChoiceReply>[0] = {
       listings: [listing],
       selections: [{ ref: 'm1', name: listing.title, evidence: description }],
       zh: true,
@@ -33,13 +33,21 @@ describe('market choice practical details', () => {
         requiredArea: ['E14'],
         preferences: [],
       },
-    });
+    };
+    const { text } = renderMarketChoiceReply(input);
     expect(text.split('单价£40')).toHaveLength(2);
     expect(text.split('支持自提')).toHaveLength(2);
     expect(text).toContain('100×60cm');
     expect(text).toContain('正常使用痕迹');
     expect(text).toContain(listing.url);
     expect(text).toContain(listing.sourceUrl);
+    const brief = renderMarketChoiceReply({ ...input, format: 'brief' }).text;
+    expect(brief.length).toBeLessThan(text.length);
+    expect(brief).toContain('£40');
+    expect(brief).toContain('正常使用痕迹');
+    expect(brief).toContain(listing.url);
+    expect(brief).toContain(listing.sourceUrl);
+    expect(brief).not.toContain('相关线索');
   });
   it('shows the room term and layout from its own source without converting that to confirmed move-in', () => {
     const listing: MarketCandidate = {
@@ -77,5 +85,42 @@ describe('market choice practical details', () => {
     expect(text).toContain('3人合租，与1人共用卫生间');
     expect(text).toContain('待确认：11月初入住');
     expect(choices.primary).toHaveLength(0);
+  });
+  it('keeps a brief backup visibly unconfirmed rather than implying a fit', () => {
+    const listing: MarketCandidate = {
+      id: 'home',
+      ref: 'm1',
+      title: '伦敦一居室',
+      description: '出租：伦敦一居室\n费用：月租£1550，不含账单',
+      tags: [],
+      tradeType: 'SELL',
+      status: 'ON_SALE',
+      url: 'https://a2hmarket.ai/listings/home',
+      sourceUrl: null,
+      isRepost: false,
+      priceLabel: '£1550/月',
+      sourcePublishedAt: null,
+      createdAt: null,
+      availableFrom: null,
+      availableUntil: null,
+    };
+    const { text, choices } = renderMarketChoiceReply({
+      listings: [listing],
+      selections: [{ ref: 'm1', name: listing.title, evidence: listing.description }],
+      format: 'brief',
+      zh: true,
+      plan: {
+        intent: 'housing',
+        needs: [{ id: 'home', terms: ['一居室'] }],
+        preferences: [],
+        budget: 1600,
+        budgetScope: 'all_in',
+      },
+    });
+    expect(choices.primary).toHaveLength(0);
+    expect(text).toContain('待核实');
+    expect(text).toContain('含账单总价');
+    expect(text).toContain('不含账单');
+    expect(text).toContain(listing.url);
   });
 });

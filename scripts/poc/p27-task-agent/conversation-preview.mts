@@ -58,7 +58,20 @@ const corpus = z
       ),
     ),
   );
-const sample = conversations.cases.find((c) => c.id === sampleId)!;
+const originalSample = conversations.cases.find((c) => c.id === sampleId)!;
+const variantBytes = process.argv[4] ? readFileSync(process.argv[4], 'utf8') : null;
+const variantInputs = variantBytes
+  ? z
+      .object({ cases: z.record(z.string(), z.array(z.string().min(1).max(600)).length(5)) })
+      .parse(JSON.parse(variantBytes)).cases[sampleId]
+  : undefined;
+if (variantBytes && !variantInputs) throw new Error('missing style variant');
+const sample = variantInputs
+  ? {
+      ...originalSample,
+      turns: originalSample.turns.map((turn, index) => ({ ...turn, input: variantInputs[index]! })),
+    }
+  : originalSample;
 const sources = corpus.cases.find((c) => c.id === sampleId)!;
 if (!sample || !sources) throw new Error('missing frozen conversation or corpus');
 const hash = createHash('sha256');
@@ -73,6 +86,8 @@ for (const root of [
     .filter((n) => n.endsWith('.ts'))
     .sort())
     hash.update(root + '/' + name).update(readFileSync(join(root, name)));
+const soulHash = createHash('sha256').update(readFileSync('packages/agent/SOUL.md')).digest('hex');
+hash.update('packages/agent/SOUL.md').update(soulHash);
 const sourceFingerprint = hash.digest('hex');
 const logger = createLogger('p27-conversation-preview', 'warn');
 const prisma = getPrisma(env.DATABASE_URL),
@@ -143,6 +158,10 @@ const save = (status: string) =>
         runId,
         sampleId,
         sourceFingerprint,
+        soulHash,
+        inputVariantHash: variantBytes
+          ? createHash('sha256').update(variantBytes).digest('hex')
+          : null,
         agentVersion: AGENT_VERSION,
         harnessVersion: 'stable-receipt-v3',
         model: env.DEEPSEEK_MODEL,

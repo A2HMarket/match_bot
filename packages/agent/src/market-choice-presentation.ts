@@ -133,6 +133,46 @@ function renderChoice(
     .filter(Boolean)
     .join('\n');
 }
+function missingLabels(row: MarketChoice, plan: MarketPlan, zh: boolean): string[] {
+  return [
+    ...new Set(
+      row.missing.map((label) =>
+        plan.intent === 'housing' &&
+        plan.budgetScope === 'all_in' &&
+        row.assessment.itemPriceGBP &&
+        ['预算', '租金/计价单位'].includes(label)
+          ? zh
+            ? '含账单总价'
+            : 'total including bills'
+          : translate(label, zh),
+      ),
+    ),
+  ];
+}
+function renderBriefChoice(
+  row: MarketChoice,
+  selection: MarketSelection,
+  plan: MarketPlan,
+  index: number,
+  zh: boolean,
+): string {
+  const n = row.listing;
+  const details = uniqueSourceDetails([
+    compact(selection.evidence, 110),
+    ...practicalDetails(row, plan, zh),
+    priceLine(row, plan, zh),
+  ]);
+  const missing = missingLabels(row, plan, zh);
+  return [
+    `${index}. ${compact(selection.name, 80)}${row.essentialMissing.length ? (zh ? '（待核实）' : ' (unconfirmed)') : ''}`,
+    ...details,
+    row.warning ? `${zh ? '注意：' : 'Caution: '}${compact(row.warning, 100)}` : '',
+    missing.length ? `${zh ? '还需确认：' : 'Still to check: '}${missing.join(' / ')}` : '',
+    `[${zh ? 'A2H详情' : 'A2H listing'}](${n.url})${n.sourceUrl ? ` · [${zh ? '原帖' : 'Original post'}](${n.sourceUrl})` : ''}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
 function uniqueSourceDetails(lines: string[]): string[] {
   const kept: string[] = [];
   const content = (s: string) =>
@@ -166,6 +206,7 @@ export function renderMarketChoiceReply(p: {
   zh: boolean;
   assessWholeOffer?: boolean;
   task?: UserTask;
+  format?: 'full' | 'brief';
 }) {
   const choices = buildMarketChoices({
     candidates: p.listings,
@@ -175,7 +216,7 @@ export function renderMarketChoiceReply(p: {
       ? {}
       : { names: Object.fromEntries(p.selections.map((s) => [s.ref, s.name])) }),
   });
-  const blocks = [introduction(choices, p.zh)];
+  const blocks = p.format === 'brief' ? [] : [introduction(choices, p.zh)];
   const covered = new Set(
     [...choices.primary, ...choices.backup].flatMap((row) => row.assessment.needs),
   );
@@ -190,10 +231,10 @@ export function renderMarketChoiceReply(p: {
     [p.zh ? '【备选 · 需要确认】' : '【Backups · check first】', choices.backup],
   ] as const) {
     if (!rows.length) continue;
-    blocks.push(heading);
+    if (p.format !== 'brief') blocks.push(heading);
     for (const row of rows)
       blocks.push(
-        renderChoice(
+        (p.format === 'brief' ? renderBriefChoice : renderChoice)(
           row,
           p.selections.find((s) => s.ref === row.listing.ref)!,
           p.plan,

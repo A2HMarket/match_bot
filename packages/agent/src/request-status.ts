@@ -17,11 +17,11 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
   const zh = ctx.currentRequest.demand.lang !== 'en';
   const intro = zh
     ? unavailable
-      ? '这次查询没有完成，不能据此判断没有合适结果。'
-      : '这次还没有核实出能可靠推荐的选项，不能把条件未知的线索说成已经匹配。'
+      ? '这次查询没能完成，还不能判断有没有合适的。'
+      : '还没核实到能推荐的合适线索，有些关键条件还不清楚。'
     : unavailable
       ? 'This query could not complete; that does not mean no suitable options exist.'
-      : 'I have not confirmed an option I can reliably recommend; unknown conditions are not a confirmed match.';
+      : "I haven't confirmed a suitable lead yet; some important details are still unclear.";
   const task =
     ctx.task?.ownerUserId === ctx.userId &&
     ctx.task.scope.chatId === ctx.chatId &&
@@ -32,7 +32,7 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
     return (
       intro +
       (zh
-        ? '\n\n你给出的通勤范围已保留，不需要重复说明。下一步应核对来源中的准确地点与适用条件，再按原要求比较；信息缺失不能当作已经匹配。'
+        ? '\n\n通勤范围就按你前面说的，不用再补。接下来要核对具体地点和适用条件，再看哪些线索值得继续聊。'
         : '\n\nYour travel limit is retained; you do not need to repeat it. The next step is to verify the source location and suitability, then compare using the same conditions. Missing facts are not a confirmed match.')
     );
   if (
@@ -42,13 +42,13 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
     return (
       intro +
       (zh
-        ? '\n\n已保留你指定的区域与条件。下一步需要继续核实房型、月租、起租时间和宠物许可；条件未核对清楚前，不能把线索当成已匹配房源。'
+        ? '\n\n区域和条件就按你前面说的。房型、费用、起租和宠物许可还需要核实，确认后才好比较。'
         : '\n\nYour required area and conditions are retained. The next step is to verify the room type, rent, move-in terms and pet permission without treating missing facts as a match.')
     );
   if (!zh)
     return (
       intro +
-      '\n\nPlease verify the exact terms, price, date and location with the provider. Which of your conditions can be flexible so I can search for clearly labelled alternatives?'
+      '\n\nThe next step is to check the exact terms, price, date and location. Which missing detail would help you decide first?'
     );
   const category = ctx.currentRequest.demand.category;
   const intent = ctx.marketIntent;
@@ -57,9 +57,9 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
     category === 'housing'
       ? '房型、月租、起租时间和宠物许可需要分别确认；租金下限不等于整月报价。除了当前区域，你还接受哪些相邻区域？我可以按这个范围再查。'
       : category === 'second_hand'
-        ? '可先核对具体型号、单品价格与自提地点，再区分符合硬条件的物品和备选。你最多能接受多久的单程自提路程？'
+        ? '先核对型号、实际价格和取货地点，再看哪件值得继续聊。你最多能接受多久的单程自提路程？'
         : intent === 'companion' || /搭子|羽毛球|口语|散步/.test(text)
-          ? '地点、日期和活动水平都需要明确；“新生”不代表“初学者”。可以扩大到相邻区域找明确欢迎新手或能约定时间的活动。你最多能接受多久的单程通勤？'
+          ? '地点、时间和是否适合新手还要确认。也可以看看相邻区域有没有明确欢迎新手的活动。你最多能接受多久的单程通勤？'
           : intent === 'carry' || /帮带/.test(text)
             ? '下一步应分别确认航班日期、路线、重量与交接方式；方向不符或日期已过的帖子不能作备选。你希望在哪里、通过什么方式交接？'
             : category === 'furniture_service'

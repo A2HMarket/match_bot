@@ -44,6 +44,7 @@
 | P25 | 任务规划与朋友式帮助 | [P25-task-planning-and-companion.md](./P25-task-planning-and-companion.md) | P24 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
 | P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
 | P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
+| P28 | SOUL与自然接话 | [P28-soul-and-conversation-style.md](./P28-soul-and-conversation-style.md) | P27 | 7 | codex | 进行中 | 固定人格显式注入、紧凑接话、同源回归；原出站门不变 | 2026-10-17 |
 
 
 ## 波次与并行

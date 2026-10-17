@@ -8,6 +8,7 @@ import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
 import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
+import { claimsCompleteMarketFit } from '../market-summary-claims.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -85,7 +86,7 @@ function renderMarketRefs(
   ctx: MatchContext,
   refs: string[],
   zh: boolean,
-): { text: string; evidence: string[] } | null {
+): { text: string; evidence: string[]; hasConfirmedChoice: boolean } | null {
   if (!ctx.marketPlan) return null;
   const listings = (ctx.marketListings ?? []).filter((n) => refs.includes(n.ref));
   if (
@@ -146,12 +147,23 @@ function renderMarketRefs(
     plan: ctx.marketPlan,
     zh,
     assessWholeOffer: true,
+    format:
+      ctx.taskUpdate?.kind === 'continued' &&
+      ctx.task?.ownerUserId === ctx.userId &&
+      ctx.task.scope.chatId === ctx.chatId &&
+      ctx.task.scope.channel === (ctx.channel ?? 'telegram') &&
+      !/展开|详细|完整|重新列|show.{0,15}details|full.{0,12}(?:details|list)/i.test(
+        ctx.currentRequest?.text.split('\n')[0] ?? '',
+      )
+        ? 'brief'
+        : 'full',
     ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
       ? { task: ctx.task }
       : {}),
   });
   return {
     text: rendered.text,
+    hasConfirmedChoice: rendered.choices.primary.length > 0,
     evidence: selections.map((selection, index) => {
       const listing = usable[index];
       if (!listing) return selection.evidence;
@@ -300,6 +312,11 @@ export function replyToRequestTool(deps: AgentDeps) {
             error:
               'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: ' +
               JSON.stringify(marketChoiceFeedback(ctx)),
+          };
+        if (!rendered.hasConfirmedChoice && claimsCompleteMarketFit(args.text))
+          return {
+            error:
+              'No selected lead has all essential conditions confirmed. Do not claim a complete fit; name the supported conditions and the remaining unknown instead.',
           };
         const review = await checkMarketOfferConflicts(deps, ctx, market);
         if (review.kind === 'conflict')
