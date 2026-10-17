@@ -1,0 +1,46 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts (0 test)
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (37 tests | 1 failed) 49ms
+   ❯ reply_to_request (37)
+     × rejects inferred seller identities before a marketplace draft reaches the semantic gate 12ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/seller-identity-claims.test.ts [ packages/agent/tests/seller-identity-claims.test.ts ]
+Error: Cannot find module '../src/seller-identity-claims.js' imported from /Users/huanghaibin/Workspace/match_bot/packages/agent/tests/seller-identity-claims.test.ts
+ ❯ packages/agent/tests/seller-identity-claims.test.ts:2:1
+      1| import { expect, it } from 'vitest';
+      2| import { hasUnqualifiedSellerIdentity } from '../src/seller-identity-c…
+       | ^
+      3| it.each([
+      4|   '两条只是不同卖家的发帖。',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > rejects inferred seller identities before a marketplace draft reaches the semantic gate
+AssertionError: expected 'invalid answer: offer is unknown, ina…' to contain 'Seller identity'
+
+Expected: "Seller identity"
+Received: "invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: null"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:63:20
+     61|       kind: 'partial', refs: ['m1'], text: '这两条是不同卖家，需要分别取货。',
+     62|     }));
+     63|     expect(result).toContain('Seller identity');
+       |                    ^
+     64|     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+     65|     expect(d.evaluateOutbound).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  1 failed | 36 passed (37)
+   Start at  11:06:54
+   Duration  439ms (import 47%, transform 39%, tests 13%, worker 1%)
+

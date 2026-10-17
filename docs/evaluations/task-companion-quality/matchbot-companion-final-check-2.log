@@ -1,0 +1,22 @@
+$ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
+$ tsc -b tsconfig.json
+$ eslint . && node scripts/check-deps.mjs
+✓ dependency direction ok
+$ prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+$ vitest run
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+(node:46715) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+ Test Files  114 passed (114)
+      Tests  929 passed (929)
+   Start at  11:07:54
+   Duration  6.53s (tests 47%, import 31%, transform 21%, worker 1%)
+
+    Isolate  114 workers spawned · ~71ms startup each (spawn + environment, per file)
+             at least ~552ms faster with isolate: false — reuses workers across files instead of one per file
+

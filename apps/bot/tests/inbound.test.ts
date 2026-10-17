@@ -20,6 +20,17 @@ function deps(group: unknown) {
         findByExternal: vi.fn(() => Promise.resolve(group)),
         upsert: vi.fn(() => Promise.resolve({ id: 'g', isActive: false })),
       },
+      users: { upsertByExternal: vi.fn(() => Promise.resolve({ id: 'user' })) },
+      executions: {
+        accept: vi.fn(() =>
+          Promise.resolve({
+            kind: 'accepted',
+            message: { id: 'stored', executionStatus: 'accepted' },
+          }),
+        ),
+        markEnqueued: vi.fn(() => Promise.resolve()),
+      },
+      traces: { create: vi.fn(() => Promise.resolve({})) },
     },
     queues: {},
     enqueueInbound: vi.fn(() => Promise.resolve()),

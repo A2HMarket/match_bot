@@ -4,6 +4,10 @@ import { makeOutboundTool } from './make-outbound-tool.js';
 import { groupReplyAddressing } from './addressing.js';
 import { buildMarketChoices } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
+import { marketChoiceFeedback } from '../market-choice-feedback.js';
+import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
+import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
+import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -13,7 +17,7 @@ const parameters = z.object({
     .min(1)
     .max(1400)
     .describe(
-      'Useful answer in user language: reasoning, practical steps or ONE key question. Facts must be supported by supplied sources; mark interpretations/unknowns. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable only explain the local search outcome and next step.',
+      'Useful answer in user language: reasoning, practical steps or ONE key question. When refs contain m offers, MAX 200 characters: priority plus ONE next step, code renders facts. Facts must be supported by supplied sources; mark interpretations/unknowns. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable only explain the local search outcome and next step.',
     ),
   refs: z
     .array(z.string())
@@ -23,11 +27,47 @@ const parameters = z.object({
     ),
 });
 
-function numericClaims(text: string): string[] {
-  return text.replace(/(^|\n)\s*\d{1,2}[.、)）]\s*/g, '$1').match(/\d+(?:\.\d+)?/g) ?? [];
+function numericClaims(text: string, referenceCount = 0): string[] {
+  return (
+    text
+      .replace(/\bA2H\b/gi, '')
+      .replace(/(?:第|这|那)(\d{1,2})(?:条|套|项)/g, (whole: string, value: string) =>
+        Number(value) > 0 && Number(value) <= referenceCount ? '' : whole,
+      )
+      .replace(/(^|\n)\s*\d{1,2}[.、)）]\s*/g, '$1')
+      .match(/\d+(?:\.\d+)?/g) ?? []
+  );
 }
 function hasSupportedNumber(support: string, value: string): boolean {
   return (support.match(/\d+(?:\.\d+)?/g) ?? []).some((n) => Number(n) === Number(value));
+}
+function claimsUnknownTotalFits(text: string, evidence: string): boolean {
+  if (
+    !/不(?:含|包).{0,6}(?:账单|水电)|(?:excluding|without)\s+bills|bills (?:are )?(?:extra|excluded|not included)/i.test(
+      evidence,
+    )
+  )
+    return false;
+  if (
+    /(?:账单|水电|bills)\s*(?:为|是|每月|约|are|of|per month|[:：])?\s*(?:£|GBP)\s*\d/i.test(
+      evidence,
+    )
+  )
+    return false;
+  return text
+    .split(/[。！？?\n]/)
+    .some(
+      (part) =>
+        /总(?:支出|费用|价|花费)|(?:房租|租金).{0,6}(?:加|\+).{0,6}账单|all[- ]?in|total (?:monthly )?(?:cost|spend|expense)/i.test(
+          part,
+        ) &&
+        /预算(?:范围)?内|不(?:会)?超(?:过)?(?:你的)?预算|没有超(?:过)?(?:你的)?预算|within (?:your |the )?budget|under (?:your |the )?budget/i.test(
+          part,
+        ) &&
+        !/未(?:知|确认|核实|核对)|尚未|不确定|不能(?:确认|保证|核实)|无法(?:确认|保证|核实)|是否|待(?:确认|核实)|需(?:要)?(?:再)?(?:确认|核实)|unknown|unconfirmed|cannot (?:confirm|verify)|whether|not (?:confirmed|known)/i.test(
+          part,
+        ),
+    );
 }
 
 function hasUnsupportedDeparture(text: string, evidence: string): boolean {
@@ -55,16 +95,27 @@ function renderMarketRefs(
     )
   )
     return null;
-  const choices = buildMarketChoices({ candidates: listings, plan: ctx.marketPlan });
+  const choices = buildMarketChoices({
+    candidates: listings,
+    plan: ctx.marketPlan,
+    ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
+      ? { task: ctx.task }
+      : {}),
+  });
   const usable = [...choices.primary, ...choices.backup].map((r) => r.listing);
   if (usable.length !== listings.length) return null;
-  const terms = ctx.marketPlan.needs.flatMap((n) => n.terms);
   const selections = usable.map((n) => {
+    const matched =
+      [...choices.primary, ...choices.backup].find((row) => row.listing.ref === n.ref)?.assessment
+        .needs ?? [];
+    const ownTerms = ctx
+      .marketPlan!.needs.filter((need) => matched.includes(need.id))
+      .flatMap((need) => need.terms);
     const rows = n.description.split('\n');
     const bullets = rows.filter(
       (s) =>
         /^\s*[-•]/.test(s) &&
-        terms.some((t) => s.toLowerCase().includes(t.toLowerCase())) &&
+        ownTerms.some((t) => s.toLowerCase().includes(t.toLowerCase())) &&
         !/已出|已售|❌|sold/i.test(s),
     );
     const evidence = bullets.length
@@ -95,10 +146,53 @@ function renderMarketRefs(
     plan: ctx.marketPlan,
     zh,
     assessWholeOffer: true,
+    ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
+      ? { task: ctx.task }
+      : {}),
   });
   return {
     text: rendered.text,
-    evidence: usable.map((n) => n.title + '\n' + n.description.slice(0, 1600)),
+    evidence: selections.map((selection, index) => {
+      const listing = usable[index];
+      if (!listing) return selection.evidence;
+      const published = listing.isRepost ? listing.sourcePublishedAt : listing.createdAt;
+      const metadata =
+        '\nSource publication timestamp (not availability): ' +
+        (published ?? 'unknown') +
+        '\nEvidence checked on calendar date Europe/London: ' +
+        new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
+      const matched =
+        [...choices.primary, ...choices.backup].find((row) => row.listing.ref === listing.ref)
+          ?.assessment.needs ?? [];
+      const mentions = (text: string, terms: string[]) =>
+        terms.some((term) => text.toLowerCase().includes(term.toLowerCase()));
+      const excluded = ctx.marketPlan!.needs.some(
+        (need) =>
+          !matched.includes(need.id) &&
+          mentions(listing.title + '\n' + listing.description, need.terms),
+      );
+      if (!excluded) return listing.title + '\n' + listing.description.slice(0, 1600) + metadata;
+      const ownTerms = ctx
+        .marketPlan!.needs.filter((need) => matched.includes(need.id))
+        .flatMap((need) => need.terms);
+      const blocks = listing.description
+        .split(/\n(?=\s*[-•])/)
+        .filter((block) => mentions(block.split('\n')[0] ?? '', ownTerms))
+        .map((block) => block.split('——原帖原文——')[0] ?? '')
+        .join('\n');
+      const common = listing.description
+        .split('\n')
+        .filter((line) => /^(?:地点|位置|时间|路线|要求|户型|费用)[：:]/.test(line))
+        .join('\n');
+      return (
+        selection.name +
+        '\n' +
+        (blocks || selection.evidence).slice(0, 1600) +
+        '\n' +
+        common +
+        metadata
+      );
+    }),
   };
 }
 
@@ -109,6 +203,17 @@ export function replyToRequestTool(deps: AgentDeps) {
       'SENDS a useful, source-grounded reply to the current request: advice/steps, partial matches, local no-match explanation, ONE clarification or source unavailability. Complete the user goal even without a perfect offer. Use k refs from search_information for facts, m refs for valid A2H offers; code formats their facts and links. Keep explicit role/date/area/budget; never relax must-have constraints or contact people. This remains subject to phase/Jev/rate gates.',
     parameters,
     toDraft: async (ctx, args: z.infer<typeof parameters>) => {
+      if (
+        deps.taskRequests &&
+        ctx.task &&
+        !ctx.isAnswerFinalization &&
+        ctx.taskProgressVersion !== ctx.task.requirementsVersion
+      )
+        return {
+          error:
+            'Record source checks and the useful next step with record_task_progress before this task answer. Keep unknowns unknown.',
+          kind: 'research_required',
+        };
       if (ctx.answerInputExhausted && ctx.isAnswerFinalization) {
         const zhFailure = ctx.currentRequest?.demand.lang !== 'en';
         const next =
@@ -142,10 +247,48 @@ export function replyToRequestTool(deps: AgentDeps) {
           .replace(/\*\*([^*]+)\*\*/g, '$1')
           .replace(/[（(]\s*(?:k\d+(?::p\d+)?[\s、,]*)+[)）]/g, '')
           .replace(/\bk\d+(?::p\d+)?\b/g, '')
+          .replace(/\bm\d+\b/g, (ref) =>
+            ctx.marketListings?.some((n) => n.ref === ref) ? '' : ref,
+          )
           .trim(),
       };
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
+      if (hasUnrecordedSourceFailureClaim(args.text, ctx.sourceFailures))
+        return {
+          error:
+            'No recorded source failure; do not invent a search outage. Use the server research receipts and available evidence, or ask a necessary question without claiming the search failed.',
+          kind: 'research_required',
+        };
+      if (
+        args.kind === 'no_match' &&
+        deps.answerRequests &&
+        (deps.marketSearch || deps.webSearch || deps.xhsSearch) &&
+        !ctx.marketQueries?.length &&
+        !ctx.marketDetailIds?.length &&
+        !ctx.informationQueries?.length &&
+        !ctx.xhsQueries?.length &&
+        ctx.xhsNotes === undefined &&
+        ctx.searchResults === undefined &&
+        !ctx.sourceFailures?.length &&
+        !ctx.supplierSearchEmpty &&
+        !(ctx.answerInputExhausted && ctx.isAnswerFinalization)
+      )
+        return {
+          error:
+            'No search has been attempted for this request. Call the appropriate search tool before describing empty results or a search outage; ask a necessary clarification instead if the objective itself is undefined.',
+          kind: 'research_required',
+        };
       const market = args.refs.filter((r) => /^m\d+$/.test(r));
+      if (market.length && hasUnqualifiedSellerIdentity(args.text))
+        return {
+          error:
+            'Seller identity is not established by anonymous offer refs. State that it is unknown; do not infer the same/different sellers or pickup addresses from separate posts.',
+        };
+      if (market.length && args.text.length > 200)
+        return {
+          error:
+            'Keep market advice within 200 characters. Give the priority and ONE practical next step; code renders the source facts. Shorten the advice yourself without removing its important uncertainty.',
+        };
       let text = args.text;
       let evidence: string[] = [];
       if (market.length) {
@@ -155,24 +298,47 @@ export function replyToRequestTool(deps: AgentDeps) {
         if (!rendered)
           return {
             error:
-              'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions; choose useful valid leads or no_match',
+              'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: ' +
+              JSON.stringify(marketChoiceFeedback(ctx)),
+          };
+        const review = await checkMarketOfferConflicts(deps, ctx, market);
+        if (review.kind === 'conflict')
+          return {
+            error:
+              'Selected source explicitly conflicts with a hard condition: ' +
+              JSON.stringify(review.conflicts) +
+              '. Remove these offer refs AND their facts; choose another source or explain no_match. Unknown conditions are not positive fits.',
+          };
+        if (review.kind === 'incomplete')
+          return {
+            error:
+              'Selected source conflict review is incomplete (' +
+              review.reason +
+              '); do not call it a match. Use an honest unavailable explanation with refs=[] or fewer already-checkable offers.',
+          };
+        if (
+          ctx.currentRequest?.demand.category === 'housing' &&
+          claimsUnknownTotalFits(args.text, rendered.evidence.join('\n'))
+        )
+          return {
+            error:
+              'Rent excludes bills and the total cost is unknown. Do not claim rent plus bills fits the budget; distinguish the verified rent from the unconfirmed total.',
           };
         const support = rendered.evidence.join('\n') + '\n' + (ctx.currentRequest?.text ?? '');
-        if (numericClaims(args.text).some((n) => !hasSupportedNumber(support, n)))
+        if (numericClaims(args.text, market.length).some((n) => !hasSupportedNumber(support, n)))
           return {
             error:
               'invalid answer: unsupported numerical values ' +
               [
                 ...new Set(
-                  numericClaims(args.text).filter(
+                  numericClaims(args.text, market.length).filter(
                     (n) => !hasSupportedNumber(support, n) && n.length <= 4,
                   ),
                 ),
               ].join(', ') +
               '; omit or cite supporting offer evidence.',
           };
-        const advice = args.text.length > 320 ? args.text.slice(0, 320) + '…' : args.text;
-        text = advice + '\n\n' + rendered.text;
+        text = args.text + '\n\n' + rendered.text;
         evidence = rendered.evidence;
       } else {
         const sources = args.refs.map((ref) =>
@@ -207,14 +373,16 @@ export function replyToRequestTool(deps: AgentDeps) {
 
         if (
           args.kind !== 'clarification' &&
-          numericClaims(args.text).some((n) => !hasSupportedNumber(support, n))
+          numericClaims(args.text, new Set(sources).size).some(
+            (n) => !hasSupportedNumber(support, n),
+          )
         )
           return {
             error:
               'invalid answer: unsupported numerical values ' +
               [
                 ...new Set(
-                  numericClaims(args.text).filter(
+                  numericClaims(args.text, new Set(sources).size).filter(
                     (n) => !hasSupportedNumber(support, n) && n.length <= 4,
                   ),
                 ),
@@ -277,6 +445,7 @@ export function replyToRequestTool(deps: AgentDeps) {
         kind: args.kind === 'clarification' ? 'clarification' : 'recommendation',
         target: ctx.chatId,
         text,
+        taskQuestionText: args.text,
         supplierSummaries: evidence,
         inputRef: ctx.sourceMessageId,
         ...(market.length ? { disclaimer: 'market' as const } : {}),

@@ -1,0 +1,54 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/eval/tests/task-contract.test.ts (4 tests | 1 failed) 11ms
+   × distinguishes a qualitative willingness to pay from an invented monetary cap 3ms
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (23 tests | 1 failed) 32ms
+   ❯ reply_to_request (23)
+     × supplies the selected post timestamp and London check date to Jev without fabricating an original repost date 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/eval/tests/task-contract.test.ts > distinguishes a qualitative willingness to pay from an invented monetary cap
+AssertionError: expected [ 'invented_budget' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "invented_budget",
++ ]
+
+ ❯ packages/eval/tests/task-contract.test.ts:155:19
+    153|   });
+    154|   const grade = () => gradeTaskTurn({ doNotInventBudget: true }, { tas…
+    155|   expect(grade()).toEqual([]);
+       |                   ^
+    156|   for (const value of [
+    157|     { kind: 'money' as const, amountPence: 2000, unit: 'person' as con…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > supplies the selected post timestamp and London check date to Jev without fabricating an original repost date
+AssertionError: expected '{"draft":"这张书桌报价符合预算。\n\n先看这1条相关线索，报价…' to contain '2026-10-16T00:00:00Z'
+
+Expected: "2026-10-16T00:00:00Z"
+Received: "{"draft":"这张书桌报价符合预算。\n\n先看这1条相关线索，报价和待确认项已分别标出。\n\n【优先看】\n\n1. E14书桌\n推荐理由：单品报价符合预算\n出售书桌一张，£40，伦敦E14自提。\n单品报价：出售书桌一张，£40，伦敦E14自提。\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/desk)","demand":{"category":"second_hand","need":"E14收书桌，50镑以内","fromPostcode":"E14","lang":"zh","confidence":1},"supplierSummaries":["E14书桌\n出售书桌一张，£40，伦敦E14自提。"],"recentReplies":[],"inputRef":"m","phase":2}"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:73:42
+     71|     await needsApproval({ context: c } as never, args, 'source-metadat…
+     72|     const verdictInput = (d.evaluateOutbound.mock.calls[0] as unknown …
+     73|     expect(JSON.stringify(verdictInput)).toContain('2026-10-16T00:00:0…
+       |                                          ^
+     74|     expect(JSON.stringify(verdictInput)).toContain('Europe/London');
+     75|     c.marketListings[0]!.isRepost = true;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 25 passed (27)
+   Start at  09:35:44
+   Duration  397ms (import 47%, transform 43%, tests 10%, worker 1%)
+

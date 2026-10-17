@@ -26,6 +26,141 @@ const plan: MarketPlan = {
   requiredArea: ['E14'],
 };
 describe('source-grounded market strategy', () => {
+  it.each([
+    ['租金：£465pw', 'month', 'mismatch'],
+    ['租金：周租£465', 'month', 'mismatch'],
+    ['租金：465pw', 'month', 'mismatch'],
+    ['租金：£335 per week', 'month', 'unknown'],
+    ['租金：约£465pw', 'month', 'unknown'],
+    ['押金：£465pw', 'month', 'unknown'],
+    ['租金：€465pw', 'month', 'unknown'],
+    ['租金：£335-465pw', 'month', 'unknown'],
+    ['租金：£465pw', 'total', 'unknown'],
+  ] as const)('compares weekly housing quotes conservatively: %s (%s)', (quote, unit, status) => {
+    const result = assessMarketListing(
+      { ...listing('出租：Stratford一居室整租\n' + quote), title: 'Stratford一居室' },
+      {
+        intent: 'housing',
+        needs: [{ id: 'home', terms: ['一居室'] }],
+        preferences: [],
+        budget: 1600,
+        budgetUnit: unit,
+        budgetScope: 'all_in',
+      },
+    );
+    expect(result.checks.find((c) => c.label === 'budget')?.status).toBe(status);
+    // A four-week lower bound excludes an over-cap quote; it is not a quoted monthly rent.
+    expect(result.itemPriceGBP).toBeUndefined();
+    if (status === 'mismatch')
+      expect(result.checks.find((c) => c.label === 'budget')?.evidence).toContain(quote);
+  });
+  it.each(['不接受初学者和零基础', '不收初学者', '谢绝新手', '仅限中级及以上'])(
+    'excludes an explicit beginner conflict: %s',
+    (restriction) => {
+      const candidate = {
+        ...listing('伦敦E14，周日下午室内羽毛球。' + restriction),
+        title: 'E14羽毛球搭子',
+        tradeType: 'PEER' as const,
+      };
+      const result = assessMarketListing(candidate, {
+        intent: 'companion',
+        needs: [{ id: 'bad', terms: ['羽毛球'] }],
+        preferences: ['初学者'],
+        essentialPreferences: ['初学者'],
+      });
+      expect(result.checks).toContainEqual(
+        expect.objectContaining({ label: 'skill', status: 'mismatch' }),
+      );
+    },
+  );
+  it('does not turn a beginner welcome or an unknown level into an explicit skill conflict', () => {
+    for (const statement of ['欢迎初学者和零基础', '水平要求待确认']) {
+      const candidate = {
+        ...listing('伦敦E14羽毛球。' + statement),
+        title: '羽毛球搭子',
+        tradeType: 'PEER' as const,
+      };
+      const result = assessMarketListing(candidate, {
+        intent: 'companion',
+        needs: [{ id: 'bad', terms: ['羽毛球'] }],
+        preferences: ['初学者'],
+      });
+      expect(result.checks.some((c) => c.label === 'skill' && c.status === 'mismatch')).toBe(false);
+    }
+  });
+  it('recognises a stated monthly rent excluding bills without treating the rent as all-in', () => {
+    const n = {
+      ...listing('出租：伦敦Stratford一居室整租\n费用：月租£1550，不含账单\n地点：Stratford'),
+      title: 'Stratford一居室',
+    };
+    const result = assessMarketListing(n, {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      preferences: ['包账单'],
+      budget: 1600,
+    });
+    expect(result.checks.find((c) => c.label === 'budget')?.status).toBe('met');
+    expect(result.itemPriceEvidence).toContain('不含账单');
+  });
+  it('rejects explicit opposition to a hard pet condition without treating an unknown permission as a conflict', () => {
+    const p: MarketPlan = {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      preferences: ['猫'],
+      essentialPreferences: ['猫'],
+    };
+    for (const statement of ['不允许养猫', '禁止宠物，包括猫', 'no cats allowed']) {
+      const n = { ...listing('出租：伦敦一居室\n要求：' + statement), title: '一居室' };
+      expect(assessMarketListing(n, p).checks.some((c) => c.status === 'mismatch')).toBe(true);
+    }
+    const unknown = { ...listing('出租：伦敦一居室\n要求：是否能养猫待确认'), title: '一居室' };
+    expect(assessMarketListing(unknown, p).checks).toContainEqual({
+      label: 'preference:猫',
+      status: 'unknown',
+      evidence: null,
+    });
+    expect(assessMarketListing(unknown, p).checks.some((c) => c.status === 'mismatch')).toBe(false);
+  });
+  it('keeps separate item budgets and retains only the valid part of a mixed bundle', () => {
+    const separate: MarketPlan = {
+      ...plan,
+      budget: 100,
+      needs: [
+        { id: 'desk', terms: ['书桌'], budget: 70 },
+        { id: 'chair', terms: ['办公椅'], budget: 50 },
+      ],
+    };
+    const n = listing('- 书桌｜£60\n- 办公椅｜£65\n地点：E14 自提');
+    const result = assessMarketListing(n, separate);
+    expect(result.needs).toEqual(['desk']);
+    expect(result.itemPriceEvidence).toContain('书桌');
+    expect(result.itemPriceEvidence).not.toContain('办公椅');
+    expect(result.checks).toContainEqual({
+      label: 'budget',
+      status: 'met',
+      evidence: '- 书桌｜£60',
+    });
+    const chair = assessMarketListing(n, separate, '办公椅');
+    expect(chair.checks.some((c) => c.label === 'budget' && c.status === 'mismatch')).toBe(true);
+  });
+  it('checks each quote against its own cap when both items fit', () => {
+    const separate: MarketPlan = {
+      ...plan,
+      needs: [
+        { id: 'desk', terms: ['书桌'], budget: 70 },
+        { id: 'chair', terms: ['办公椅'], budget: 50 },
+      ],
+    };
+    const result = assessMarketListing(
+      listing('- 书桌｜£60\n- 办公椅｜£45\n地点：E14 自提'),
+      separate,
+    );
+    expect(result.needs).toEqual(['desk', 'chair']);
+    expect(result.checks.filter((c) => c.label === 'budget').map((c) => c.status)).toEqual([
+      'met',
+      'met',
+    ]);
+  });
   it('does not declare an estimated rent lower bound within the monthly budget', () => {
     const n = {
       ...listing('转租：Stratford一居室公寓\n价格：租金预算估计在£400以上/月'),

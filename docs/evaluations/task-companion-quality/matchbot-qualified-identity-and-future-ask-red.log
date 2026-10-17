@@ -1,0 +1,56 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts (14 tests | 1 failed) 5ms
+   × rejects identity inferred from anonymous offers: 先问对方是否能同一天取——两件不同卖家，能否一趟拿完尚未确认。 2ms
+ ❯ packages/agent/tests/reply-boundaries.test.ts (17 tests | 2 failed) 6ms
+   × rejects an action or background promise without a capability/receipt: 我会优先问书桌那单能不能拆开搬走。 3ms
+   × rejects an action or background promise without a capability/receipt: 我会先联系卖家确认。 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/reply-boundaries.test.ts > rejects an action or background promise without a capability/receipt: 我会优先问书桌那单能不能拆开搬走。
+ FAIL  packages/agent/tests/reply-boundaries.test.ts > rejects an action or background promise without a capability/receipt: 我会先联系卖家确认。
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts:16:43
+     14|   '我会先联系卖家确认。',
+     15| ])('rejects an action or background promise without a capability/recei…
+     16|   expect(hasUnsupportedActionClaim(text)).toBe(true);
+       |                                           ^
+     17| });
+     18| it('checks authored questions and intros but not a quoted provider or …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  packages/agent/tests/seller-identity-claims.test.ts > rejects identity inferred from anonymous offers: 先问对方是否能同一天取——两件不同卖家，能否一趟拿完尚未确认。
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts:12:46
+     10|   'Different sellers posted these, so arrange two pickups.',
+     11| ])('rejects identity inferred from anonymous offers: %s', (text) => {
+     12|   expect(hasUnqualifiedSellerIdentity(text)).toBe(true);
+       |                                              ^
+     13| });
+     14| it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  3 failed | 28 passed (31)
+   Start at  11:20:47
+   Duration  99ms (transform 56%, import 19%, tests 18%, worker 6%)
+

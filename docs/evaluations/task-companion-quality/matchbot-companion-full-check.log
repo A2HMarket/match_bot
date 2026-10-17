@@ -1,0 +1,68 @@
+$ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
+$ tsc -b tsconfig.json
+$ eslint . && node scripts/check-deps.mjs
+✓ dependency direction ok
+$ prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+$ vitest run
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+(node:45610) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ❯ packages/agent/tests/reply-boundaries.test.ts (15 tests | 2 failed) 6ms
+   × rejects an action or background promise without a capability/receipt: I have already booked it for you. 2ms
+   × checks authored questions and intros but not a quoted provider or a user demand summary 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/reply-boundaries.test.ts > rejects an action or background promise without a capability/receipt: I have already booked it for you.
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts:14:43
+     12|   'I have already booked it for you.',
+     13| ])('rejects an action or background promise without a capability/recei…
+     14|   expect(hasUnsupportedActionClaim(text)).toBe(true);
+       |                                           ^
+     15| });
+     16| it('checks authored questions and intros but not a quoted provider or …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/reply-boundaries.test.ts > checks authored questions and intros but not a quoted provider or a user demand summary
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts:17:68
+     15| });
+     16| it('checks authored questions and intros but not a quoted provider or …
+     17|   expect(hasUnsupportedModelAction({ question: '我会继续留意，你方便哪天？' })).toB…
+       |                                                                    ^
+     18|   expect(hasUnsupportedModelAction({ intro: '我会继续留意' })).toBe(true);
+     19|   expect(hasUnsupportedModelAction({ sources: [{ text: '我会继续留意' }], de…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 112 passed (113)
+      Tests  2 failed | 915 passed (917)
+   Start at  11:04:42
+   Duration  6.88s (tests 47%, import 31%, transform 22%, worker 1%)
+
+    Isolate  113 workers spawned · ~72ms startup each (spawn + environment, per file)
+             at least ~556ms faster with isolate: false — reuses workers across files instead of one per file
+
+[ELIFECYCLE] Test failed. See above for more details.
+[ELIFECYCLE] Command failed with exit code 1.

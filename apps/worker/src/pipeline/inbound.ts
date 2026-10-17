@@ -1,8 +1,8 @@
 import type { AgentDeps, MatchContext, runInbound as runInboundFn } from '@matchbot/agent';
 import type { publishApproval as publishApprovalFn } from '@matchbot/approval';
-import type { Demand, Group } from '@matchbot/db';
+import type { Demand } from '@matchbot/db';
 import type { DemandDraft, InboundMessage, Phase } from '@matchbot/domain';
-import { decideInbound, isBlacklisted, resolvePhase } from '@matchbot/gating';
+import { decideInbound, inboundRuleReason, resolvePhase } from '@matchbot/gating';
 import type { evaluateInbound as evaluateInboundFn } from '@matchbot/jev';
 
 export interface PipelineDeps extends AgentDeps {
@@ -18,16 +18,6 @@ const RECENT_WINDOW_HOURS = 24;
 
 function toPhase(raw: number): Phase {
   return raw === 1 || raw === 2 ? raw : 0;
-}
-
-/** 代码门里不需要访问数据库的部分（架构 §3：空文本 / 命令 / 黑名单 / 群未接入）。 */
-function preGateReason(text: string, group: Group | null, isPrivate: boolean): string | null {
-  if (text.trim().length === 0) return 'empty_text';
-  if (text.trimStart().startsWith('/')) return 'command';
-  if (isBlacklisted(text)) return 'blacklist';
-  if (!isPrivate && !group) return 'group_not_registered';
-  if (group && !group.isActive) return 'group_inactive';
-  return null;
 }
 
 function toDemandDraft(d: Demand): DemandDraft {
@@ -51,11 +41,14 @@ function toDemandDraft(d: Demand): DemandDraft {
  * tagged_move_event / entered_agent / agent_interrupted / agent_completed。
  * Jev 不可用一律按「不进 agent」降级（§3.3 第 5 条）。
  */
-export async function processInbound(d: PipelineDeps, msg: InboundMessage): Promise<void> {
+export async function processInbound(
+  d: PipelineDeps,
+  msg: InboundMessage,
+): Promise<void | { deferMs: number }> {
   const t0 = Date.now();
   const isPrivate = msg.chatId === msg.userId;
   const group = isPrivate ? null : await d.repos.groups.findByExternal(msg.channel, msg.chatId);
-  const phase = resolvePhase({ group, defaultPhase: toPhase(d.env.DEFAULT_PHASE) });
+  let phase = resolvePhase({ group, defaultPhase: toPhase(d.env.DEFAULT_PHASE) });
   const trace = (kind: 'rule' | 'gate', inputRef: string, output: Record<string, unknown>) =>
     d.repos.traces.create({
       kind,
@@ -67,8 +60,14 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     });
 
   // 代码门先于落库：被规则挡下的消息不写 messages，避免留存无用文本（AGENTS.md §6）。
-  const blocked = preGateReason(msg.text, group, isPrivate);
+  const blocked = inboundRuleReason({
+    text: msg.text,
+    isPrivate,
+    hasGroup: !!group,
+    isGroupActive: group?.isActive ?? false,
+  });
   if (blocked) {
+    await d.repos.executions.rejectAdmission({ message: msg, errorCode: blocked });
     await trace('rule', `${msg.channel}:${msg.chatId}:${msg.messageId}`, {
       outcome: 'dropped_by_rule',
       reason: blocked,
@@ -81,118 +80,163 @@ export async function processInbound(d: PipelineDeps, msg: InboundMessage): Prom
     externalId: msg.userId,
     ...(msg.lang ? { lang: msg.lang } : {}),
   });
-  // 队列重投（BullMQ 按 attempts 重试）时整条流程会重跑。agent 可能已经发过消息，
-  // 再跑一遍就是重复发帖——宁可丢这一轮，也不重复（2026-09-24 实测：第 6 版草稿已发出，
-  // 随后 MaxTurns 抛错触发重试，只因 unique 约束碰巧挡住才没发第二遍）。
-  const already = await d.repos.messages.findExisting({
-    groupId: group?.id ?? null,
+  const rawRepos = d.repos;
+  const accepted = await rawRepos.executions.accept({
     userId: user.id,
-    externalId: msg.messageId,
-  });
-  if (already) {
-    await trace('rule', already.id, { outcome: 'dropped_by_rule', reason: 'duplicate_delivery' });
-    return;
-  }
-  const stored = await d.repos.messages.create({
     groupId: group?.id ?? null,
-    userId: user.id,
-    externalId: msg.messageId,
-    text: msg.text,
-    ...(msg.lang ? { lang: msg.lang } : {}),
-    receivedAt: new Date(msg.receivedAt),
-  });
-
-  const recent = (await d.repos.messages.recentByUser(user.id, RECENT_WINDOW_HOURS))
-    .filter((m) => m.id !== stored.id && m.text.length > 0)
-    .slice(0, RECENT_TEXTS)
-    .map((m) => m.text);
-  const verdict = await d.evaluateInbound(d.jev, {
-    text: msg.text,
-    groupName: group?.name ?? 'private',
-    ...(msg.lang ? { lang: msg.lang } : {}),
-    recentTexts: recent,
-    inputRef: stored.id,
+    message: msg,
     phase,
   });
-  if (!verdict.ok) {
-    // Jev 挂了不等于放行：入站方向固定为不进 agent（AGENTS.md §3.3 第 5 条）。
-    await trace('gate', stored.id, {
-      outcome: 'dropped_by_jev',
-      reason: verdict.reason,
-      jevAvailable: false,
+  if (accepted.kind === 'legacy') {
+    await trace('rule', accepted.message.id, {
+      outcome: 'dropped_by_rule',
+      reason: 'legacy_delivery',
     });
     return;
   }
-
-  const decision = decideInbound(verdict, d.thresholds, {
-    addressedToBot: msg.addressedToBot,
-    text: msg.text,
-  });
-  if (decision.action === 'drop') {
-    await trace('gate', stored.id, {
-      outcome: 'dropped_by_jev',
-      reason: decision.reason,
-      verdict,
-    });
-    return;
-  }
-  if (decision.action === 'tag_move_event') {
-    await d.repos.demands.create({
-      userId: user.id,
-      category: verdict.category,
-      confidence: verdict.categoryConfidence,
-      sourceMessageId: stored.id,
-      isMoveEvent: true,
-    });
-    await trace('gate', stored.id, { outcome: 'tagged_move_event', verdict });
-    return;
-  }
-
-  // 接话时 Jev 判的品类未必可靠（「谢谢」没有品类），取该用户最近一条未结需求
-  const openDemands = await d.repos.demands.findOpenByUser(user.id);
-  const open =
-    decision.kind === 'followup'
-      ? openDemands[0]
-      : openDemands.find((x) => x.category === decision.category);
-  const ctx: MatchContext = {
+  const claim = await rawRepos.executions.claim({
     userId: user.id,
+    messageId: accepted.message.id,
+  });
+  if (claim.kind === 'busy') return { deferMs: claim.retryAfterMs };
+  if (claim.kind !== 'acquired') {
+    await trace('rule', accepted.message.id, { outcome: 'execution_' + claim.kind });
+    return;
+  }
+  const stored = claim.message,
+    execution = claim.lease;
+  phase = toPhase(Math.min(phase, stored.executionPhase));
+  msg = {
+    channel: msg.channel,
     chatId: msg.chatId,
-    groupId: group?.id ?? null,
-    phase,
-    sourceMessageId: stored.id,
-    requestCategory: verdict.category,
-    source: { messageId: msg.messageId, userId: msg.userId },
-    ...(group?.rateLimitPerDay != null ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
-    ...(msg.addressedToBot ? { addressedToBot: true } : {}),
-    ...(msg.replyToBotText ? { replyToBotText: msg.replyToBotText } : {}),
-    recentReplies: [],
-    ...(open ? { demandId: open.id, demand: toDemandDraft(open) } : {}),
+    userId: msg.userId,
+    messageId: stored.externalId,
+    text: stored.text,
+    receivedAt: stored.receivedAt.toISOString(),
+    addressedToBot: stored.isAddressedToBot,
+    ...(stored.lang ? { lang: stored.lang } : {}),
+    ...(stored.replyToBotText ? { replyToBotText: stored.replyToBotText } : {}),
+    ...(stored.replyToMessageId ? { replyToMessageId: stored.replyToMessageId } : {}),
   };
-  await trace('gate', stored.id, { outcome: 'entered_agent', decision, verdict });
-
-  let r: Awaited<ReturnType<typeof d.runInbound>>;
+  d = { ...d, repos: rawRepos.forExecution(execution) };
+  let terminal: 'completed' | 'failed' | 'accepted' | 'waiting_approval' = 'completed';
+  let runStateId: string | undefined;
+  let errorCode: string | undefined;
   try {
-    r = await d.runInbound({ deps: d, ctx, input: msg.text });
-  } catch (e) {
-    // 不抛给队列：agent 跑到一半可能已写出站，整轮重跑会重复发帖。留痕后结束本条。
-    const err = e instanceof Error ? e : new Error(String(e));
-    d.logger.error({ inputRef: stored.id, err: err.name }, 'agent run failed');
-    await trace('gate', stored.id, {
-      outcome: 'agent_failed',
-      error: err.name,
-      message: err.message.slice(0, 200),
+    const recent = (
+      await d.repos.messages.recentByUser(user.id, RECENT_WINDOW_HOURS, { groupId: stored.groupId })
+    )
+      .filter((m) => m.id !== stored.id && m.text.length > 0 && m.groupId === stored.groupId)
+      .slice(0, RECENT_TEXTS)
+      .map((m) => m.text);
+    const verdict = await d.evaluateInbound(d.jev, {
+      text: msg.text,
+      groupName: group?.name ?? 'private',
+      ...(msg.lang ? { lang: msg.lang } : {}),
+      recentTexts: recent,
+      inputRef: stored.id,
+      phase,
     });
-    return;
-  }
-  if (r.kind === 'interrupted') {
-    const runState = await d.repos.runStates.findById(r.runStateId);
-    if (runState) {
-      await d.publishApproval({ repos: d.repos, cards: d.cards, runState });
-    } else {
-      d.logger.warn({ runStateId: r.runStateId }, 'interrupted run has no run_state row');
+    if (!verdict.ok) {
+      terminal = 'failed';
+      errorCode = 'jev_unavailable';
+      // Jev 挂了不等于放行：入站方向固定为不进 agent（AGENTS.md §3.3 第 5 条）。
+      await trace('gate', stored.id, {
+        outcome: 'dropped_by_jev',
+        reason: verdict.reason,
+        jevAvailable: false,
+      });
+      return;
     }
-    await trace('gate', stored.id, { outcome: 'agent_interrupted', runStateId: r.runStateId });
-    return;
+
+    const decision = decideInbound(verdict, d.thresholds, {
+      addressedToBot: msg.addressedToBot,
+      text: msg.text,
+    });
+    if (decision.action === 'drop') {
+      await trace('gate', stored.id, {
+        outcome: 'dropped_by_jev',
+        reason: decision.reason,
+        verdict,
+      });
+      return;
+    }
+    if (decision.action === 'tag_move_event') {
+      await d.repos.demands.create({
+        userId: user.id,
+        category: verdict.category,
+        confidence: verdict.categoryConfidence,
+        sourceMessageId: stored.id,
+        isMoveEvent: true,
+      });
+      await trace('gate', stored.id, { outcome: 'tagged_move_event', verdict });
+      return;
+    }
+
+    // 接话时 Jev 判的品类未必可靠（「谢谢」没有品类），取该用户最近一条未结需求
+    const openDemands = await d.repos.demands.findOpenByUser(user.id);
+    const open =
+      decision.kind === 'followup'
+        ? openDemands[0]
+        : openDemands.find((x) => x.category === decision.category);
+    const ctx: MatchContext = {
+      execution,
+      channel: msg.channel,
+      userId: user.id,
+      chatId: msg.chatId,
+      groupId: group?.id ?? null,
+      phase,
+      sourceMessageId: stored.id,
+      requestCategory: verdict.category,
+      source: { messageId: msg.messageId, userId: msg.userId },
+      ...(group?.rateLimitPerDay != null ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
+      ...(msg.addressedToBot ? { addressedToBot: true } : {}),
+      ...(msg.replyToBotText ? { replyToBotText: msg.replyToBotText } : {}),
+      ...(msg.replyToMessageId ? { replyToMessageId: msg.replyToMessageId } : {}),
+      recentReplies: [],
+      ...(open ? { demandId: open.id, demand: toDemandDraft(open) } : {}),
+    };
+    await trace('gate', stored.id, { outcome: 'entered_agent', decision, verdict });
+
+    let r: Awaited<ReturnType<typeof d.runInbound>>;
+    try {
+      r = await d.runInbound({
+        deps: d,
+        ctx,
+        input: msg.text,
+        checkpoint: stored.executionSnapshot,
+      });
+    } catch (e) {
+      // Reply idempotence and the durable execution fence now make bounded redelivery safe.
+      const err = e instanceof Error ? e : new Error(String(e));
+      d.logger.error({ inputRef: stored.id, err: err.name }, 'agent run failed');
+      await trace('gate', stored.id, {
+        outcome: 'agent_failed',
+        error: err.name,
+      });
+      throw err;
+    }
+    if (r.kind === 'interrupted') {
+      terminal = 'waiting_approval';
+      runStateId = r.runStateId;
+      await trace('gate', stored.id, { outcome: 'agent_interrupted', runStateId });
+      return;
+    }
+    await trace('gate', stored.id, { outcome: 'agent_completed', toolsCalled: r.toolsCalled });
+  } catch (error) {
+    terminal = 'accepted';
+    errorCode = 'processing_error';
+    throw error;
+  } finally {
+    await rawRepos.executions.finish({
+      lease: execution,
+      status: terminal,
+      ...(errorCode ? { errorCode } : {}),
+      ...(runStateId ? { runStateId } : {}),
+    });
+    if (terminal === 'waiting_approval' && runStateId) {
+      const state = await rawRepos.runStates.findById(runStateId);
+      if (state) await d.publishApproval({ repos: rawRepos, cards: d.cards, runState: state });
+    }
   }
-  await trace('gate', stored.id, { outcome: 'agent_completed', toolsCalled: r.toolsCalled });
 }

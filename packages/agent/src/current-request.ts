@@ -1,6 +1,7 @@
 import { demandDraftSchema, type DemandCategory, type DemandDraft } from '@matchbot/domain';
 import { z } from 'zod';
 import type { MatchContext } from './context.js';
+import { taskCurrentRequest } from './task-request.js';
 
 export const currentRequestSchema = z.object({
   text: z.string().min(1).max(6000),
@@ -34,6 +35,13 @@ function categoryFor(
 
 /** P22：新请求只从本条原文建评估快照；指代旧回复时才保留同一需求背景。 */
 export function bindCurrentRequest(ctx: MatchContext, input: string): void {
+  const selected = taskCurrentRequest(ctx, input);
+  if (selected) {
+    ctx.currentRequest = currentRequestSchema.parse(selected);
+    ctx.demand = selected.demand;
+    delete ctx.demandId;
+    return;
+  }
   const refinement =
     !!ctx.replyToBotText &&
     /^(?:这台|这家|这个|那台|它|那家|价格呢|有无线吗|does it|what about)/i.test(input.trim());

@@ -1,6 +1,9 @@
 import { tool, type RunContext } from '@openai/agents';
 import type { z } from 'zod';
 import type { AgentDeps, MatchContext } from '../context.js';
+import { TaskTransitionError } from '@matchbot/domain';
+import { taskDeliveryForOutbound } from '../task-outbound.js';
+import { hasUnsupportedModelAction } from '../reply-boundaries.js';
 import {
   decideForOutbound,
   executeOutbound,
@@ -26,6 +29,22 @@ export function makeOutboundTool<A>(
   },
 ) {
   const toArgs = (raw: unknown): A => cfg.parameters.parse(raw) as A;
+  const toDraft = async (ctx: MatchContext, args: A): Promise<DraftResult> => {
+    if (hasUnsupportedModelAction(args))
+      return {
+        error:
+          'invalid answer: no background monitoring or contact/booking action was performed or scheduled. Give a useful action the user can take now; do not promise later monitoring or invent a completed action.',
+      };
+    const draft = await cfg.toDraft(ctx, args);
+    if ('error' in draft) return draft;
+    try {
+      taskDeliveryForOutbound(ctx, draft);
+      return draft;
+    } catch (error) {
+      if (error instanceof TaskTransitionError) return { error: error.message };
+      throw error;
+    }
+  };
   // SDK 在敏感信息关闭时会清掉 InvalidToolInputError 的原始参数/原因；先保存字段路径与限值。
   // 不保存参数值，不写日志/快照。每个工具独立，批量无效调用的错误一并供模型修正。
   const retryLimitMessage =
@@ -66,7 +85,7 @@ export function makeOutboundTool<A>(
         ]);
         return false;
       }
-      const d = await cfg.toDraft(ctx, toArgs(args));
+      const d = await toDraft(ctx, toArgs(args));
       if ('error' in d) {
         await recordDraftFeedback(ctx, d);
         if (callId) {
@@ -101,7 +120,7 @@ export function makeOutboundTool<A>(
       const callId = details?.toolCall?.callId;
       const rejection = callId ? rejectedCalls.get(ctx)?.get(callId) : undefined;
       if (rejection) return rejection;
-      const d = await cfg.toDraft(ctx, toArgs(args));
+      const d = await toDraft(ctx, toArgs(args));
       if ('error' in d) {
         await recordDraftFeedback(ctx, d);
         return ctx.outboundBlocked ? retryLimitMessage : d.error;

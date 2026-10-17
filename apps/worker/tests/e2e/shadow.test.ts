@@ -198,9 +198,18 @@ describe('shadow e2e (Phase 0)', () => {
       where: { user: { externalId: USER }, externalId: '2' },
     });
     const traces = await prisma.decisionTrace.findMany({ where: { inputRef: msg?.id ?? '' } });
-    expect(traces.map((t) => (t.output as { outcome?: string }).outcome)).toEqual([
-      'dropped_by_jev',
-    ]);
+    expect(
+      traces
+        .map((t) => (t.output as { outcome?: string }).outcome)
+        .filter((value) => value !== undefined),
+    ).toEqual(['dropped_by_jev']);
+    expect(
+      traces
+        .map((t) => t.output as { gate?: string; decision?: string })
+        .filter((t) => t.gate === 'request_execution')
+        .map((t) => t.decision),
+    ).toEqual(['accepted', 'claimed', 'failed']);
+    expect(msg?.executionStatus).toBe('failed');
     expect(await prisma.outboundMessage.count({ where: { target: CHAT, status: 'pending' } })).toBe(
       0,
     );

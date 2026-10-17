@@ -1,5 +1,6 @@
 import type { MarketCandidate } from './market-research.js';
 import type { MarketPlan } from './market-strategy.js';
+import type { UserTask } from '@matchbot/domain';
 import { buildMarketChoices, type MarketChoice, type MarketChoices } from './market-choices.js';
 export type MarketSelection = { ref: string; name: string; evidence: string };
 const compact = (s: string, max = 180) => {
@@ -112,14 +113,17 @@ function renderChoice(
   const links =
     `[${zh ? 'A2H详情' : 'A2H listing'}](${n.url})` +
     (n.sourceUrl ? ` · [${zh ? '原帖' : 'Original post'}](${n.sourceUrl})` : '');
+  const details = uniqueSourceDetails([
+    compact(selection.evidence),
+    ...practicalDetails(row, plan, zh),
+    priceLine(row, plan, zh),
+    describeLocation(row, zh),
+  ]);
   return [
     `${index}. ${compact(selection.name, 100)}`,
     `${zh ? (row.essentialMissing.length ? '可作备选：' : '推荐理由：') : 'Why: '}${explainChoice(row, plan, zh)}`,
-    compact(selection.evidence),
-    ...practicalDetails(row, plan, zh),
+    ...details,
     row.warning ? `${zh ? '注意原文：' : 'Source caution: '}${compact(row.warning, 100)}` : '',
-    priceLine(row, plan, zh),
-    describeLocation(row, zh),
     row.missing.length
       ? `${zh ? '待确认：' : 'Unconfirmed: '}${row.missing.map((label) => translate(label, zh)).join(' / ')}`
       : '',
@@ -129,14 +133,31 @@ function renderChoice(
     .filter(Boolean)
     .join('\n');
 }
+function uniqueSourceDetails(lines: string[]): string[] {
+  const kept: string[] = [];
+  const content = (s: string) =>
+    s
+      .replace(
+        /^(?:原文信息|Source detail|分项报价|Item quotes|月租|Monthly rent|买家报价|Buyer offer|费用|Fee|单品报价|Item price|地点原文|Location quote)[：:]\s*/i,
+        '',
+      )
+      .replace(/\s+/g, '');
+  for (const line of lines.filter(Boolean)) {
+    const value = content(line);
+    // Short values such as "unconfirmed" can concern different fields; do not merge those labels.
+    if (value.length >= 8 && kept.some((old) => content(old).includes(value))) continue;
+    kept.push(line);
+  }
+  return kept;
+}
 function introduction(choices: MarketChoices, zh: boolean): string {
   if (!choices.primary.length)
     return zh
       ? `这次尚未确认完全匹配的选项。下面${choices.backup.length}条是待核实线索，先看标出的缺口。`
       : 'This search did not confirm every essential condition. These are leads to check first.';
   return zh
-    ? `我会先看第1项，再比较下面这${choices.primary.length}个选择，关键条件已有原文支持。${choices.backup.length ? `另有${choices.backup.length}条备选，缺失信息已标出。` : '未确认的偏好已单独标出。'}`
-    : 'I would start with these choices: the essential conditions have source evidence. Unconfirmed preferences and backups are marked separately.';
+    ? `先看这${choices.primary.length}条相关线索，报价和待确认项已分别标出。${choices.backup.length ? `另外${choices.backup.length}条备选还缺关键信息。` : ''}`
+    : 'Here are the most relevant leads from this search. Quotes and remaining questions are shown for each option.';
 }
 export function renderMarketChoiceReply(p: {
   listings: MarketCandidate[];
@@ -144,10 +165,12 @@ export function renderMarketChoiceReply(p: {
   plan: MarketPlan;
   zh: boolean;
   assessWholeOffer?: boolean;
+  task?: UserTask;
 }) {
   const choices = buildMarketChoices({
     candidates: p.listings,
     plan: p.plan,
+    ...(p.task ? { task: p.task } : {}),
     ...(p.assessWholeOffer
       ? {}
       : { names: Object.fromEntries(p.selections.map((s) => [s.ref, s.name])) }),

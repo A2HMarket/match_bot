@@ -1,0 +1,65 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/eval/tests/task-contract.test.ts (3 tests | 1 failed) 9ms
+   × recognizes an explicit negative room-type condition, without accepting a positive or soft studio preference 3ms
+ ❯ packages/agent/tests/task-proposal.test.ts (7 tests | 1 failed) 20ms
+   ❯ task proposal normalization (7)
+     × retains the amount but updates explicit all-in scope even if the proposal only mentions bills 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > retains the amount but updates explicit all-in scope even if the proposal only mentions bills
+AssertionError: expected undefined to match object { budgetScope: 'all_in', …(2) }
+
+- Expected:
+{
+  "budgetScope": "all_in",
+  "sourceQuote": "总预算不能增加",
+  "value": {
+    "amountPence": 160000,
+    "kind": "money",
+    "unit": "month",
+  },
+}
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/task-proposal.test.ts:47:65
+     45|     }] });
+     46|     const result = normalizeTaskPatch({ input, task: housing, text: '最…
+     47|     expect(result?.constraints.find((c) => c.key === 'budget')).toMatc…
+       |                                                                 ^
+     48|       budgetScope: 'all_in', value: { kind: 'money', amountPence: 1600…
+     49|       sourceQuote: '总预算不能增加',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/eval/tests/task-contract.test.ts > recognizes an explicit negative room-type condition, without accepting a positive or soft studio preference
+AssertionError: expected [ 'exclude:studio' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "exclude:studio",
++ ]
+
+ ❯ packages/eval/tests/task-contract.test.ts:111:19
+    109|   });
+    110|   const grade = () => gradeTaskTurn({ exclude: ['studio'] }, { task, b…
+    111|   expect(grade()).toEqual([]);
+       |                   ^
+    112|   task.constraints[0]!.value = { kind: 'text', text: '可以考虑studio' };
+    113|   expect(grade()).toContain('exclude:studio');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 8 passed (10)
+   Start at  09:28:17
+   Duration  209ms (transform 54%, import 35%, tests 10%, worker 1%)
+

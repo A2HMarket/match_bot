@@ -1,13 +1,14 @@
 import { isActiveMarketListing, hasLondonEvidence } from '@matchbot/websearch';
 import { z } from 'zod';
+import { BUDGET_SCOPES } from '@matchbot/domain';
 import type { MarketListing, MarketIntent } from '@matchbot/websearch';
-export type MarketNeed = { id: string; terms: string[] };
-export type MarketPlan = {
-  intent: MarketIntent;
-  needs: MarketNeed[];
+export type MarketNeed = { id: string; terms: string[]; budget?: number; rules?: MarketRules };
+export type MarketRules = {
   preferences: string[];
   essentialPreferences?: string[];
   budget?: number;
+  budgetScope?: (typeof BUDGET_SCOPES)[number];
+  budgetUnit?: 'item' | 'person' | 'month' | 'total';
   requiredTerms?: string[];
   excludeTerms?: string[];
   dateRange?: { from: string; to: string };
@@ -15,6 +16,19 @@ export type MarketPlan = {
   route?: { from: string[]; to: string[] };
   capacityKg?: number;
 };
+export type MarketPlan = MarketRules & { intent: MarketIntent; needs: MarketNeed[] };
+export function normalizeMarketPreference(text: string): string {
+  const core = text
+    .replace(
+      /^(?:(?:必须|一定要|务必|需要|希望|最好|优先|must|prefer(?:ably)?|need to|have to)\s*)+/i,
+      '',
+    )
+    .trim();
+  return /猫|\bcats?\b/i.test(core) &&
+    !/不.{0,6}猫|无猫|禁止.{0,6}猫|no\s+cats?|without\s+cats?|not.{0,8}cats?/i.test(core)
+    ? '猫'
+    : core;
+}
 export type MarketCheck = {
   label: string;
   status: 'met' | 'unknown' | 'mismatch';
@@ -75,6 +89,7 @@ function priceEvidence(
   p: MarketPlan,
   focusName?: string,
 ): { text: string; min: number; max: number } | null {
+  if (p.intent === 'housing' && p.budgetUnit && p.budgetUnit !== 'month') return null;
   const textLines = lines(n.description),
     terms = p.needs.flatMap((need) => need.terms);
   const itemLines = textLines.filter((line) =>
@@ -84,11 +99,19 @@ function priceEvidence(
   const candidateLines = [
     ...itemLines.filter((line) => /^[-•]/.test(line)),
     ...itemLines.filter((line) => !/^[-•]/.test(line)),
-    ...(distinctBulletItems.length <= 1 ? textLines.filter((s) => /^价格[：:]/.test(s)) : []),
+    ...(distinctBulletItems.length <= 1
+      ? textLines.filter(
+          (s) =>
+            /^价格[：:]/.test(s) || (p.intent === 'housing' && /^(?:费用|租金|月租)[：:]/.test(s)),
+        )
+      : []),
   ];
   const priced: Array<{ text: string; min: number; max: number }> = [];
   for (const line of candidateLines) {
-    if (/参考价|购入价|原价|新品价|不含|押金|套餐|整套|买.*送|多件|等\d*件|、/.test(line)) continue;
+    const priceContext =
+      p.intent === 'housing' ? line.replace(/不含(?:账单|水电费|水电网|bills)/gi, '') : line;
+    if (/参考价|购入价|原价|新品价|不含|押金|套餐|整套|买.*送|多件|等\d*件|、/.test(priceContext))
+      continue;
     if (
       p.intent === 'carry' &&
       /\/\s*(?:kg|g|公斤|斤)|(?:每|按).*(?:公斤|斤|重量)|\d+(?:\.\d+)?\s*kg/i.test(line)
@@ -112,6 +135,29 @@ function priceEvidence(
   return (
     priced.find((price) => p.budget !== undefined && price.max <= p.budget) ?? priced[0] ?? null
   );
+}
+function weeklyRentConflict(n: MarketListing, p: MarketPlan): string | null {
+  if (
+    p.intent !== 'housing' ||
+    p.budgetUnit !== 'month' ||
+    p.budget === undefined ||
+    n.tradeType !== 'SELL'
+  )
+    return null;
+  for (const line of lines(n.title + '\n' + n.description)) {
+    if (
+      /押金|deposit|参考|约|估计|估算|左右|approx|around|原价|购入价|€|\$|EUR|USD|\d\s*[-–—~至]\s*£?\d/i.test(
+        line,
+      )
+    )
+      continue;
+    const match = line.match(
+      /(?:£\s*|GBP\s*)?(\d+(?:\.\d+)?)\s*(?:pw\b|p\s*\/\s*w\b|per week\b|镑\s*\/周)|周租[：:\s]*(?:£\s*|GBP\s*)?(\d+(?:\.\d+)?)/i,
+    );
+    // Every calendar month contains at least four weeks. Do not invent a monthly quote.
+    if (match && Number(match[1] ?? match[2]) * 4 > p.budget) return line;
+  }
+  return null;
 }
 function routeCheck(n: MarketListing, route: NonNullable<MarketPlan['route']>): MarketCheck {
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -145,7 +191,61 @@ function routeCheck(n: MarketListing, route: NonNullable<MarketPlan['route']>): 
     );
   return { label: 'route', status: wrong ? 'mismatch' : 'unknown', evidence: wrong ?? null };
 }
+export function getMarketCityAliases(city: string): string[] {
+  return /伦敦|London|Heathrow|希思罗/i.test(city)
+    ? ['伦敦', 'London', '希思罗', 'Heathrow']
+    : /上海|Shanghai|浦东/i.test(city)
+      ? ['上海', 'Shanghai', '浦东', 'PVG']
+      : [city];
+}
 export function assessMarketListing(
+  n: MarketListing,
+  p: MarketPlan,
+  focusName?: string,
+): MarketAssessment {
+  if (!p.needs.some((need) => need.budget !== undefined || need.rules !== undefined))
+    return assessSharedMarketListing(n, p, focusName);
+  const views = p.needs
+    .filter((need) => !focusName || contains(focusName, need.terms))
+    .map((need) =>
+      assessSharedMarketListing(
+        n,
+        {
+          ...(need.rules ? { intent: p.intent, ...need.rules } : p),
+          needs: [need],
+          ...(need.budget !== undefined ? { budget: need.budget } : {}),
+        },
+        focusName,
+      ),
+    );
+  const relevant = views.filter((view) => view.needs.length);
+  const usable = relevant.filter(
+    (view) => !view.checks.some((check) => check.status === 'mismatch'),
+  );
+  const chosen = usable.length ? usable : relevant;
+  const prices = chosen.flatMap((view) => (view.itemPriceGBP ? [view.itemPriceGBP] : []));
+  return {
+    id: n.id,
+    needs: chosen.flatMap((view) => view.needs),
+    checks: chosen.flatMap((view) => view.checks),
+    itemPriceEvidence:
+      [
+        ...new Set(
+          chosen.flatMap((view) => (view.itemPriceEvidence ? [view.itemPriceEvidence] : [])),
+        ),
+      ].join('\n') || null,
+    ...(prices.length
+      ? {
+          itemPriceGBP: {
+            min: Math.min(...prices.map((v) => v.min)),
+            max: Math.max(...prices.map((v) => v.max)),
+          },
+        }
+      : {}),
+    score: chosen.reduce((sum, view) => sum + view.score, 0),
+  };
+}
+function assessSharedMarketListing(
   n: MarketListing,
   p: MarketPlan,
   focusName?: string,
@@ -197,7 +297,7 @@ export function assessMarketListing(
     checks.push({ label: 'availability', status: 'mismatch', evidence: matchedItems[0] ?? null });
   if (p.intent === 'companion' && p.preferences.some((term) => /初学|新手|beginner/i.test(term))) {
     const incompatible = lines(n.title + '\n' + n.description).find((line) =>
-      /非新手|不收新手|不适合(?:初学|新手)|(?:建议|建議)(?:中阶|中階)以上|中高级|中高級|no beginners|exclude beginners|not for beginners|beginners not accepted|intermediate (?:or|and) above/i.test(
+      /非新手|(?:不接受|不收|不适合|谢绝)(?:初学者?|新手|零基础)|(?:仅限|只收|只接受)(?:中级|中阶|中階)|(?:建议|建議)(?:中阶|中階)以上|中高级|中高級|no beginners|exclude beginners|not for beginners|beginners not accepted|intermediate (?:or|and) above/i.test(
         line,
       ),
     );
@@ -359,6 +459,7 @@ export function assessMarketListing(
     });
   }
   let price = priceEvidence(n, p, focusName);
+  const weeklyConflict = price ? null : weeklyRentConflict(n, p);
   if (!focusName && p.intent === 'second_hand' && needs.length > 1) {
     const parts = p.needs
       .filter((need) => needs.includes(need.id))
@@ -389,18 +490,51 @@ export function assessMarketListing(
               : price.min > p.budget
                 ? 'mismatch'
                 : 'unknown'
-        : 'unknown',
-      evidence: price?.text ?? null,
+        : weeklyConflict
+          ? 'mismatch'
+          : 'unknown',
+      evidence: price?.text ?? weeklyConflict,
     });
   if (p.route) checks.push(routeCheck(n, p.route));
+  const budgetCheck = checks.find((check) => check.label === 'budget');
+  if (
+    p.budgetScope === 'all_in' &&
+    budgetCheck?.status === 'met' &&
+    (!/全包|包(?:含)?\s*(?:bill|账单|水电)|含\s*(?:bill|账单|水电)|all[- ]?in|bills (?:are )?included|including bills/i.test(
+      n.description + '\n' + (n.priceLabel ?? ''),
+    ) ||
+      /不(?:包|含)\s*(?:bill|账单|水电)|(?:excluding|without) bills|bills (?:are )?not included/i.test(
+        n.description,
+      ))
+  )
+    budgetCheck.status = 'unknown';
   const preferenceSource = focusName && matchedItems.length ? matchedItems.join('\n') : subject;
   for (const preference of p.preferences) {
     const escaped = preference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const petCondition = /^(?:猫|养猫|可养猫|宠物|允许宠物|允许养猫|pets?|cats?)$/i.test(
+      normalizeMarketPreference(preference),
+    );
+    const contradiction = petCondition
+      ? lines(preferenceSource).find(
+          (line) =>
+            /(?:不允许|不接受|禁止|谢绝|不可|不能)(?:养|带)?(?:猫|宠物)|\bno (?:pets|cats)\b|(?:pets|cats) (?:are )?not allowed/i.test(
+              line,
+            ) && !/不是不允许|并非禁止|不再禁止/.test(line),
+        )
+      : undefined;
+    if (contradiction && p.essentialPreferences?.includes(preference)) {
+      checks.push({
+        label: `preference:${preference}`,
+        status: 'mismatch',
+        evidence: contradiction,
+      });
+      continue;
+    }
     const unresolved = new RegExp(
       `(?:没有|未|不支持|无)[^。\\n]{0,6}${escaped}|${escaped}[^。\\n]{0,10}(?:没有说明|未说明|未确认|待确认|不详|不支持)`,
       'i',
     ).test(preferenceSource);
-    if (!contains(preferenceSource, [preference]) || unresolved)
+    if (!contains(preferenceSource, [preference]) || unresolved || contradiction)
       checks.push({ label: `preference:${preference}`, status: 'unknown', evidence: null });
   }
   const met = checks.filter((c) => c.status === 'met').length,
@@ -489,8 +623,9 @@ export const marketPlanInputSchema = z.object({
   route: z.object({ from: terms.min(1), to: terms.min(1) }).nullable(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).nullable(),
 });
-export const marketPlanSchema = marketPlanInputSchema.extend({
-  intent: z.enum(['second_hand', 'housing', 'carry', 'companion']),
+export const marketRulesSchema = marketPlanInputSchema.omit({ needs: true }).extend({
+  budgetScope: z.enum(BUDGET_SCOPES).optional(),
+  budgetUnit: z.enum(['item', 'person', 'month', 'total']).optional(),
   budget: z.number().finite().nonnegative().max(100000).optional(),
   route: z.object({ from: terms.min(1), to: terms.min(1) }).optional(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).optional(),
@@ -499,6 +634,18 @@ export const marketPlanSchema = marketPlanInputSchema.extend({
   requiredTerms: terms.optional(),
   excludeTerms: terms.optional(),
   requiredArea: terms.optional(),
+});
+export const marketPlanSchema = marketRulesSchema.extend({
+  intent: z.enum(['second_hand', 'housing', 'carry', 'companion']),
+  needs: z
+    .array(
+      marketPlanInputSchema.shape.needs.element.extend({
+        budget: z.number().finite().nonnegative().max(100000).optional(),
+        rules: marketRulesSchema.optional(),
+      }),
+    )
+    .min(1)
+    .max(6),
 });
 function carryMonthRange(requestText: string | undefined): MarketPlan['dateRange'] {
   const match = requestText?.match(
@@ -571,15 +718,9 @@ export function toMarketPlan(
   const routeMatch = requestText?.match(
     /(伦敦|上海|北京|广州|London|Shanghai|Beijing|Heathrow|希思罗|浦东)\s*(?:飞|到|至|往|->|→|✈️?|to)\s*(伦敦|上海|北京|广州|London|Shanghai|Beijing|Heathrow|希思罗|浦东)/i,
   );
-  const aliases = (city: string) =>
-    /伦敦|London|Heathrow|希思罗/i.test(city)
-      ? ['伦敦', 'London', '希思罗', 'Heathrow']
-      : /上海|Shanghai|浦东/i.test(city)
-        ? ['上海', 'Shanghai', '浦东', 'PVG']
-        : [city];
   const route =
     input.intent === 'carry' && routeMatch
-      ? { from: aliases(routeMatch[1]!), to: aliases(routeMatch[2]!) }
+      ? { from: getMarketCityAliases(routeMatch[1]!), to: getMarketCityAliases(routeMatch[2]!) }
       : input.intent === 'carry' || requested === null
         ? input.route
         : null;

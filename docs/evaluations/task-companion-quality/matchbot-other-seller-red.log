@@ -1,0 +1,35 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts (16 tests | 2 failed) 6ms
+   × rejects identity inferred from anonymous offers: 椅子属于另一个卖家，不一定能一趟取完。 2ms
+   × rejects identity inferred from anonymous offers: 椅子是另外一位发帖人的。 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/seller-identity-claims.test.ts > rejects identity inferred from anonymous offers: 椅子属于另一个卖家，不一定能一趟取完。
+ FAIL  packages/agent/tests/seller-identity-claims.test.ts > rejects identity inferred from anonymous offers: 椅子是另外一位发帖人的。
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/agent/tests/seller-identity-claims.test.ts:14:46
+     12|   'Different sellers posted these, so arrange two pickups.',
+     13| ])('rejects identity inferred from anonymous offers: %s', (text) => {
+     14|   expect(hasUnqualifiedSellerIdentity(text)).toBe(true);
+       |                                              ^
+     15| });
+     16| it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 14 passed (16)
+   Start at  11:27:43
+   Duration  88ms (transform 51%, tests 23%, import 20%, worker 6%)
+

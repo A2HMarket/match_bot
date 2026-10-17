@@ -1,0 +1,49 @@
+$ pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
+$ tsc -b tsconfig.json
+$ eslint . && node scripts/check-deps.mjs
+✓ dependency direction ok
+$ prettier --check .
+Checking formatting...
+All matched files use Prettier code style!
+$ vitest run
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+(node:65859) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ❯ packages/queue/tests/integration/worker.test.ts (3 tests | 1 failed) 5682ms
+   ❯ createWorker (3)
+     × releases the Redis connection it owns when the worker closes 5012ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/queue/tests/integration/worker.test.ts > createWorker > releases the Redis connection it owns when the worker closes
+AssertionError: closed worker must exit naturally, not retain a Redis socket: expected 'SIGKILL' to be null
+
+- Expected:
+null
+
++ Received:
+"SIGKILL"
+
+ ❯ packages/queue/tests/integration/worker.test.ts:38:86
+     36|         .parse(result);
+     37|       expect(output).toContain('worker closed');
+     38|       expect(signal, 'closed worker must exit naturally, not retain a …
+       |                                                                                      ^
+     39|       expect(code).toBe(0);
+     40|     } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 116 passed (117)
+      Tests  1 failed | 960 passed (961)
+   Start at  13:57:33
+   Duration  6.55s (tests 55%, import 29%, transform 16%, worker 1%)
+
+    Isolate  117 workers spawned · ~70ms startup each (spawn + environment, per file)
+             at least ~556ms faster with isolate: false — reuses workers across files instead of one per file
+
+[ELIFECYCLE] Test failed. See above for more details.
+[ELIFECYCLE] Command failed with exit code 1.

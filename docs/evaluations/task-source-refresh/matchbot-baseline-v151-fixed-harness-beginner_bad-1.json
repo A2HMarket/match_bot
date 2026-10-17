@@ -1,0 +1,638 @@
+{
+  "runId": "bcabea4f-f809-42d5-b3fe-3cb0bd5b3a85",
+  "sampleId": "beginner_bad",
+  "baselineSha": "254e462fbfef7b752df3ed8a082530c106bcabb5",
+  "agentVersion": "0.15.1",
+  "model": "deepseek-flash",
+  "jevModel": "typesafe/jev-1.13",
+  "corpusHash": "f95988b4eb84e4b891fc5d84ec571a226ab7560e4c3ca1f1a7e61d66c4c6319a",
+  "status": "completed",
+  "elapsedMs": 17451,
+  "boundary": "immutable old main; real generation/Jev/SDK/PG/outbound gates; frozen source corpus; per-source outbox simulated transport; no worker inbound or Telegram; baseline has no Task ledger, not graded as candidate Task compliance",
+  "limits": {
+    "perTurnMs": 150000,
+    "toolRounds": 12,
+    "sourceQueries": 8,
+    "sourceDetails": 8
+  },
+  "results": [
+    {
+      "index": 0,
+      "input": "E14想找周末羽毛球搭子，我是初学者，有适合新手的吗？",
+      "elapsedMs": 6698,
+      "searches": 3,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "market_enrich",
+          "reply_to_request"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "E14 有适合新手的两场周末羽毛球局：周六下午14:00–16:00 室内场地、£6/人/次，明确写\"欢迎初学者\"；周日下午同一时段也有新手局、£8/人/次，写明含场地和球、欢迎零基础，具体集合点在确认报名时告知。两场均未写明具体球馆名称，建议报名时先问清是哪家场馆、是否需自带球拍。另外有一场周日中级局明确\"不接受初学者\"，不适合你，可以先跳过。\n\n这次尚未确认完全匹配的选项。下面2条是待核实线索，先看标出的缺口。\n\n【备选 · 需要确认】\n\n1. E14周六室内羽毛球新手局\n可作备选：原文是在找同类活动的伙伴\n伦敦E14招羽毛球搭子。每周六下午14:00–16:00，室内场地，欢迎初学者。每人每次£6。\n单品报价：伦敦E14招羽毛球搭子。每周六下午14:00–16:00，室内场地，欢迎初学者。每人每次£6。\n待确认：地点 / 周末\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-bad-saturday)\n\n2. E14周日下午室内羽毛球新手局\n可作备选：原文是在找同类活动的伙伴\n伦敦E14招羽毛球搭子。每周日下午14:00–16:00，室内场地，欢迎初学者和零基础新手。每人每次£8，含场地和球。地点：E14，具体集合点在确认报名时告知。\n单品报价：伦敦E14招羽毛球搭子。每周日下午14:00–16:00，室内场地，欢迎初学者和零基础新手。每人每次£8，含场地和球。地点：E14，具体集合点在确认报名时告知。\n待确认：地点 / 周末\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-bad-sunday)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+          "kind": "recommendation",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsxfh20003cjbg5twql1r6",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:52:59.414Z"
+        },
+        {
+          "id": "cmvbsxfh50004cjbgzdcc3wow",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "PEER"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:52:59.417Z"
+        },
+        {
+          "id": "cmvbsxhhs0005cjbgtaght5u6",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "market_search",
+            "added": 4,
+            "total": 4,
+            "queries": [
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "companion",
+                "keyword": "羽毛球",
+                "purpose": "discover",
+                "tradeType": "PEER"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "companion",
+                "keyword": "badminton",
+                "purpose": "discover",
+                "tradeType": "PEER"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "companion",
+                "keyword": "新手 羽毛球",
+                "purpose": "discover",
+                "tradeType": "PEER"
+              }
+            ],
+            "decision": "searched",
+            "failures": [],
+            "planApplied": {
+              "needs": 1,
+              "hasRoute": false,
+              "preferences": 4,
+              "excludeTerms": 0,
+              "hasDateRange": false,
+              "requiredTerms": 0,
+              "budgetSpecified": false
+            }
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:02.032Z"
+        },
+        {
+          "id": "cmvbsxij60007cjbg574fw70l",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "market_enrich",
+            "refs": [
+              "m2",
+              "m1"
+            ],
+            "enriched": 2,
+            "failures": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:03.378Z"
+        },
+        {
+          "id": "cmvbsxk1m0009cjbgpaw85aiv",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m2",
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:05.338Z"
+        },
+        {
+          "id": "cmvbsxklz000acjbgb3skbv1w",
+          "kind": "jev",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "id": "gen-dec-1792205585-TWW99EmPxw6cThx39voX",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000061362,
+              "input_tokens": 1461
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.85,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.86,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0.01,
+                  "2": 0.12,
+                  "3": 0.87
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.39,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 731,
+          "costMicro": 61,
+          "createdAt": "2026-10-17T02:53:06.071Z"
+        },
+        {
+          "id": "cmvbsxkm2000bcjbgzfq7kosk",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.85,
+              "mentionsUnverified": 0.39
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:06.074Z"
+        },
+        {
+          "id": "cmvbsxkm4000ccjbgaxwqsue8",
+          "kind": "gate",
+          "inputRef": "cmvbsxfgy0002cjbgqvypweli",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m2",
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:06.076Z"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "input": "半小时以内",
+      "elapsedMs": 1966,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "ask_clarification"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "“半小时以内”是指路程时间（从 E14 出发半小时内能到），还是活动/服务时长控制在半小时以内？",
+          "kind": "clarification",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsxkn2000ocjbgd0ul73i4",
+          "kind": "gate",
+          "inputRef": "cmvbsxkn0000ncjbglryr1fx6",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:06.110Z"
+        },
+        {
+          "id": "cmvbsxkn4000pcjbgby2t5cun",
+          "kind": "gate",
+          "inputRef": "cmvbsxkn0000ncjbglryr1fx6",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:06.112Z"
+        },
+        {
+          "id": "cmvbsxm54000qcjbgbgeikekm",
+          "kind": "jev",
+          "inputRef": "cmvbsxkn0000ncjbglryr1fx6",
+          "output": {
+            "id": "gen-dec-1792205587-LhA9F5SzV0xDfR79PPRp",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000027132,
+              "input_tokens": 646
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.61,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.63,
+                "probabilities": {
+                  "0": 0.02,
+                  "1": 0.04,
+                  "2": 0.23,
+                  "3": 0.71
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.07,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 398,
+          "costMicro": 27,
+          "createdAt": "2026-10-17T02:53:08.056Z"
+        },
+        {
+          "id": "cmvbsxm56000rcjbgbuzsstnu",
+          "kind": "gate",
+          "inputRef": "cmvbsxkn0000ncjbglryr1fx6",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.61,
+              "mentionsUnverified": 0.07
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:08.058Z"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "input": "周日下午，周六不行",
+      "elapsedMs": 1674,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": []
+      },
+      "outbounds": [],
+      "traces": [
+        {
+          "id": "cmvbsxm5r000zcjbg66sikvno",
+          "kind": "gate",
+          "inputRef": "cmvbsxm5o000ycjbguoo977k6",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:08.079Z"
+        },
+        {
+          "id": "cmvbsxm5t0010cjbgrh5z1eek",
+          "kind": "gate",
+          "inputRef": "cmvbsxm5o000ycjbguoo977k6",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:08.081Z"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "input": "室内的，收费也可以",
+      "elapsedMs": 4646,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "reply_to_request"
+        ]
+      },
+      "failures": [
+        "information:unavailable"
+      ],
+      "outbounds": [
+        {
+          "text": "这次查询没能完成，不能据此判断没有匹配结果。\n抱歉，我这边暂时查不到可靠的公开信息（室内活动、场馆和票价出处都没能加载出来），所以不想凭空给你推荐。\n\n方便先告诉我一句吗：这是给大人自己去的室内活动，还是带孩子一起的亲子室内去处？等我拿到可核实的场馆与票价信息，就按「室内 + 可付费」这个条件帮你整理两三个选项。",
+          "kind": "recommendation",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsxng90015cjbgeydva33q",
+          "kind": "gate",
+          "inputRef": "cmvbsxng70014cjbg8676hihr",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:09.753Z"
+        },
+        {
+          "id": "cmvbsxngb0016cjbgkr7130or",
+          "kind": "gate",
+          "inputRef": "cmvbsxng70014cjbg8676hihr",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:09.755Z"
+        },
+        {
+          "id": "cmvbsxqhf0018cjbgboz8p1fe",
+          "kind": "gate",
+          "inputRef": "cmvbsxng70014cjbg8676hihr",
+          "output": {
+            "gate": "request_answer",
+            "kind": "unavailable",
+            "refs": [],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:13.683Z"
+        },
+        {
+          "id": "cmvbsxr0u0019cjbgwvv8519a",
+          "kind": "jev",
+          "inputRef": "cmvbsxng70014cjbg8676hihr",
+          "output": {
+            "id": "gen-dec-1792205594-B95kEqLKXV7Fx4yF2SHP",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000031794,
+              "input_tokens": 757
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.37,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.49,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0.07,
+                  "2": 0.49,
+                  "3": 0.44
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.07,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 696,
+          "costMicro": 32,
+          "createdAt": "2026-10-17T02:53:14.382Z"
+        },
+        {
+          "id": "cmvbsxr0v001acjbgglh3ki8v",
+          "kind": "gate",
+          "inputRef": "cmvbsxng70014cjbg8676hihr",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.37,
+              "mentionsUnverified": 0.07
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:14.383Z"
+        },
+        {
+          "id": "cmvbsxr0x001bcjbgtqawfwc8",
+          "kind": "gate",
+          "inputRef": "cmvbsxng70014cjbg8676hihr",
+          "output": {
+            "gate": "request_answer",
+            "kind": "unavailable",
+            "refs": [],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:14.385Z"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "input": "约好了，已经解决",
+      "elapsedMs": 2368,
+      "searches": 0,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "react"
+        ]
+      },
+      "outbounds": [
+        {
+          "text": "👍",
+          "kind": "reaction",
+          "status": "sent"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbsxr1c001kcjbgchwcrcrb",
+          "kind": "gate",
+          "inputRef": "cmvbsxr1a001jcjbgpzh5w1th",
+          "output": {
+            "gate": "current_request",
+            "category": "other"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:14.400Z"
+        },
+        {
+          "id": "cmvbsxr1d001lcjbgcyf38q5y",
+          "kind": "gate",
+          "inputRef": "cmvbsxr1a001jcjbgpzh5w1th",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:14.401Z"
+        },
+        {
+          "id": "cmvbsxryp001mcjbghts5phpi",
+          "kind": "gate",
+          "inputRef": "cmvbsxr1a001jcjbgpzh5w1th",
+          "output": {
+            "gate": "outbound",
+            "kind": "reaction",
+            "decision": "auto"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:15.601Z"
+        },
+        {
+          "id": "cmvbsxryu001ncjbgtyjz4je0",
+          "kind": "gate",
+          "inputRef": "cmvbsxr1a001jcjbgpzh5w1th",
+          "output": {
+            "gate": "outbound",
+            "kind": "reaction",
+            "decision": "auto"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T02:53:15.606Z"
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "keyword": "羽毛球",
+      "page": 1,
+      "tradeType": "PEER"
+    },
+    {
+      "keyword": "badminton",
+      "page": 1,
+      "tradeType": "PEER"
+    },
+    {
+      "keyword": "新手 羽毛球",
+      "page": 1,
+      "tradeType": "PEER"
+    }
+  ],
+  "details": [
+    "task-eval-bad-saturday",
+    "task-eval-bad-sunday"
+  ]
+}

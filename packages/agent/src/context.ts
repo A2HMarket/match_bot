@@ -1,5 +1,6 @@
 import type { Repositories } from '@matchbot/db';
-import type { DemandDraft, DemandCategory, Phase } from '@matchbot/domain';
+import type { DemandDraft, DemandCategory, Phase, UserTask } from '@matchbot/domain';
+import type { ExecutionLease } from '@matchbot/domain';
 import type { Thresholds } from '@matchbot/gating';
 import type { evaluateOutbound, JevClient } from '@matchbot/jev';
 import type { Env, Logger } from '@matchbot/shared';
@@ -21,6 +22,8 @@ import type { MarketCandidate, MarketResearchQuery } from './market-research.js'
 
 /** 一次 run 的上下文。Session 粒度是用户；群上下文与开放需求经这里 + instructions 注入。 */
 export interface MatchContext {
+  execution?: ExecutionLease;
+  channel?: 'telegram' | 'whatsapp';
   userId: string;
   chatId: string;
   groupId: string | null;
@@ -36,7 +39,22 @@ export interface MatchContext {
   /** 用户在对 bot 说话（回复 bot / @bot），以及被回复的那条 bot 消息原文。 */
   addressedToBot?: boolean;
   replyToBotText?: string;
+  replyToMessageId?: string;
   requestCategory?: DemandCategory;
+  /** Server-selected, owner/scope-checked task; never accept an arbitrary model-provided snapshot. */
+  task?: UserTask;
+  taskCandidates?: UserTask[];
+  taskAnchorId?: string;
+  taskPlanFailures?: number;
+  taskProgressCalls?: number;
+  taskProgressVersion?: number;
+  sourceReviewCache?: Record<string, boolean>;
+  taskSourceReviewedClaims?: number;
+  runDeadlineAt?: number;
+  taskUpdate?: {
+    kind:
+      'new' | 'continued' | 'ambiguous' | 'acknowledged' | 'completed' | 'cancelled' | 'unbound';
+  };
   currentRequest?: CurrentRequest;
   knowledgeSources?: KnowledgeSource[];
   informationQueries?: string[];
@@ -82,6 +100,8 @@ export interface MatchContext {
 export interface AgentDeps {
   /** P22 production enables request-bound answering; legacy injected callers remain compatible. */
   answerRequests?: boolean;
+  /** Enable the persistent task preparation stage once migrations and the full flow are deployed. */
+  taskRequests?: boolean;
   env: Env;
   repos: Repositories;
   jev: JevClient;

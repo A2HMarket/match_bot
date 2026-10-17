@@ -4,6 +4,7 @@ import { assistantMessage, functionCall, ScriptedModel } from '@openai/agents/te
 import { describe, expect, it, vi } from 'vitest';
 import { AGENT_VERSION } from '../src/agent.js';
 import { resumeRun, runInbound } from '../src/run.js';
+import { taskSchema, reviseTaskRequirements, recordTaskProgress } from '@matchbot/domain';
 
 const VAN = { id: 'a', name: 'Van Co', roughPrice: '£40/h', telegram: '@vanco' };
 
@@ -86,6 +87,290 @@ const replyCall = (callId = 'c1') =>
   );
 
 describe('runInbound', () => {
+  it('does not turn thanks for a recommendation into another research/finalization reply', async () => {
+    const model = new ScriptedModel([
+      [functionCall('acknowledge_task', {}, { callId: 'ack' })],
+      [functionCall('react', { emoji: '👍' }, { callId: 'reaction' })],
+      [assistantMessage('done')],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    await runInbound({
+      deps: {
+        ...deps,
+        answerRequests: true,
+        taskRequests: true,
+        repos: { ...repos, tasks: { findOpenByScope: () => Promise.resolve([]) } },
+      } as never,
+      ctx: { ...ctx(2), source: { messageId: 'tg1', userId: 'user1' } },
+      input: '谢谢推荐',
+    });
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    expect(repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'reaction' }),
+      'pending',
+    );
+    model.assertComplete();
+  });
+  it('refreshes saved sources after planning and before the first answer generation on a short followup', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'update_task',
+          {
+            taskRef: 'activity-task',
+            referenceQuote: null,
+            goals: [],
+            constraints: [
+              {
+                key: 'max_travel_minutes',
+                goalId: null,
+                strength: 'hard',
+                value: { kind: 'duration', minutes: 30 },
+                sourceQuote: '半小时以内',
+              },
+            ],
+            outcome: null,
+          },
+          { callId: 'plan' },
+        ),
+      ],
+      [
+        functionCall(
+          'record_task_progress',
+          {
+            checks: [],
+            next: {
+              action: 'ask_user',
+              goalId: 'activity',
+              constraintKey: 'day',
+              reason: '需要知道具体哪天方便',
+            },
+          },
+          { callId: 'source-progress' },
+        ),
+      ],
+      [
+        functionCall(
+          'reply_to_request',
+          { kind: 'clarification', text: '周末更方便周六还是周日？', refs: [] },
+          { callId: 'task-reply' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    const task = taskSchema.parse({
+      id: 'activity-task',
+      ownerUserId: 'u1',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找初学者周末羽毛球',
+      category: 'other',
+      counterparty: 'peer',
+      status: 'active',
+      revision: 0,
+      goals: [
+        {
+          id: 'activity',
+          title: '初学者周末羽毛球',
+          required: true,
+          criteria: [
+            {
+              id: 'fit',
+              label: '水平/时间/地点适合',
+              strength: 'hard',
+              status: 'unknown',
+              evidenceRefs: [],
+            },
+          ],
+        },
+      ],
+      constraints: [
+        {
+          key: 'area',
+          strength: 'hard',
+          value: { kind: 'location', area: 'E14' },
+          origin: { kind: 'user', sourceMessageId: 'first' },
+        },
+      ],
+      evidence: [
+        {
+          id: 'saved',
+          goalId: 'activity',
+          kind: 'source_excerpt',
+          sourceRef: 'market:badminton',
+          summary: '历史活动价格£40',
+          observedAt: '2026-10-16T00:00:00Z',
+        },
+      ],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    let storedTask = task;
+    const tasks = {
+      findOpenByScope: vi.fn(() => Promise.resolve([task])),
+      applyUserTurn: vi.fn((p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
+        Promise.resolve({
+          kind: 'applied',
+          task: (storedTask = reviseTaskRequirements({
+            task,
+            patch: p.patch,
+            source: { messageId: 'm1', text: '半小时以内' },
+          })),
+        }),
+      ),
+      recordProgress: vi.fn(
+        (p: { progress: Omit<Parameters<typeof recordTaskProgress>[0], 'task'> }) =>
+          Promise.resolve({
+            kind: 'applied',
+            task: (storedTask = recordTaskProgress({ task: storedTask, ...p.progress })),
+          }),
+      ),
+    };
+    Object.assign(tasks, {
+      planTurn: (p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
+        tasks.applyUserTurn(p),
+    });
+    const detail = vi.fn(() =>
+      Promise.resolve({
+        id: 'badminton',
+        title: 'E14初学者周末羽毛球',
+        description: 'E14初学者周末羽毛球搭子，当前活动价格£45',
+        tradeType: 'PEER',
+        status: 'ON_SALE',
+        tags: [],
+        priceLabel: '£45',
+        url: 'https://a2hmarket.ai/listings/badminton',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      }),
+    );
+    const getResponse = model.getResponse.bind(model);
+    const generations: Array<{ detailReads: number; instructions: string }> = [];
+    vi.spyOn(model, 'getResponse').mockImplementation((request) => {
+      // The planning call runs first. Every subsequent generation must see the refreshed public source.
+      generations.push({
+        detailReads: detail.mock.calls.length,
+        instructions: JSON.stringify(request.systemInstructions),
+      });
+      return getResponse(request);
+    });
+    await runInbound({
+      deps: {
+        ...deps,
+        repos: { ...repos, tasks },
+        answerRequests: true,
+        taskRequests: true,
+        marketSearch: { detail, find: vi.fn() },
+      } as never,
+      ctx: ctx(2),
+      input: '半小时以内',
+    });
+    expect(tasks.findOpenByScope).toHaveBeenCalledWith({
+      userId: 'u1',
+      scope: { channel: 'telegram', chatId: '-1' },
+    });
+    expect(tasks.applyUserTurn).toHaveBeenCalledOnce();
+    expect(generations[1]).toEqual(expect.objectContaining({ detailReads: 1 }));
+    expect(generations[1]!.instructions).toContain('当前活动价格£45');
+    expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('30 minutes');
+    expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('E14');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    model.assertComplete();
+  });
+  it('passes the selected persistent task into actual SDK instructions for a short followup', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'reply_to_request',
+          {
+            kind: 'clarification',
+            text: '周末你更方便周六还是周日？',
+            refs: [],
+          },
+          { callId: 'task-answer' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    deps.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 3,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    const task = taskSchema.parse({
+      id: 'badminton',
+      ownerUserId: 'u1',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找羽毛球搭子',
+      category: 'other',
+      status: 'active',
+      revision: 2,
+      goals: [
+        {
+          id: 'activity',
+          title: '周末初学者羽毛球活动',
+          required: true,
+          criteria: [
+            {
+              id: 'fit',
+              label: '符合时间和水平',
+              strength: 'hard',
+              status: 'unknown',
+              evidenceRefs: [],
+            },
+          ],
+        },
+      ],
+      constraints: [
+        {
+          key: 'area',
+          strength: 'hard',
+          value: { kind: 'location', area: 'E14' },
+          origin: { kind: 'user', sourceMessageId: 'first' },
+        },
+        {
+          key: 'radius',
+          strength: 'hard',
+          value: { kind: 'duration', minutes: 30 },
+          origin: { kind: 'user', sourceMessageId: 'm1' },
+        },
+      ],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    await runInbound({
+      deps: { ...deps, answerRequests: true } as never,
+      ctx: { ...ctx(2), task },
+      input: '半小时以内',
+    });
+    const instructions = JSON.stringify(model.calls[0]?.request.systemInstructions);
+    expect(instructions).toContain('初学者羽毛球');
+    expect(instructions).toContain('E14');
+    expect(instructions).toContain('30 minutes');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    model.assertComplete();
+  });
   it('binds current food instead of the old carry request during information answering', async () => {
     const model = new ScriptedModel([
       [
@@ -920,6 +1205,100 @@ describe('runInbound', () => {
     });
     expect(r).toEqual({ kind: 'completed', toolsCalled: ['reply_in_group'] });
     expect(repos.outbound.create).toHaveBeenCalledWith(expect.anything(), 'pending');
+  });
+  it('rebuilds a modern approval from its original message and fresh fence without reading the latest unrelated demand', async () => {
+    const model = new ScriptedModel([[replyCall()]]),
+      { deps, repos, runStates } = makeDeps(model);
+    await runInbound({ deps: deps as never, ctx: ctx(1), input: 'need a van' });
+    const row = runStates[0];
+    if (!row) throw new Error('missing snapshot');
+    const fresh = {
+      ...repos,
+      messages: {
+        findById: vi.fn().mockResolvedValue({
+          id: 'm1',
+          userId: 'u1',
+          externalId: 'original-message',
+          groupId: 'g',
+          text: 'need a van',
+          taskId: null,
+        }),
+      },
+      users: {
+        findById: vi.fn().mockResolvedValue({ id: 'u1', channel: 'telegram', externalId: '111' }),
+      },
+      groups: {
+        findByExternal: vi
+          .fn()
+          .mockResolvedValue({ id: 'g', isActive: true, phase: 1, rateLimitPerDay: null }),
+      },
+      executions: {
+        recoveryFlags: vi
+          .fn()
+          .mockResolvedValue({ outboundBlocked: false, answerInputExhausted: false }),
+      },
+    };
+    const modern = { ...fresh, forExecution: vi.fn(() => fresh) },
+      lease = { userId: 'u1', messageId: 'm1', token: 'fresh-lease', fence: 2 };
+    model.enqueue([assistantMessage('posted')]);
+    const result = await resumeRun({
+      deps: { ...deps, repos: modern } as never,
+      runState: { ...row, status: 'consumed', messageId: 'm1' } as never,
+      approval: { runStateId: row.id, decision: 'approve' } as never,
+      execution: lease,
+    });
+    expect(result.kind).toBe('completed');
+    expect(repos.demands.findOpenByUser).not.toHaveBeenCalled();
+    expect(repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        execution: lease,
+        replyToMessageId: 'original-message',
+        mentionUserId: '111',
+      }),
+      'pending',
+    );
+    model.assertComplete();
+  });
+  it('refuses a modern approval after its task conditions change, before executing the old tool', async () => {
+    const model = new ScriptedModel([[replyCall()]]),
+      { deps, repos, runStates } = makeDeps(model);
+    await runInbound({ deps: deps as never, ctx: ctx(1), input: 'need a van' });
+    const row = runStates[0];
+    if (!row) throw new Error('missing snapshot');
+    const fresh = {
+        ...repos,
+        messages: {
+          findById: vi.fn().mockResolvedValue({
+            id: 'm1',
+            userId: 'u1',
+            groupId: 'g',
+            text: 'need a van',
+            taskId: 'task',
+            taskRequirementsVersion: 0,
+          }),
+        },
+        users: {
+          findById: vi.fn().mockResolvedValue({ id: 'u1', channel: 'telegram', externalId: '111' }),
+        },
+        groups: {
+          findByExternal: vi.fn().mockResolvedValue({ id: 'g', isActive: true, phase: 1 }),
+        },
+        tasks: {
+          findById: vi.fn().mockResolvedValue({ requirementsVersion: 1, status: 'active' }),
+        },
+      },
+      modern = { ...fresh, forExecution: vi.fn(() => fresh) };
+    await expect(
+      resumeRun({
+        deps: { ...deps, repos: modern } as never,
+        runState: { ...row, status: 'consumed', messageId: 'm1' } as never,
+        approval: { runStateId: row.id, decision: 'approve' } as never,
+        execution: { userId: 'u1', messageId: 'm1', token: 'new-lease', fence: 2 },
+      }),
+    ).rejects.toMatchObject({ name: 'ObsoleteResumeError' });
+    expect(repos.outbound.create).not.toHaveBeenCalled();
+    expect(repos.demands.findOpenByUser).not.toHaveBeenCalled();
+    model.assertComplete();
   });
 
   it('resumeRun: rejected interruption does not write outbound', async () => {

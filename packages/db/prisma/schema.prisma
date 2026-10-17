@@ -33,6 +33,25 @@ enum DemandStatus {
   expired
 }
 
+enum ExecutionStatus {
+  accepted
+  running
+  waiting_approval
+  completed
+  failed
+}
+
+enum TaskStatus {
+  active
+  waiting_user
+  waiting_source
+  waiting_delivery
+  delivered
+  completed
+  cancelled
+  expired
+}
+
 enum SupplierPool {
   A
   B
@@ -41,8 +60,10 @@ enum SupplierPool {
 enum OutboundStatus {
   dry_run
   pending
+  sending
   sent
   failed
+  delivery_unknown
 }
 
 /// 出站消息的用途。频控只数 recommendation（PRD §6.2：像广告的是反复推荐，不是回应追问）。
@@ -77,12 +98,16 @@ model User {
   lastSeenAt   DateTime @map("last_seen_at") @db.Timestamptz
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  executionLeaseToken String? @map("execution_lease_token")
+  executionLeaseExpiresAt DateTime? @map("execution_lease_expires_at") @db.Timestamptz
+  executionFence Int @default(0) @map("execution_fence")
 
   messages     Message[]
   demands      Demand[]
   supplies     Supply[]
   sessionItems SessionItem[]
   runStates    RunState[]
+  tasks        Task[]
 
   @@unique([channel, externalId])
   @@map("users")
@@ -118,18 +143,37 @@ model Message {
   lang       String?
   receivedAt DateTime @map("received_at") @db.Timestamptz
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  executionKey String? @unique @map("execution_key")
+  executionStatus ExecutionStatus? @map("execution_status")
+  executionPhase Int @default(0) @map("execution_phase")
+  executionAttempts Int @default(0) @map("execution_attempts")
+  executionFence Int? @map("execution_fence")
+  executionSnapshot String? @map("execution_snapshot")
+  executionError String? @map("execution_error")
+  executionQueuedAt DateTime? @map("execution_queued_at") @db.Timestamptz
+  replyToMessageId String? @map("reply_to_message_id")
+  isAddressedToBot Boolean @default(false) @map("is_addressed_to_bot")
+  replyToBotText String? @map("reply_to_bot_text")
+  taskId String? @map("task_id")
+  taskRequirementsVersion Int? @map("task_requirements_version")
 
   group Group? @relation(fields: [groupId], references: [id])
   user  User   @relation(fields: [userId], references: [id])
+  task Task? @relation(fields: [taskId],references: [id],onDelete: SetNull)
+  runStates RunState[]
+  outbounds OutboundMessage[]
 
   @@unique([groupId, externalId])
   @@index([userId, receivedAt])
+  @@index([userId,executionStatus,receivedAt])
   @@map("messages")
 }
 
 model Demand {
   id               String         @id @default(cuid())
   userId           String         @map("user_id")
+  taskId           String?        @unique @map("task_id")
+  task             Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
   category         DemandCategory
   status           DemandStatus   @default(open)
   need             String?        // 在找什么（简短英文）；库外需求 web search 的查询来源
@@ -151,6 +195,56 @@ model Demand {
 
   @@index([userId, status])
   @@map("demands")
+}
+
+/// PRD §13: one scoped user objective; operational revision and requirements version are distinct.
+model Task {
+  id                  String         @id @default(cuid())
+  userId              String         @map("user_id")
+  channel             Channel
+  chatId              String         @map("chat_id")
+  sourceMessageId     String         @map("source_message_id")
+  intentKey           String         @map("intent_key")
+  originHash          String         @map("origin_hash")
+  category            DemandCategory
+  status              TaskStatus     @default(active)
+  revision            Int            @default(0)
+  requirementsVersion Int            @default(0) @map("requirements_version")
+  state               Json
+  lastUserActivityAt  DateTime       @map("last_user_activity_at") @db.Timestamptz
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events TaskEvent[]
+  messages Message[]
+  outbounds OutboundMessage[]
+  demand Demand?
+
+  @@unique([userId, channel, chatId, sourceMessageId, intentKey])
+  @@index([userId, channel, chatId, status])
+  @@index([lastUserActivityAt])
+  @@map("tasks")
+}
+
+/// Append-only checkpoints expire with task personal data after 30 inactive days (PRD §13).
+model TaskEvent {
+  id              String   @id @default(cuid())
+  taskId          String   @map("task_id")
+  revision        Int
+  operationKey    String   @map("operation_key")
+  requestHash     String   @map("request_hash")
+  kind            String
+  actorKind       String   @map("actor_kind")
+  sourceMessageId String?  @map("source_message_id")
+  checkpoint      Json
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, revision])
+  @@unique([taskId, operationKey])
+  @@map("task_events")
 }
 
 model Supply {
@@ -269,9 +363,12 @@ model RunState {
   expiresAt     DateTime       @map("expires_at") @db.Timestamptz
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
   consumedAt    DateTime?      @map("consumed_at") @db.Timestamptz
+  messageId String? @map("message_id")
 
   user      User       @relation(fields: [userId], references: [id])
   approvals Approval[]
+  outboundCard OutboundMessage?
+  message Message? @relation(fields: [messageId],references: [id],onDelete: SetNull)
 
   @@index([status, expiresAt])
   @@map("run_states")
@@ -284,9 +381,15 @@ model Approval {
   decision   String   // approve / reject / edit / ignore
   editedText String?  @map("edited_text")
   decidedAt  DateTime @default(now()) @map("decided_at") @db.Timestamptz
+  resumeStatus ExecutionStatus? @map("resume_status")
+  resumeQueuedAt DateTime? @map("resume_queued_at") @db.Timestamptz
+  resumeAttempts Int @default(0) @map("resume_attempts")
+  resumeFence Int? @map("resume_fence")
+  resumeError String? @map("resume_error")
 
   runState RunState @relation(fields: [runStateId], references: [id])
 
+  @@index([resumeStatus, resumeQueuedAt])
   @@map("approvals")
 }
 
@@ -296,6 +399,7 @@ model OutboundMessage {
   target     String         // chat id / user id / supplier contact
   text       String
   status     OutboundStatus @default(pending)
+  phase      Int            @default(0)
   kind       OutboundKind   @default(recommendation)
   toolCallId String?        @map("tool_call_id")
   replyToMessageId String? @map("reply_to_message_id") // 群内回帖对应的原消息
@@ -303,9 +407,25 @@ model OutboundMessage {
   error      String?
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz
   sentAt     DateTime?      @map("sent_at") @db.Timestamptz
+  leaseToken String?        @map("lease_token")
+  leaseExpiresAt DateTime?  @map("lease_expires_at") @db.Timestamptz
+  attemptStartedAt DateTime? @map("attempt_started_at") @db.Timestamptz
+  attemptCount Int          @default(0) @map("attempt_count")
+  nextAttemptAt DateTime?   @map("next_attempt_at") @db.Timestamptz
+  externalMessageId String? @map("external_message_id")
+  sourceMessageId String? @map("source_message_id")
+  requestKey String? @unique @map("request_key")
+  approvalRunStateId String? @unique @map("approval_run_state_id")
+  approvalRunState RunState? @relation(fields: [approvalRunStateId], references: [id], onDelete: SetNull)
+  taskId String? @map("task_id")
+  taskRequirementsVersion Int? @map("task_requirements_version")
+  task Task? @relation(fields: [taskId],references: [id],onDelete: SetNull)
+  sourceMessage Message? @relation(fields: [sourceMessageId],references: [id],onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([target, kind, sentAt])
+  @@index([status, leaseExpiresAt])
+  @@unique([channel, target, externalMessageId])
   @@map("outbound_messages")
 }
 

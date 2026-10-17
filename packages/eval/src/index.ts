@@ -34,3 +34,4 @@ export {
 } from './fixture-jev.js';
 export { createMemoryTraces, type MemoryTraces } from './memory-traces.js';
 export { loadInboundGate, type BoundInboundGate } from './gate.js';
+export { gradeTaskTurn, taskConversationsSchema, type TaskObservation } from './task-contract.js';

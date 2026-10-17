@@ -1,0 +1,85 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/eval/tests/task-contract.test.ts (5 tests | 1 failed) 12ms
+   × accepts a hard day condition that explicitly excludes Saturday, without accepting an unqualified weekend 8ms
+ ❯ packages/agent/tests/task-proposal.test.ts (9 tests | 2 failed) 21ms
+   ❯ task proposal normalization (9)
+     × requires housing conditions to be checks on an actual home, not independent property goals 5ms
+     × retains an explicit indoor requirement separately from a willingness to pay on a single activity 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > requires housing conditions to be checks on an actual home, not independent property goals
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/task-proposal.test.ts:41:83
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > retains an explicit indoor requirement separately from a willingness to pay on a single activity
+AssertionError: expected [ { key: 'feature', …(3) } ] to deep equally contain ObjectContaining{…}
+
+- Expected:
+ObjectContaining {
+  "key": "custom:venue_environment",
+  "sourceQuote": "室内",
+  "strength": "hard",
+  "value": {
+    "kind": "text",
+    "text": "室内",
+  },
+}
+
++ Received:
+[
+  {
+    "key": "feature",
+    "sourceQuote": "收费也可以",
+    "strength": "preference",
+    "value": {
+      "kind": "text",
+      "text": "可接受收费活动",
+    },
+  },
+]
+
+ ❯ packages/agent/tests/task-proposal.test.ts:47:32
+     45|     const input = taskPatchProposalSchema.parse({ goals: [], constrain…
+     46|     const patch = normalizeTaskPatch({ input, task: activity, text: '室…
+     47|     expect(patch?.constraints).toContainEqual(expect.objectContaining(…
+       |                                ^
+     48|     expect(normalizeTaskPatch({ input: taskPatchProposalSchema.parse({…
+     49|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  packages/eval/tests/task-contract.test.ts > accepts a hard day condition that explicitly excludes Saturday, without accepting an unqualified weekend
+AssertionError: expected [ 'excluded_day' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "excluded_day",
++ ]
+
+ ❯ packages/eval/tests/task-contract.test.ts:7:19
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  3 failed | 11 passed (14)
+   Start at  09:56:37
+   Duration  186ms (transform 52%, import 33%, tests 14%, worker 1%)
+

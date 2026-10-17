@@ -1,0 +1,68 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/reply-boundaries.test.ts (0 test)
+ ❯ packages/agent/tests/market-choice-presentation.test.ts (2 tests | 1 failed) 8ms
+   ❯ market choice practical details (2)
+     × shows a single paragraph only once while retaining its price, location, condition and links 6ms
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (34 tests | 1 failed) 48ms
+   ❯ reply_to_request (34)
+     × does not enqueue a background promise as a clarification 12ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/reply-boundaries.test.ts [ packages/agent/tests/reply-boundaries.test.ts ]
+Error: Cannot find module '../src/reply-boundaries.js' imported from /Users/huanghaibin/Workspace/match_bot/packages/agent/tests/reply-boundaries.test.ts
+ ❯ packages/agent/tests/reply-boundaries.test.ts:2:1
+      1| import { expect, it } from 'vitest';
+      2| import { hasUnsupportedActionClaim } from '../src/reply-boundaries.js';
+       | ^
+      3|
+      4| it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/market-choice-presentation.test.ts > market choice practical details > shows a single paragraph only once while retaining its price, location, condition and links
+AssertionError: expected [ …(3) ] to have a length of 2 but got 3
+
+- Expected
++ Received
+
+- 2
++ 3
+
+ ❯ packages/agent/tests/market-choice-presentation.test.ts:15:33
+     13|       plan: { intent: 'second_hand', needs: [{ id: 'desk', terms: ['书桌…
+     14|     });
+     15|     expect(text.split('单价£40')).toHaveLength(2);
+       |                                 ^
+     16|     expect(text.split('支持自提')).toHaveLength(2);
+     17|     expect(text).toContain('100×60cm');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > does not enqueue a background promise as a clarification
+AssertionError: expected 'not sent: this request already has a …' to contain 'background'
+
+Expected: "background"
+Received: "not sent: this request already has a failed or unconfirmed delivery (o); do not automatically resend"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:63:20
+     61|       kind: 'clarification', refs: [], text: '我会继续留意房源，有合适的通知你。你方便哪天？',
+     62|     }));
+     63|     expect(result).toContain('background');
+       |                    ^
+     64|     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+     65|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  2 failed | 34 passed (36)
+   Start at  11:00:53
+   Duration  541ms (import 50%, transform 41%, tests 9%, worker 1%)
+

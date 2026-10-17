@@ -1,0 +1,610 @@
+{
+  "runId": "8c0471c3-a900-4914-9736-244e4b2faad3",
+  "agentVersion": "0.16.0",
+  "model": "deepseek-flash",
+  "status": "completed",
+  "elapsedMs": 17990,
+  "boundary": "synthetic user inputs; real model and isolated DB; no search, Jev or Telegram",
+  "results": [
+    {
+      "scenario": "desk_chair",
+      "turn": 0,
+      "input": "E14想收书桌和办公椅，每件50镑以内，能自提。",
+      "elapsedMs": 4506,
+      "update": {
+        "kind": "new"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvb99gf300036tbgmzjo2v9p",
+        "ownerUserId": "cmvb99cyb00006tbgwmrusatk",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-8c0471c3-a900-4914-9736-244e4b2faad3-desk_chair"
+        },
+        "objective": "User wants to find second-hand (收) a desk and an office chair, each under £50, for the E14 area, with self-collection possible.",
+        "category": "second_hand",
+        "status": "active",
+        "revision": 1,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          },
+          {
+            "key": "max_price_per_item",
+            "goalId": "desk",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 5000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          },
+          {
+            "key": "max_price_per_item",
+            "goalId": "office_chair",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 5000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          },
+          {
+            "key": "self_collect",
+            "strength": "hard",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "desk",
+            "title": "Find a second-hand desk (user collecting/buying) within budget in E14",
+            "required": true,
+            "criteria": [
+              {
+                "id": "desk_price",
+                "label": "Desk price is £50 or less",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_area",
+                "label": "Desk is located in / available for collection in E14",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_self_collect",
+                "label": "Desk can be self-collected (自提) by the user",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          },
+          {
+            "id": "office_chair",
+            "title": "Find a second-hand office chair (user collecting/buying) within budget in E14",
+            "required": true,
+            "criteria": [
+              {
+                "id": "chair_price",
+                "label": "Office chair price is £50 or less",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_area",
+                "label": "Office chair is located in / available for collection in E14",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_self_collect",
+                "label": "Office chair can be self-collected (自提) by the user",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "plan_task",
+          "arguments": "{\"route\": \"new\", \"taskRef\": null, \"referenceQuote\": null, \"objective\": \"User wants to find second-hand (收) a desk and an office chair, each under £50, for the E14 area, with self-collection possible.\", \"category\": \"second_hand\", \"patch\": {\"goals\": [{\"id\": \"desk\", \"title\": \"Find a second-hand desk (user collecting/buying) within budget in E14\", \"required\": true, \"criteria\": [{\"id\": \"desk_price\", \"label\": \"Desk price is £50 or less\", \"strength\": \"hard\"}, {\"id\": \"desk_area\", \"label\": \"Desk is located in / available for collection in E14\", \"strength\": \"hard\"}, {\"id\": \"desk_self_collect\", \"label\": \"Desk can be self-collected (自提) by the user\", \"strength\": \"hard\"}], \"sourceQuote\": \"E14想收书桌和办公椅，每件50镑以内，能自提。\"}, {\"id\": \"office_chair\", \"title\": \"Find a second-hand office chair (user collecting/buying) within budget in E14\", \"required\": true, \"criteria\": [{\"id\": \"chair_price\", \"label\": \"Office chair price is £50 or less\", \"strength\": \"hard\"}, {\"id\": \"chair_area\", \"label\": \"Office chair is located in / available for collection in E14\", \"strength\": \"hard\"}, {\"id\": \"chair_self_collect\", \"label\": \"Office chair can be self-collected (自提) by the user\", \"strength\": \"hard\"}], \"sourceQuote\": \"E14想收书桌和办公椅，每件50镑以内，能自提。\"}], \"constraints\": [{\"key\": \"area\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"E14\"}, \"sourceQuote\": \"E14想收书桌和办公椅\"}, {\"key\": \"max_price_per_item\", \"goalId\": \"desk\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 5000, \"unit\": \"item\"}, \"sourceQuote\": \"每件50镑以内\"}, {\"key\": \"max_price_per_item\", \"goalId\": \"office_chair\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 5000, \"unit\": \"item\"}, \"sourceQuote\": \"每件50镑以内\"}, {\"key\": \"self_collect\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"boolean\", \"value\": true}, \"sourceQuote\": \"能自提\"}]}, \"outcome\": null}",
+          "callId": "call_00_zOM7cKQgnKMhKG0TsTY68929"
+        }
+      ]
+    },
+    {
+      "scenario": "desk_chair",
+      "turn": 1,
+      "input": "桌子可以到70镑，椅子还是50",
+      "elapsedMs": 2208,
+      "update": {
+        "kind": "continued"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvb99gf300036tbgmzjo2v9p",
+        "ownerUserId": "cmvb99cyb00006tbgwmrusatk",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-8c0471c3-a900-4914-9736-244e4b2faad3-desk_chair"
+        },
+        "objective": "User wants to find second-hand (收) a desk and an office chair, each under £50, for the E14 area, with self-collection possible.",
+        "category": "second_hand",
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          },
+          {
+            "key": "max_price_per_item",
+            "goalId": "desk",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 7000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99gg000086tbg1d59l7z3"
+            }
+          },
+          {
+            "key": "max_price_per_item",
+            "goalId": "office_chair",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 5000,
+              "unit": "item"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          },
+          {
+            "key": "self_collect",
+            "strength": "hard",
+            "value": {
+              "kind": "boolean",
+              "value": true
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99cyj00026tbg5tz9ni3w"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "desk",
+            "title": "Find a second-hand desk (user collecting/buying) within budget in E14",
+            "required": true,
+            "criteria": [
+              {
+                "id": "desk_price",
+                "label": "Desk price is £50 or less",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_area",
+                "label": "Desk is located in / available for collection in E14",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "desk_self_collect",
+                "label": "Desk can be self-collected (自提) by the user",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          },
+          {
+            "id": "office_chair",
+            "title": "Find a second-hand office chair (user collecting/buying) within budget in E14",
+            "required": true,
+            "criteria": [
+              {
+                "id": "chair_price",
+                "label": "Office chair price is £50 or less",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_area",
+                "label": "Office chair is located in / available for collection in E14",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "chair_self_collect",
+                "label": "Office chair can be self-collected (自提) by the user",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "plan_task",
+          "arguments": "{\"route\": \"continue\", \"taskRef\": \"cmvb99gf300036tbgmzjo2v9p\", \"referenceQuote\": \"桌子可以到70镑，椅子还是50\", \"objective\": null, \"category\": null, \"patch\": {\"goals\": [], \"constraints\": [{\"key\": \"max_price_per_item\", \"goalId\": \"desk\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 7000, \"unit\": \"item\"}, \"sourceQuote\": \"桌子可以到70镑\"}, {\"key\": \"max_price_per_item\", \"goalId\": \"office_chair\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 5000, \"unit\": \"item\"}, \"sourceQuote\": \"椅子还是50\"}]}, \"outcome\": null}",
+          "callId": "call_00_BvIVGjzkHlQfAEWDmaqE6686"
+        }
+      ]
+    },
+    {
+      "scenario": "cat_housing",
+      "turn": 0,
+      "input": "想在Stratford找一居室，月租1600镑以内，11月入住，我有一只猫。",
+      "elapsedMs": 3075,
+      "update": {
+        "kind": "new"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvb99kil000f6tbgvapesmgl",
+        "ownerUserId": "cmvb99i5i000c6tbgzv66ohz7",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-8c0471c3-a900-4914-9736-244e4b2faad3-cat_housing"
+        },
+        "objective": "用户在 Stratford 寻找一居室租住房源，月租 1600 英镑以内，11 月入住，可养一只猫。",
+        "category": "housing",
+        "status": "active",
+        "revision": 1,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99i5l000e6tbgvb1os8jc"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "stratford-1bed",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99i5l000e6tbgvb1os8jc"
+            }
+          },
+          {
+            "key": "monthly_rent",
+            "goalId": "stratford-1bed",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99i5l000e6tbgvb1os8jc"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "stratford-1bed",
+            "strength": "hard",
+            "value": {
+              "kind": "date_range",
+              "from": "2026-11-01",
+              "to": "2026-11-30"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99i5l000e6tbgvb1os8jc"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "stratford-1bed",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一只猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99i5l000e6tbgvb1os8jc"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "stratford-1bed",
+            "title": "在 Stratford 找到一居室出租房源",
+            "required": true,
+            "criteria": [
+              {
+                "id": "stratford-1bed-type",
+                "label": "房源为一居室（one-bedroom）",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "stratford-1bed-area",
+                "label": "房源位于 Stratford",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "stratford-1bed-rent",
+                "label": "月租不超过 1600 英镑",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "stratford-1bed-movein",
+                "label": "可在 11 月入住",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "stratford-1bed-pets",
+                "label": "允许养一只猫",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "plan_task",
+          "arguments": "{\"route\": \"new\", \"taskRef\": null, \"referenceQuote\": null, \"objective\": \"用户在 Stratford 寻找一居室租住房源，月租 1600 英镑以内，11 月入住，可养一只猫。\", \"category\": \"housing\", \"patch\": {\"goals\": [{\"id\": \"stratford-1bed\", \"title\": \"在 Stratford 找到一居室出租房源\", \"required\": true, \"criteria\": [{\"id\": \"stratford-1bed-type\", \"label\": \"房源为一居室（one-bedroom）\", \"strength\": \"hard\"}, {\"id\": \"stratford-1bed-area\", \"label\": \"房源位于 Stratford\", \"strength\": \"hard\"}, {\"id\": \"stratford-1bed-rent\", \"label\": \"月租不超过 1600 英镑\", \"strength\": \"hard\"}, {\"id\": \"stratford-1bed-movein\", \"label\": \"可在 11 月入住\", \"strength\": \"hard\"}, {\"id\": \"stratford-1bed-pets\", \"label\": \"允许养一只猫\", \"strength\": \"hard\"}], \"sourceQuote\": \"想在Stratford找一居室，月租1600镑以内，11月入住，我有一只猫。\"}], \"constraints\": [{\"key\": \"area\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"Stratford\"}, \"sourceQuote\": \"想在Stratford找一居室\"}, {\"key\": \"room_type\", \"goalId\": \"stratford-1bed\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"一居室\"}, \"sourceQuote\": \"想在Stratford找一居室\"}, {\"key\": \"monthly_rent\", \"goalId\": \"stratford-1bed\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 160000, \"unit\": \"month\"}, \"sourceQuote\": \"月租1600镑以内\"}, {\"key\": \"move_in_date\", \"goalId\": \"stratford-1bed\", \"strength\": \"hard\", \"value\": {\"kind\": \"date_range\", \"from\": \"2026-11-01\", \"to\": \"2026-11-30\"}, \"sourceQuote\": \"11月入住\"}, {\"key\": \"pets\", \"goalId\": \"stratford-1bed\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"一只猫\"}, \"sourceQuote\": \"我有一只猫。\"}]}, \"outcome\": null}",
+          "callId": "call_00_1bxX9DDLr07ZPkj0uZ1B7897"
+        }
+      ]
+    },
+    {
+      "scenario": "cat_housing",
+      "turn": 1,
+      "input": "11月5日入住，猫一定要能养，包账单更好，但不增加预算。",
+      "elapsedMs": 4059,
+      "error": "MaxTurnsExceededError",
+      "failures": 2
+    },
+    {
+      "scenario": "beginner_badminton",
+      "turn": 0,
+      "input": "我住E14，周末想找适合初学者的羽毛球搭子。",
+      "elapsedMs": 2531,
+      "update": {
+        "kind": "new"
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvb99plx000s6tbgmg1q1olq",
+        "ownerUserId": "cmvb99nnx000p6tbghsio7b4y",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p25-preview-8c0471c3-a900-4914-9736-244e4b2faad3-beginner_badminton"
+        },
+        "objective": "Seeking badminton partners/playing companions suitable for beginners, located near E14, on weekends.",
+        "category": "other",
+        "status": "active",
+        "revision": 1,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "E14"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99no0000r6tbgl7csu4ho"
+            }
+          },
+          {
+            "key": "day",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "weekends"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99no0000r6tbgl7csu4ho"
+            }
+          },
+          {
+            "key": "level",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "beginner"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvb99no0000r6tbgl7csu4ho"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "badminton-partner",
+            "title": "Find beginner-friendly badminton partner(s)/session near E14 for weekend play",
+            "required": true,
+            "criteria": [
+              {
+                "id": "partner-beginner-level",
+                "label": "Partner or session is suitable for beginners",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "partner-weekend-availability",
+                "label": "Play is possible on weekends",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "partner-area-e14",
+                "label": "Location is in or near E14",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              },
+              {
+                "id": "partner-details-verified",
+                "label": "Venue/contact or partner arrangement details are verified, not invented",
+                "strength": "hard",
+                "status": "unknown",
+                "evidenceRefs": []
+              }
+            ],
+            "userConfirmation": null
+          }
+        ],
+        "evidence": [],
+        "pendingQuestion": null,
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "plan_task",
+          "arguments": "{\"route\": \"new\", \"taskRef\": null, \"referenceQuote\": null, \"objective\": \"Seeking badminton partners/playing companions suitable for beginners, located near E14, on weekends.\", \"category\": \"other\", \"patch\": {\"goals\": [{\"id\": \"badminton-partner\", \"title\": \"Find beginner-friendly badminton partner(s)/session near E14 for weekend play\", \"required\": true, \"criteria\": [{\"id\": \"partner-beginner-level\", \"label\": \"Partner or session is suitable for beginners\", \"strength\": \"hard\"}, {\"id\": \"partner-weekend-availability\", \"label\": \"Play is possible on weekends\", \"strength\": \"hard\"}, {\"id\": \"partner-area-e14\", \"label\": \"Location is in or near E14\", \"strength\": \"hard\"}, {\"id\": \"partner-details-verified\", \"label\": \"Venue/contact or partner arrangement details are verified, not invented\", \"strength\": \"hard\"}], \"sourceQuote\": \"我住E14，周末想找适合初学者的羽毛球搭子。\"}], \"constraints\": [{\"key\": \"area\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"E14\"}, \"sourceQuote\": \"我住E14\"}, {\"key\": \"day\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"weekends\"}, \"sourceQuote\": \"周末\"}, {\"key\": \"level\", \"goalId\": null, \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"beginner\"}, \"sourceQuote\": \"适合初学者\"}]}, \"outcome\": null}",
+          "callId": "call_00_AqUuBJFra7WRGt3rjEyZ2903"
+        }
+      ]
+    },
+    {
+      "scenario": "beginner_badminton",
+      "turn": 1,
+      "input": "半小时以内",
+      "elapsedMs": 1490,
+      "update": {
+        "kind": "ambiguous"
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "name": "plan_task",
+          "arguments": "{\"route\": \"clarify\", \"taskRef\": null, \"referenceQuote\": null, \"objective\": null, \"category\": null, \"patch\": null, \"outcome\": null}",
+          "callId": "call_00_nCNdVRKJUt3Bn93lZ1jS0381"
+        }
+      ]
+    }
+  ],
+  "captureOriginalSha256": "c7955a40cfc7926a7bd60bff6052d405a3628f06c3b297a9e1adca52cd695f18",
+  "captureNote": "Synthetic inputs only; exact task states and tool arguments retained; duplicated vendor metadata omitted. This is preparation-only, not a full reply/Telegram acceptance run."
+}

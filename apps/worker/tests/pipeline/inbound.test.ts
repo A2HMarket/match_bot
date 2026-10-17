@@ -1,3 +1,4 @@
+import type { InboundMessage } from '@matchbot/domain';
 import { DEFAULT_THRESHOLDS } from '@matchbot/gating';
 import { describe, expect, it, vi } from 'vitest';
 import { processInbound } from '../../src/pipeline/inbound.js';
@@ -40,7 +41,49 @@ function makeDeps(over: Record<string, unknown> = {}) {
     create: vi.fn(() => Promise.resolve({ id: 'd1' })),
   };
   const runStates = { findById: vi.fn(() => Promise.resolve({ id: 'rs1' })) };
-  const repos = { traces, users, groups, messages, demands, runStates };
+  let admitted = {
+    userId: 'u1',
+    groupId: 'g1' as string | null,
+    message: msg as InboundMessage,
+    phase: 0,
+  };
+  const stored = () => ({
+    id: 'm1',
+    userId: admitted.userId,
+    groupId: admitted.groupId,
+    externalId: admitted.message.messageId,
+    text: admitted.message.text,
+    lang: admitted.message.lang ?? null,
+    receivedAt: new Date(admitted.message.receivedAt),
+    executionPhase: admitted.phase,
+    executionStatus: 'running',
+    executionSnapshot: null,
+    isAddressedToBot: admitted.message.addressedToBot ?? false,
+    replyToBotText: admitted.message.replyToBotText ?? null,
+    replyToMessageId: admitted.message.replyToMessageId ?? null,
+  });
+  const executions = {
+    rejectAdmission: vi.fn(() => Promise.resolve(false)),
+    accept: vi.fn((p: typeof admitted) => {
+      admitted = p;
+      return Promise.resolve({ kind: 'accepted', message: stored() });
+    }),
+    claim: vi.fn(() =>
+      Promise.resolve({
+        kind: 'acquired',
+        message: stored(),
+        lease: {
+          userId: 'u1',
+          messageId: 'm1',
+          token: '00000000-0000-4000-8000-000000000001',
+          fence: 1,
+        },
+      }),
+    ),
+    finish: vi.fn(() => Promise.resolve(true)),
+  };
+  const repos = { traces, users, groups, messages, demands, runStates, executions };
+  Object.assign(repos, { forExecution: () => repos });
   const evaluateInbound = vi.fn(() => Promise.resolve(verdict));
   const runInbound = vi.fn(() =>
     Promise.resolve({ kind: 'completed', toolsCalled: ['upsert_demand', 'reply_in_group'] }),
@@ -88,6 +131,39 @@ function traceWith(traces: { create: ReturnType<typeof vi.fn> }, outcome: string
 }
 
 describe('processInbound', () => {
+  it('defers a busy user without rerunning Jev or consuming the other execution', async () => {
+    const t = makeDeps();
+    t.repos.executions.claim.mockResolvedValueOnce({ kind: 'busy', retryAfterMs: 2000 } as never);
+    expect(await processInbound(t.deps as never, msg)).toEqual({ deferMs: 2000 });
+    expect(t.evaluateInbound).not.toHaveBeenCalled();
+    expect(t.repos.executions.finish).not.toHaveBeenCalled();
+  });
+  it('does not feed another group history into Jev', async () => {
+    const t = makeDeps();
+    t.repos.messages.recentByUser.mockResolvedValueOnce([
+      { id: 'same', groupId: 'g1', text: 'same group' },
+      { id: 'other', groupId: 'private', text: 'private history' },
+    ] as never);
+    await processInbound(t.deps as never, msg);
+    const call = t.evaluateInbound.mock.calls[0] as unknown as [unknown, { recentTexts: string[] }];
+    expect(call[1].recentTexts).toEqual(['same group']);
+  });
+  it('does not publish an admitted shadow message after the group is upgraded during retry', async () => {
+    const t = makeDeps();
+    t.repos.groups.findByExternal.mockResolvedValueOnce({
+      id: 'g1',
+      name: 'G',
+      phase: 2,
+      isActive: true,
+    });
+    const original = t.repos.executions.claim.getMockImplementation()!;
+    t.repos.executions.claim.mockImplementationOnce(async () => {
+      const claim = await original();
+      return { ...claim, message: { ...claim.message, executionPhase: 0 } };
+    });
+    await processInbound(t.deps as never, msg);
+    expect(firstArg<RunInboundArg>(t.runInbound).ctx.phase).toBe(0);
+  });
   it('blacklisted text is dropped by rule and jev is never called', async () => {
     const t = makeDeps();
     await processInbound(t.deps as never, { ...msg, text: '有人换汇吗' });
@@ -218,22 +294,25 @@ describe('processInbound', () => {
 describe('processInbound — redelivery and agent failures', () => {
   it('does not reprocess a message that was already stored (queue redelivery)', async () => {
     const { deps, repos, traces, runInbound, evaluateInbound } = makeDeps();
-    repos.messages.findExisting.mockResolvedValueOnce({ id: 'm-old' } as never);
+    repos.executions.accept.mockResolvedValueOnce({
+      kind: 'legacy',
+      message: { id: 'm-old' },
+    } as never);
     await processInbound(deps as never, msg);
     expect(repos.messages.create).not.toHaveBeenCalled();
     expect(evaluateInbound).not.toHaveBeenCalled();
     expect(runInbound).not.toHaveBeenCalled();
     expect(traceWith(traces, 'dropped_by_rule')).toMatchObject({
-      output: { reason: 'duplicate_delivery' },
+      output: { reason: 'legacy_delivery' },
     });
   });
 
-  it('contains an agent crash instead of throwing it back to the queue', async () => {
+  it('retains an agent crash for a bounded durable retry', async () => {
     const boom = Object.assign(new Error('Max turns (8) exceeded'), {
       name: 'MaxTurnsExceededError',
     });
     const { deps, traces } = makeDeps({ runInbound: vi.fn(() => Promise.reject(boom)) });
-    await expect(processInbound(deps as never, msg)).resolves.toBeUndefined();
+    await expect(processInbound(deps as never, msg)).rejects.toBe(boom);
     expect(traceWith(traces, 'agent_failed')).toMatchObject({
       output: { error: 'MaxTurnsExceededError' },
     });

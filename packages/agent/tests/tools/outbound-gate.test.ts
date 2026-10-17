@@ -45,6 +45,24 @@ const draft = {
 };
 
 describe('decideForOutbound', () => {
+  it('passes selected-task per-item requirements separately when no single shared budget exists', async () => {
+    const d = deps();
+    const requestContext = '书桌预算£70；办公椅预算£50，均为每件上限';
+    const current = {
+      ...(ctx(2) as object),
+      task: { id: 'selected' },
+      currentRequest: {
+        text: requestContext,
+        demand: { category: 'second_hand', confidence: 1, need: '书桌；办公椅' },
+        isActionable: true,
+      },
+    } as never;
+    await decideForOutbound(d as never, current, draft);
+    expect(d.evaluateOutbound).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ requestContext }),
+    );
+  });
   it('phase 0 -> dry_run without calling jev, still writes a gate trace', async () => {
     const d = deps();
     expect(await decideForOutbound(d as never, ctx(0), draft)).toBe('dry_run');

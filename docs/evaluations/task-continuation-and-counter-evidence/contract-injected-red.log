@@ -1,0 +1,52 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ apps/worker/tests/e2e/task-conversations.test.ts (12 tests | 1 failed) 3003ms
+   ❯ frozen task conversation contracts (12)
+     × desk_chair 404ms
+     ✓ cat_housing 543ms
+     ✓ beginner_bad 459ms
+     ✓ switch_back 286ms
+     ✓ ambiguous 230ms
+     ✓ not_complete 199ms
+     ✓ cancel 143ms
+     ✓ scope 127ms
+     ✓ ownership 129ms
+     ✓ carry_role 177ms
+     ✓ no_match 173ms
+     ✓ user_solved 133ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/worker/tests/e2e/task-conversations.test.ts > frozen task conversation contracts > desk_chair
+AssertionError: desk_chair turn 0: E14想收书桌和办公椅，每件50镑以内，能自提。: expected [ 'missing_goal:chair', 'item_budget' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "missing_goal:chair",
++   "item_budget",
++ ]
+
+ ❯ apps/worker/tests/e2e/task-conversations.test.ts:362:78
+    360|               scope,
+    361|             });
+    362|             expect(issues, sample.id + ' turn ' + index + ': ' + turn.…
+       |                                                                              ^
+    363|           }
+    364|         } finally {
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 passed (12)
+   Start at  10:28:23
+   Duration  3.61s (tests 84%, transform 9%, import 7%)
+
+JSON report written to /tmp/matchbot-task-contract-injected-results.json

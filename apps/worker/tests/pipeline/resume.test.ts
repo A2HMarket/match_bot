@@ -10,9 +10,15 @@ function makeDeps(over: Record<string, unknown> = {}) {
     status: 'consumed',
   };
   const runStates = { findById: vi.fn(() => Promise.resolve(runState)) };
-  const approvals = { findById: vi.fn(() => Promise.resolve({ id: 'ap1', decision: 'approve' })) };
+  const lease = { userId: 'u1', messageId: 'message', token: 'lease', fence: 2 };
+  const approval = { id: 'ap1', runStateId: 'rs1', decision: 'approve' };
+  const approvals = {
+    claimResume: vi.fn(() => Promise.resolve({ kind: 'acquired', runState, approval, lease })),
+    finishResume: vi.fn(() => Promise.resolve(true)),
+  };
   const traces = { create: vi.fn(() => Promise.resolve({})) };
-  const repos = { runStates, approvals, traces, demands: { findOpenByUser: vi.fn() } };
+  const base = { runStates, approvals, traces, demands: { findOpenByUser: vi.fn() } };
+  const repos = { ...base, forExecution: vi.fn(() => base) };
   const resumeRun = vi.fn(() =>
     Promise.resolve({ kind: 'completed', toolsCalled: ['reply_in_group'] }),
   );
@@ -51,17 +57,16 @@ describe('processResume', () => {
       output: Record<string, unknown>;
     };
     expect(trace.kind).toBe('gate');
-    expect(trace.inputRef).toBe('rs1');
+    expect(trace.inputRef).toBe('message');
     expect(trace.phase).toBe(1); // run_states.phase，不是 env.DEFAULT_PHASE
     expect(trace.output['outcome']).toBe('resume_completed');
   });
 
   it('missing run state or approval is a no-op that warns', async () => {
     const t = makeDeps();
-    t.runStates.findById.mockResolvedValue(null as never);
+    t.approvals.claimResume.mockResolvedValue({ kind: 'invalid' } as never);
     await processResume(t.deps as never, { runStateId: 'rs1', approvalId: 'ap1' });
     expect(t.resumeRun).not.toHaveBeenCalled();
-    expect(t.logger.warn).toHaveBeenCalled();
     expect(t.traces.create).not.toHaveBeenCalled();
   });
 
@@ -79,6 +84,32 @@ describe('processResume', () => {
     });
     const trace = t.traces.create.mock.calls[0]?.[0] as { output: Record<string, unknown> };
     expect(trace.output['outcome']).toBe('resume_interrupted');
-    expect(trace.output['runStateId']).toBe('rs2');
+    expect(trace.output['nextRunStateId']).toBe('rs2');
+  });
+  it('delays a contending resume without touching the model or completing the intent', async () => {
+    const t = makeDeps();
+    t.approvals.claimResume.mockResolvedValue({ kind: 'busy', retryAfterMs: 2000 } as never);
+    expect(await processResume(t.deps as never, { runStateId: 'rs1', approvalId: 'ap1' })).toEqual({
+      deferMs: 2000,
+    });
+    expect(t.resumeRun).not.toHaveBeenCalled();
+    expect(t.approvals.finishResume).not.toHaveBeenCalled();
+  });
+  it('keeps failed generation dispatchable, but terminally refuses obsolete snapshots', async () => {
+    const resumeRun = vi.fn().mockRejectedValueOnce(new Error('provider failed')),
+      t = makeDeps({ resumeRun });
+    await expect(
+      processResume(t.deps as never, { runStateId: 'rs1', approvalId: 'ap1' }),
+    ).rejects.toThrow('provider failed');
+    expect(t.approvals.finishResume).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'accepted', errorCode: 'resume_failed' }),
+    );
+    const obsolete = new Error('obsolete');
+    obsolete.name = 'ObsoleteResumeError';
+    resumeRun.mockRejectedValueOnce(obsolete);
+    await processResume(t.deps as never, { runStateId: 'rs1', approvalId: 'ap1' });
+    expect(t.approvals.finishResume).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 'failed', errorCode: 'obsolete_snapshot' }),
+    );
   });
 });

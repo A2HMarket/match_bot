@@ -1,0 +1,80 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/jev/tests/client.test.ts (12 tests | 3 failed) 1726ms
+   ❯ createJevClient (12)
+     × classifies a timed-out 200 response body as timeout, not malformed JSON 55ms
+     × bounds a slow 200 body at five seconds: 3500 ms 2ms
+     × bounds a slow 200 body at five seconds: 6000 ms 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/jev/tests/client.test.ts > createJevClient > classifies a timed-out 200 response body as timeout, not malformed JSON
+AssertionError: expected { ok: false, …(1) } to deeply equal { ok: false, reason: 'timeout' }
+
+- Expected
++ Received
+
+  {
+    "ok": false,
+-   "reason": "timeout",
++   "reason": "invalid_response",
+  }
+
+ ❯ packages/jev/tests/client.test.ts:55:7
+     53|         phase: 0,
+     54|       }),
+     55|     ).toEqual({ ok: false, reason: 'timeout' });
+       |       ^
+     56|   });
+     57|   it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  packages/jev/tests/client.test.ts > createJevClient > bounds a slow 200 body at five seconds: 3500 ms
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/jev/tests/client.test.ts:99:26
+     97|       await vi.advanceTimersByTimeAsync(5000);
+     98|       const outcome = await result;
+     99|       expect(outcome.ok).toBe(succeeds);
+       |                          ^
+    100|       if (!succeeds) expect(outcome).toEqual({ ok: false, reason: 'tim…
+    101|     } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  packages/jev/tests/client.test.ts > createJevClient > bounds a slow 200 body at five seconds: 6000 ms
+AssertionError: expected { ok: false, …(1) } to deeply equal { ok: false, reason: 'timeout' }
+
+- Expected
++ Received
+
+  {
+    "ok": false,
+-   "reason": "timeout",
++   "reason": "invalid_response",
+  }
+
+ ❯ packages/jev/tests/client.test.ts:100:38
+     98|       const outcome = await result;
+     99|       expect(outcome.ok).toBe(succeeds);
+    100|       if (!succeeds) expect(outcome).toEqual({ ok: false, reason: 'tim…
+       |                                      ^
+    101|     } finally {
+    102|       vi.useRealTimers();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 9 passed (12)
+   Start at  13:55:41
+   Duration  1.86s (tests 96%, transform 2%, import 2%)
+

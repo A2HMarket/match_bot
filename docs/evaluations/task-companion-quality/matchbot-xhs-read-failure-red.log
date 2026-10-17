@@ -1,0 +1,27 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/xhs-read-notes.test.ts (5 tests | 1 failed) 12ms
+   ❯ selective XHS reading (5)
+     × counts failed attempts once and never substitutes another note 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/xhs-read-notes.test.ts > selective XHS reading > counts failed attempts once and never substitutes another note
+AssertionError: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string
+ ❯ packages/agent/tests/tools/xhs-read-notes.test.ts:80:30
+     78|     expect(out).toContain('x1');
+     79|     expect(c.xhsNotes?.[0]?.desc).toBe('搜索卡片摘要');
+     80|     expect(c.sourceFailures).toContain('xiaohongshu:detail_unavailable…
+       |                              ^
+     81|     await t.invoke(rc(c), JSON.stringify({ refs: ['x1'] }));
+     82|     expect(d.xhsSearch.readNote).toHaveBeenCalledOnce();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  11:16:34
+   Duration  366ms (import 85%, transform 10%, tests 4%, worker 1%)
+

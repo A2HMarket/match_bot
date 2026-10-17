@@ -1,0 +1,48 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/plan-task.test.ts (11 tests | 2 failed) 50ms
+   ❯ plan_task (11)
+     × keeps the server-bound specific category when the planner proposes the catch-all category 16ms
+     × does not accept ambiguity between tasks when there is only one scoped candidate 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/plan-task.test.ts > plan_task > keeps the server-bound specific category when the planner proposes the catch-all category
+AssertionError: expected 'other' to be 'second_hand' // Object.is equality
+
+Expected: "second_hand"
+Received: "other"
+
+ ❯ packages/agent/tests/tools/plan-task.test.ts:124:32
+    122|       patch: { goals: [{ id: 'desk', title: '书桌', required: true, sour…
+    123|     }));
+    124|     expect(ctx.task?.category).toBe('second_hand');
+       |                                ^
+    125|     expect(ctx.task?.counterparty).toBe('supply');
+    126|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/plan-task.test.ts > plan_task > does not accept ambiguity between tasks when there is only one scoped candidate
+AssertionError: expected 'task prepared: ambiguous' to contain 'only one scoped task'
+
+Expected: "only one scoped task"
+Received: "task prepared: ambiguous"
+
+ ❯ packages/agent/tests/tools/plan-task.test.ts:132:20
+    130|     const clarify = tools.find((t) => t.name === 'clarify_task')!;
+    131|     const answer = await clarify.invoke(new RunContext(ctx), JSON.stri…
+    132|     expect(answer).toContain('only one scoped task');
+       |                    ^
+    133|     expect(ctx.taskUpdate).toBeUndefined();
+    134|     expect(repos.tasks.applyUserTurn).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  09:48:36
+   Duration  435ms (import 61%, transform 25%, tests 13%, worker 1%)
+

@@ -1,5 +1,22 @@
-import { transition, type DemandDraft, type DemandStatus } from '@matchbot/domain';
+import {
+  transition,
+  demandDraftSchema,
+  taskSchema,
+  type DemandDraft,
+  type DemandStatus,
+} from '@matchbot/domain';
 import type { Demand, Prisma, PrismaClient } from '../generated/client.js';
+import { z } from 'zod';
+import { inTransaction, lockExecutionUser } from '../execution-fence.js';
+
+const id = z.string().min(1).max(160);
+const taskRecordSchema = z.strictObject({
+  access: z.strictObject({ userId: id, scope: taskSchema.shape.scope }),
+  taskId: id,
+  requirementsVersion: z.number().int().nonnegative(),
+  sourceMessageId: id,
+  draft: demandDraftSchema,
+});
 
 // Prisma 7 的输入类型在 exactOptionalPropertyTypes 下不收 undefined：
 // create 用 ?? null 显式置空，update 只写补丁里出现的键（undefined 表示不动该字段）。
@@ -34,15 +51,79 @@ function draftToUpdateData(d: Partial<DemandDraft>): Prisma.DemandUpdateInput {
 
 export function demandsRepo(prisma: PrismaClient) {
   return {
+    async recordForTask(raw: z.input<typeof taskRecordSchema>): Promise<Demand> {
+      const p = taskRecordSchema.parse(raw);
+      return inTransaction(prisma, async (tx) => {
+        await lockExecutionUser(tx, p.access.userId);
+        const task = await tx.task.findFirst({
+          where: {
+            id: p.taskId,
+            userId: p.access.userId,
+            channel: p.access.scope.channel,
+            chatId: p.access.scope.chatId,
+            requirementsVersion: p.requirementsVersion,
+            status: { notIn: ['completed', 'cancelled', 'expired'] },
+          },
+        });
+        if (!task || task.category !== p.draft.category)
+          throw new Error('demand task missing, inaccessible or obsolete');
+        const source = await tx.message.findFirst({
+          where: { id: p.sourceMessageId, userId: p.access.userId },
+          include: { user: true, group: true },
+        });
+        if (
+          !source ||
+          source.user.channel !== p.access.scope.channel ||
+          (source.group?.externalId ?? source.user.externalId) !== p.access.scope.chatId
+        )
+          throw new Error('demand task source inaccessible');
+        const latest = await tx.taskEvent.findFirst({
+          where: { taskId: task.id, kind: 'user_turn', sourceMessageId: { not: null } },
+          orderBy: { revision: 'desc' },
+          select: { sourceMessageId: true },
+        });
+        if (latest?.sourceMessageId !== source.id) throw new Error('demand task turn superseded');
+        const existing = await tx.demand.findUnique({ where: { taskId: task.id } });
+        if (
+          existing &&
+          (existing.userId !== p.access.userId ||
+            existing.category !== task.category ||
+            ['closed', 'expired'].includes(existing.status))
+        )
+          throw new Error('task demand unavailable');
+        return tx.demand.upsert({
+          where: { taskId: task.id },
+          create: {
+            ...draftToCreateData(p.draft),
+            category: task.category,
+            taskId: task.id,
+            userId: p.access.userId,
+            sourceMessageIds: [source.id],
+          },
+          update: {
+            ...draftToUpdateData(p.draft),
+            sourceMessageIds: [...new Set([...(existing?.sourceMessageIds ?? []), source.id])],
+          },
+        });
+      });
+    },
     findOpenByUser(userId: string): Promise<Demand[]> {
       return prisma.demand.findMany({
         where: { userId, status: { in: ['open', 'clarifying', 'matched'] } },
         orderBy: { updatedAt: 'desc' },
       });
     },
-    create(
+    async create(
       p: DemandDraft & { userId: string; sourceMessageId: string; isMoveEvent?: boolean },
     ): Promise<Demand> {
+      const existing = await prisma.demand.findFirst({
+        where: {
+          userId: p.userId,
+          category: p.category,
+          sourceMessageIds: { has: p.sourceMessageId },
+        },
+      });
+      if (existing) return existing;
       return prisma.demand.create({
         data: {
           ...draftToCreateData(p),

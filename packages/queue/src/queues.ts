@@ -25,7 +25,11 @@ const defaultJobOptions = {
 };
 
 export function createQueues(redisUrl: string): Queues {
-  const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
+  const connection = new Redis(redisUrl, {
+    maxRetriesPerRequest: 1,
+    commandTimeout: 5000,
+    enableOfflineQueue: false,
+  });
   const mk = (name: string) => new Queue(name, { connection, defaultJobOptions });
   return {
     connection,
@@ -36,19 +40,48 @@ export function createQueues(redisUrl: string): Queues {
   };
 }
 
-export async function enqueueInbound(q: Queues, msg: InboundMessage): Promise<void> {
+export async function enqueueInbound(
+  q: Queues,
+  msg: InboundMessage,
+  options?: { recoverActive?: boolean },
+): Promise<void> {
+  if (q.connection.status !== 'ready') throw new Error('queue producer unavailable');
   const data = inboundJobSchema.parse(msg);
+  const key = inboundJobId(data.channel, data.chatId, data.messageId);
+  const existing = await q.inbound.getJob(key);
+  if (existing) {
+    const state = await existing.getState();
+    if (
+      state === 'failed' ||
+      state === 'completed' ||
+      (state === 'active' && options?.recoverActive)
+    )
+      await existing.remove();
+  }
   await q.inbound.add('inbound', data, {
-    jobId: inboundJobId(data.channel, data.chatId, data.messageId),
+    jobId: key,
   });
 }
 
 export async function enqueueResume(
   q: Queues,
   p: { runStateId: string; approvalId: string },
+  options?: { recoverActive?: boolean },
 ): Promise<void> {
+  if (q.connection.status !== 'ready') throw new Error('queue producer unavailable');
   const data = resumeRunJobSchema.parse(p);
-  await q.resume.add('resume', data, { jobId: `resume:${data.runStateId}:${data.approvalId}` });
+  const key = `resume:${data.runStateId}:${data.approvalId}`;
+  const existing = await q.resume.getJob(key);
+  if (existing) {
+    const state = await existing.getState();
+    if (
+      state === 'failed' ||
+      state === 'completed' ||
+      (state === 'active' && options?.recoverActive)
+    )
+      await existing.remove();
+  }
+  await q.resume.add('resume', data, { jobId: key });
 }
 
 export async function enqueueOutbound(q: Queues, outboundMessageId: string): Promise<void> {

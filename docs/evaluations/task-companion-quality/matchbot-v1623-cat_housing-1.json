@@ -1,0 +1,4019 @@
+{
+  "runId": "5bbc93f0-ef8d-499c-abbc-6003b8dfab97",
+  "sampleId": "cat_housing",
+  "sourceFingerprint": "31411dc8992d80bde9916563227ca3de18cabc97ee77a0576b5ed1cf9d82d29e",
+  "agentVersion": "0.16.23",
+  "model": "deepseek-flash",
+  "jevModel": "typesafe/jev-1.13",
+  "status": "completed",
+  "elapsedMs": 52261,
+  "boundary": "frozen synthetic source corpus and user; real generation/Jev; isolated PG; Phase 2 gates; simulated sender only, no public search or Telegram; inbound worker/Jev not covered",
+  "corpusHash": "f95988b4eb84e4b891fc5d84ec571a226ab7560e4c3ca1f1a7e61d66c4c6319a",
+  "results": [
+    {
+      "index": 0,
+      "input": "Stratford想找允许养猫的一居室整租，月租1600镑以内，11月入住。",
+      "elapsedMs": 13119,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "market_enrich",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvbttqd800058ubgajj9olzz",
+        "ownerUserId": "cmvbttobw00008ubg9ovmukww",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p27-preview-5bbc93f0-ef8d-499c-abbc-6003b8dfab97"
+        },
+        "objective": "寻找可租住的房源",
+        "category": "housing",
+        "counterparty": "supply",
+        "status": "delivered",
+        "revision": 5,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室整租"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "允许养猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "budgetScope": "rent_only",
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "date_range",
+              "from": "2026-11-01",
+              "to": "2026-11-30"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "home",
+            "title": "一居室整租房源",
+            "required": true,
+            "searchTerms": [
+              "一居室整租房源",
+              "一居室整租",
+              "一居室 整租",
+              "1 bed flat",
+              "one bedroom flat"
+            ],
+            "criteria": [
+              {
+                "id": "home-subject",
+                "label": "来源描述的对象或邀约：一居室整租房源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:room_type",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:budget",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:move_in_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:a984d8175c99cebb92e729b7b21afe721a4bb408"
+                ],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "supported"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1c322c1153aaecaecde4d9be29d226730f921b55",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "出租：伦敦Stratford一居室整租",
+            "observedAt": "2026-10-17T03:18:12.644Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "要求：允许养一只猫，宠物许可会写入租约",
+            "observedAt": "2026-10-17T03:18:12.644Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "费用：月租£1550，不含账单，账单金额待确认",
+            "observedAt": "2026-10-17T03:18:12.644Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:a984d8175c99cebb92e729b7b21afe721a4bb408",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "入住：2026年11月5日起",
+            "observedAt": "2026-10-17T03:18:12.644Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "deliver",
+          "owner": "agent",
+          "reason": "m1 满足区域/一居室整租/养猫/预算/11月入住；m4起租12月不符合。账单金额仍未知，作为关键待确认项说明。",
+          "goalId": "home"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "sent",
+          "level": "ready",
+          "outboundMessageId": "cmvbttyeg000y8ubghyn29160"
+        },
+        "userConfirmation": null
+      },
+      "readiness": {
+        "ready": true,
+        "missing": []
+      },
+      "taskUpdate": {
+        "kind": "new"
+      },
+      "issues": [],
+      "outbounds": [
+        {
+          "text": "优先看这套：Stratford一居室整租，书面写明可养一只猫，11月5日起租，月租£1550，租金在1600内。唯一关键未知是账单金额，签约前务必拿到账单预算和水电暖气的历史用量，再算总开销。\n\n先看这1条相关线索，报价和待确认项已分别标出。\n\n【优先看】\n\n1. Stratford一居室整租允许养猫\n推荐理由：月租报价符合预算；地点符合你指定的范围\n出租：伦敦Stratford一居室整租 要求：允许养一只猫，宠物许可会写入租约 地点：Stratford, London\n月租：费用：月租£1550，不含账单，账单金额待确认\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-home-cat)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+          "kind": "recommendation",
+          "status": "sent",
+          "externalMessageId": "1001"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbttocj00038ubg7d2091bd",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:03.907Z"
+        },
+        {
+          "id": "cmvbttod600048ubghw0k6xna",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:03.930Z"
+        },
+        {
+          "id": "cmvbttqdn00088ubgx3r8b49o",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 0,
+            "decision": "new",
+            "revision": 1,
+            "scopedCandidateCount": 0
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:06.539Z"
+        },
+        {
+          "id": "cmvbttqdx00098ubg5xf4hjg4",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:06.549Z"
+        },
+        {
+          "id": "cmvbttqe0000a8ubg754qi7n2",
+          "kind": "agent_run",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 3115,
+            "sdkTraceRef": "trace_306e4c2a1a5c4e7a8fb98f997501d75a/span_7bc5a65dce7748ba9f92ab68",
+            "outputTokens": 457
+          },
+          "phase": 2,
+          "latencyMs": 2587,
+          "costMicro": 564,
+          "createdAt": "2026-10-17T03:18:06.552Z"
+        },
+        {
+          "id": "cmvbttqe1000b8ubg412y5hlk",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "category": "housing",
+            "taskRevision": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:06.553Z"
+        },
+        {
+          "id": "cmvbttqe9000c8ubgdx6v1odm",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:06.561Z"
+        },
+        {
+          "id": "cmvbtts2f000e8ubg43tnhtbu",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "market_search",
+            "added": 4,
+            "total": 4,
+            "queries": [
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "Stratford 一居室 整租",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "Stratford 1 bed flat",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "一居室 养猫 出租",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              }
+            ],
+            "decision": "searched",
+            "failures": [],
+            "planApplied": {
+              "needs": 1,
+              "hasRoute": false,
+              "preferences": 2,
+              "excludeTerms": 0,
+              "hasDateRange": false,
+              "requiredTerms": 0,
+              "budgetSpecified": true
+            }
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:08.727Z"
+        },
+        {
+          "id": "cmvbtts2s000f8ubgfin6nvpt",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:08.740Z"
+        },
+        {
+          "id": "cmvbtts2u000g8ubgj9spsopg",
+          "kind": "agent_run",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 7888,
+            "sdkTraceRef": "trace_c5a42475bcbc48d9831f43db77ed250c/span_18cdebd4b8124f20b4c2a71d",
+            "outputTokens": 309
+          },
+          "phase": 2,
+          "latencyMs": 2167,
+          "costMicro": 1191,
+          "createdAt": "2026-10-17T03:18:08.742Z"
+        },
+        {
+          "id": "cmvbttsyu000h8ubgwuvc2xaj",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "market_enrich",
+            "refs": [
+              "m1",
+              "m4"
+            ],
+            "enriched": 2,
+            "failures": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:09.894Z"
+        },
+        {
+          "id": "cmvbttsz7000i8ubgyyxi4kz3",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:09.907Z"
+        },
+        {
+          "id": "cmvbttsz9000j8ubgbj752qhb",
+          "kind": "agent_run",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 10279,
+            "sdkTraceRef": "trace_c5a42475bcbc48d9831f43db77ed250c/span_e27e70276f0a4121a79640f7",
+            "outputTokens": 46
+          },
+          "phase": 2,
+          "latencyMs": 1167,
+          "costMicro": 1452,
+          "createdAt": "2026-10-17T03:18:09.909Z"
+        },
+        {
+          "id": "cmvbttv3d000k8ubgbhnz28ef",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "explicit_calendar_fact_checked",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:12.649Z"
+        },
+        {
+          "id": "cmvbttvpe000l8ubgjkkll54r",
+          "kind": "jev",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "id": "gen-dec-1792207092-B5xggzuW6XDrtNIZtBoi",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000132132,
+              "input_tokens": 3146
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.97,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 788,
+          "costMicro": 132,
+          "createdAt": "2026-10-17T03:18:13.442Z"
+        },
+        {
+          "id": "cmvbttw01000m8ubgsz7et9d0",
+          "kind": "jev",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "id": "gen-dec-1792207093-HufUEgpPy7QigsZlK4xd",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000072702,
+              "input_tokens": 1731
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.96,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 377,
+          "costMicro": 73,
+          "createdAt": "2026-10-17T03:18:13.825Z"
+        },
+        {
+          "id": "cmvbttw0q000o8ubg6ysleqov",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:13.850Z"
+        },
+        {
+          "id": "cmvbttw10000p8ubg5fjj3pbt",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:13.860Z"
+        },
+        {
+          "id": "cmvbttw12000q8ubghzaxtpo2",
+          "kind": "agent_run",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 10929,
+            "sdkTraceRef": "trace_c5a42475bcbc48d9831f43db77ed250c/span_6d76b8d612e048f78fbc89dd",
+            "outputTokens": 442
+          },
+          "phase": 2,
+          "latencyMs": 3953,
+          "costMicro": 1654,
+          "createdAt": "2026-10-17T03:18:13.862Z"
+        },
+        {
+          "id": "cmvbtty2w000r8ubgkipk1x8g",
+          "kind": "jev",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "id": "gen-dec-1792207096-TLW839L0YskOewnwZ9lX",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000141498,
+              "input_tokens": 3369
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.06,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.22,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.32,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.08,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.12,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 369,
+          "costMicro": 141,
+          "createdAt": "2026-10-17T03:18:16.520Z"
+        },
+        {
+          "id": "cmvbtty2y000s8ubg1xiq7boq",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 10
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.522Z"
+        },
+        {
+          "id": "cmvbtty30000t8ubgdtnz6wju",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.524Z"
+        },
+        {
+          "id": "cmvbttydt000u8ubgu62cmocg",
+          "kind": "jev",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "id": "gen-dec-1792207096-gP0fl3jUUgNqLyGW4dCO",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000069468,
+              "input_tokens": 1654
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.98,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.98,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.02,
+                  "3": 0.98
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.1,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 387,
+          "costMicro": 69,
+          "createdAt": "2026-10-17T03:18:16.913Z"
+        },
+        {
+          "id": "cmvbttydv000v8ubg13pdmbux",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.98,
+              "mentionsUnverified": 0.1
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.915Z"
+        },
+        {
+          "id": "cmvbttydy000w8ubg7icytunf",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 10
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.918Z"
+        },
+        {
+          "id": "cmvbttydz000x8ubgswawj3w9",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.919Z"
+        },
+        {
+          "id": "cmvbttyez00108ubgxpr94yyp",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.955Z"
+        },
+        {
+          "id": "cmvbttyf200118ubgatbkjjjp",
+          "kind": "agent_run",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 11831,
+            "sdkTraceRef": "trace_c5a42475bcbc48d9831f43db77ed250c/span_5810cac9362843108e46dfe7",
+            "outputTokens": 135
+          },
+          "phase": 2,
+          "latencyMs": 3095,
+          "costMicro": 1694,
+          "createdAt": "2026-10-17T03:18:16.958Z"
+        },
+        {
+          "id": "cmvbttyfn001b8ubgcqxk53e4",
+          "kind": "gate",
+          "inputRef": "cmvbttoch00028ubgskuya9uz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:16.979Z"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "input": "11月5日入住，猫一定要允许",
+      "elapsedMs": 14868,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "market_enrich",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvbttqd800058ubgajj9olzz",
+        "ownerUserId": "cmvbttobw00008ubg9ovmukww",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p27-preview-5bbc93f0-ef8d-499c-abbc-6003b8dfab97"
+        },
+        "objective": "寻找可租住的房源",
+        "category": "housing",
+        "counterparty": "supply",
+        "status": "delivered",
+        "revision": 9,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "area",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室整租"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "允许养猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "budgetScope": "rent_only",
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "date_range",
+              "from": "2026-11-05",
+              "to": "2026-11-05"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttygx001g8ubgue38loos"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "home",
+            "title": "一居室整租房源",
+            "required": true,
+            "searchTerms": [
+              "一居室整租房源",
+              "一居室整租",
+              "一居室 整租",
+              "1 bed flat",
+              "one bedroom flat"
+            ],
+            "criteria": [
+              {
+                "id": "home-subject",
+                "label": "来源描述的对象或邀约：一居室整租房源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55",
+                  "e:118bc42d89badb607fcb7af23bb30686663bf328"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:room_type",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:budget",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:move_in_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:a984d8175c99cebb92e729b7b21afe721a4bb408"
+                ],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "supported"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1c322c1153aaecaecde4d9be29d226730f921b55",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "出租：伦敦Stratford一居室整租",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "要求：允许养一只猫，宠物许可会写入租约",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "费用：月租£1550，不含账单，账单金额待确认",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:a984d8175c99cebb92e729b7b21afe721a4bb408",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "入住：2026年11月5日起",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:118bc42d89badb607fcb7af23bb30686663bf328",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-late",
+            "summary": "出租：伦敦Stratford一居室整租，月租£1500，不含账单。入住：2026年12月1日起。允许养猫。",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-late",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-late"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "deliver",
+          "owner": "agent",
+          "reason": "m1 与全部硬条件（Stratford、一居室整租、允许养猫、11月5日入住、£1550/月租金）一致，账单金额未知；m4 起租日期12月1日与要求不符，不作为备选。",
+          "goalId": "home"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "sent",
+          "level": "ready",
+          "outboundMessageId": "cmvbtu9vx002e8ubgdy2ckyju"
+        },
+        "userConfirmation": null
+      },
+      "readiness": {
+        "ready": true,
+        "missing": []
+      },
+      "taskUpdate": {
+        "kind": "continued"
+      },
+      "issues": [],
+      "outbounds": [
+        {
+          "text": "我优先看这条：它明确写了11月5日起租、猫可养且会写进租约，最贴合你的两条硬要求。接下来要问清账单大概多少、是否影响你每月总支出。\n\n先看这1条相关线索，报价和待确认项已分别标出。\n\n【优先看】\n\n1. Stratford一居室整租允许养猫\n推荐理由：月租报价符合预算；地点符合你指定的范围\n出租：伦敦Stratford一居室整租 要求：允许养一只猫，宠物许可会写入租约 地点：Stratford, London\n月租：费用：月租£1550，不含账单，账单金额待确认\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-home-cat)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+          "kind": "recommendation",
+          "status": "sent",
+          "externalMessageId": "1002"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbttygy001h8ubgnfxu9xes",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:17.026Z"
+        },
+        {
+          "id": "cmvbttyh5001i8ubgxxn42r7v",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:17.033Z"
+        },
+        {
+          "id": "cmvbttzu6001j8ubg4nt4s4qp",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:18.798Z"
+        },
+        {
+          "id": "cmvbttzu9001k8ubgiujy0qre",
+          "kind": "agent_run",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4565,
+            "sdkTraceRef": "trace_dcd637bb1577401c8e11314e2580f032/span_150f88df17d8474e848bef0e",
+            "outputTokens": 230
+          },
+          "phase": 2,
+          "latencyMs": 1749,
+          "costMicro": 704,
+          "createdAt": "2026-10-17T03:18:18.801Z"
+        },
+        {
+          "id": "cmvbtu16o001m8ubgtaqush6y",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 0,
+            "decision": "continued",
+            "revision": 6,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.544Z"
+        },
+        {
+          "id": "cmvbtu16v001n8ubgw1scp7ii",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.551Z"
+        },
+        {
+          "id": "cmvbtu16x001o8ubg12h3qj49",
+          "kind": "agent_run",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "turn": 2,
+            "agentName": "matchAgent",
+            "inputTokens": 4784,
+            "sdkTraceRef": "trace_dcd637bb1577401c8e11314e2580f032/span_bb851972cfb545ec83b370d9",
+            "outputTokens": 239
+          },
+          "phase": 2,
+          "latencyMs": 1753,
+          "costMicro": 737,
+          "createdAt": "2026-10-17T03:18:20.553Z"
+        },
+        {
+          "id": "cmvbtu16x001p8ubgitgkj148",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "category": "housing",
+            "taskRevision": 6,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.553Z"
+        },
+        {
+          "id": "cmvbtu16z001q8ubg66n73jdp",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.556Z"
+        },
+        {
+          "id": "cmvbtu174001r8ubgxy2zzekc",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "read_task_sources",
+            "failed": 0,
+            "result": "read",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "requested": 1
+          },
+          "phase": 2,
+          "latencyMs": 1,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.560Z"
+        },
+        {
+          "id": "cmvbtu175001s8ubg8m6fqijd",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "task_source_refresh",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "decision": "automatic_refresh",
+            "attempted": 1,
+            "requested": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.561Z"
+        },
+        {
+          "id": "cmvbtu17b001t8ubg2x74nqti",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:20.567Z"
+        },
+        {
+          "id": "cmvbtu368001u8ubg224883pu",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "market_search",
+            "added": 3,
+            "total": 4,
+            "queries": [
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "Stratford 一居室 整租",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "Stratford cat friendly one bedroom",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "Stratford 养猫 出租",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              }
+            ],
+            "decision": "searched",
+            "failures": [],
+            "planApplied": {
+              "needs": 1,
+              "hasRoute": false,
+              "preferences": 2,
+              "excludeTerms": 0,
+              "hasDateRange": false,
+              "requiredTerms": 0,
+              "budgetSpecified": true
+            }
+          },
+          "phase": 2,
+          "latencyMs": 1,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:23.120Z"
+        },
+        {
+          "id": "cmvbtu36l001v8ubgqel1q9l2",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:23.133Z"
+        },
+        {
+          "id": "cmvbtu36n001w8ubg14v8kx6w",
+          "kind": "agent_run",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 8295,
+            "sdkTraceRef": "trace_f32c79dab04743ad9310d6f6d896c776/span_6d910d8efe8046e9af6218e0",
+            "outputTokens": 317
+          },
+          "phase": 2,
+          "latencyMs": 2562,
+          "costMicro": 1250,
+          "createdAt": "2026-10-17T03:18:23.135Z"
+        },
+        {
+          "id": "cmvbtu4pi001x8ubgyu0hdmuj",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "market_enrich",
+            "refs": [
+              "m1",
+              "m4"
+            ],
+            "enriched": 1,
+            "failures": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:25.110Z"
+        },
+        {
+          "id": "cmvbtu4pr001y8ubgetnwvgil",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:25.119Z"
+        },
+        {
+          "id": "cmvbtu4pt001z8ubgqzafl0ic",
+          "kind": "agent_run",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 10444,
+            "sdkTraceRef": "trace_f32c79dab04743ad9310d6f6d896c776/span_ec2cd1b0875c421d877bce3a",
+            "outputTokens": 46
+          },
+          "phase": 2,
+          "latencyMs": 1986,
+          "costMicro": 1475,
+          "createdAt": "2026-10-17T03:18:25.121Z"
+        },
+        {
+          "id": "cmvbtu6xl00208ubgn5kv844r",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "explicit_calendar_fact_checked",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:27.993Z"
+        },
+        {
+          "id": "cmvbtu7ib00218ubgcorrbfpz",
+          "kind": "jev",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "id": "gen-dec-1792207108-QqeMbmMCCiUyVfxsG9PN",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000155778,
+              "input_tokens": 3709
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.96,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.85,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.9,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 742,
+          "costMicro": 156,
+          "createdAt": "2026-10-17T03:18:28.739Z"
+        },
+        {
+          "id": "cmvbtu7sw00228ubgfx9zwu8e",
+          "kind": "jev",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "id": "gen-dec-1792207108-x2gU7GMtv3rWEiPH2sMA",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000075096,
+              "input_tokens": 1788
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.91,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 374,
+          "costMicro": 75,
+          "createdAt": "2026-10-17T03:18:29.120Z"
+        },
+        {
+          "id": "cmvbtu7tj00248ubgmibrff4g",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:29.143Z"
+        },
+        {
+          "id": "cmvbtu7tu00258ubgxq1e7t7r",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:29.154Z"
+        },
+        {
+          "id": "cmvbtu7tx00268ubgc0xcqrji",
+          "kind": "agent_run",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 10880,
+            "sdkTraceRef": "trace_f32c79dab04743ad9310d6f6d896c776/span_82cdccd782eb49fcb30ac1a9",
+            "outputTokens": 510
+          },
+          "phase": 2,
+          "latencyMs": 4036,
+          "costMicro": 1666,
+          "createdAt": "2026-10-17T03:18:29.157Z"
+        },
+        {
+          "id": "cmvbtu9la00278ubg2s1zqo1k",
+          "kind": "jev",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "id": "gen-dec-1792207111-eYxuykTmsFQYgNyIXkJj",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000139902,
+              "input_tokens": 3331
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.07,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.17,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.18,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.33,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.14,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 381,
+          "costMicro": 140,
+          "createdAt": "2026-10-17T03:18:31.438Z"
+        },
+        {
+          "id": "cmvbtu9ld00288ubg25kml0nc",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 11
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.441Z"
+        },
+        {
+          "id": "cmvbtu9lg00298ubginkdbesk",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.444Z"
+        },
+        {
+          "id": "cmvbtu9v6002a8ubgfvmdbtco",
+          "kind": "jev",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "id": "gen-dec-1792207111-66gibOsrA90uNgzAfqnp",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000066822,
+              "input_tokens": 1591
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.87,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.87,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0.02,
+                  "2": 0.09,
+                  "3": 0.89
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.14,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 347,
+          "costMicro": 67,
+          "createdAt": "2026-10-17T03:18:31.794Z"
+        },
+        {
+          "id": "cmvbtu9v9002b8ubg7tdkkhnf",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.97,
+              "worthReplying": 2.87,
+              "mentionsUnverified": 0.14
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.797Z"
+        },
+        {
+          "id": "cmvbtu9vg002c8ubgnbszz1qy",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 11
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.804Z"
+        },
+        {
+          "id": "cmvbtu9vi002d8ubgjnp9r135",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.806Z"
+        },
+        {
+          "id": "cmvbtu9wi002g8ubg0s7wq31i",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.842Z"
+        },
+        {
+          "id": "cmvbtu9wm002h8ubggd640llb",
+          "kind": "agent_run",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 11756,
+            "sdkTraceRef": "trace_f32c79dab04743ad9310d6f6d896c776/span_f04a625c4f854ce49e4636fd",
+            "outputTokens": 118
+          },
+          "phase": 2,
+          "latencyMs": 2689,
+          "costMicro": 1679,
+          "createdAt": "2026-10-17T03:18:31.846Z"
+        },
+        {
+          "id": "cmvbtu9x3002r8ubg5omgvsex",
+          "kind": "gate",
+          "inputRef": "cmvbttygx001g8ubgue38loos",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.863Z"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "input": "最好包bills，但总预算不能增加",
+      "elapsedMs": 8187,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvbttqd800058ubgajj9olzz",
+        "ownerUserId": "cmvbttobw00008ubg9ovmukww",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p27-preview-5bbc93f0-ef8d-499c-abbc-6003b8dfab97"
+        },
+        "objective": "寻找可租住的房源",
+        "category": "housing",
+        "counterparty": "supply",
+        "status": "active",
+        "revision": 13,
+        "requirementsVersion": 3,
+        "constraints": [
+          {
+            "key": "area",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室整租"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "允许养猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "budgetScope": "all_in",
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtu9xv002w8ubgikq5xldz"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "date_range",
+              "from": "2026-11-05",
+              "to": "2026-11-05"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttygx001g8ubgue38loos"
+            }
+          },
+          {
+            "key": "bills",
+            "goalId": "home",
+            "strength": "preference",
+            "value": {
+              "kind": "text",
+              "text": "包bills"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtu9xv002w8ubgikq5xldz"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "home",
+            "title": "一居室整租房源",
+            "required": true,
+            "searchTerms": [
+              "一居室整租房源",
+              "一居室整租",
+              "一居室 整租",
+              "1 bed flat",
+              "one bedroom flat"
+            ],
+            "criteria": [
+              {
+                "id": "home-subject",
+                "label": "来源描述的对象或邀约：一居室整租房源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:room_type",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:budget",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:move_in_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:a984d8175c99cebb92e729b7b21afe721a4bb408"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:bills",
+                "label": "核对当前条件：bills",
+                "strength": "preference",
+                "constraintKey": "bills",
+                "status": "conflict",
+                "evidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ],
+                "conflictingEvidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ]
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1c322c1153aaecaecde4d9be29d226730f921b55",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "出租：伦敦Stratford一居室整租",
+            "observedAt": "2026-10-17T03:18:36.358Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "要求：允许养一只猫，宠物许可会写入租约",
+            "observedAt": "2026-10-17T03:18:36.358Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "费用：月租£1550，不含账单，账单金额待确认",
+            "observedAt": "2026-10-17T03:18:36.358Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:a984d8175c99cebb92e729b7b21afe721a4bb408",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "入住：2026年11月5日起",
+            "observedAt": "2026-10-17T03:18:36.358Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:118bc42d89badb607fcb7af23bb30686663bf328",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-late",
+            "summary": "出租：伦敦Stratford一居室整租，月租£1500，不含账单。入住：2026年12月1日起。允许养猫。",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-late",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-late"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "deliver",
+          "owner": "agent",
+          "reason": "Stratford 11月5日入住、可养猫的房源存在，但租金不含账单且账单金额未确认，需交付并明确总价未知",
+          "goalId": "home",
+          "constraintKey": "budget"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "sent",
+          "level": "partial",
+          "outboundMessageId": "cmvbtug7v003l8ubgwemptrqm"
+        },
+        "userConfirmation": null
+      },
+      "readiness": {
+        "ready": false,
+        "missing": [
+          {
+            "goalId": "home",
+            "criterionId": "condition:budget",
+            "status": "unknown"
+          }
+        ]
+      },
+      "taskUpdate": {
+        "kind": "continued"
+      },
+      "issues": [],
+      "outbounds": [
+        {
+          "text": "我优先看 ：地点、11月5日起入住、可养猫都符合，但租金不含账单，账单金额未确认——所以£1600全包能否成立还不知道。由于预算是硬上限，下一步只需向对方确认账单每月大约多少，超了就只能放弃这套，不能靠调高预算来凑。\n\n这次尚未确认完全匹配的选项。下面1条是待核实线索，先看标出的缺口。\n\n【备选 · 需要确认】\n\n1. Stratford一居室整租允许养猫\n可作备选：地点符合你指定的范围\n出租：伦敦Stratford一居室整租 要求：允许养一只猫，宠物许可会写入租约 地点：Stratford, London\n月租：费用：月租£1550，不含账单，账单金额待确认\n待确认：租金/计价单位 / 预算\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-home-cat)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+          "kind": "recommendation",
+          "status": "sent",
+          "externalMessageId": "1003"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbtu9xw002x8ubgd2hat8xc",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.892Z"
+        },
+        {
+          "id": "cmvbtu9y1002y8ubgpkxoam09",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:31.897Z"
+        },
+        {
+          "id": "cmvbtubdj00308ubglx79jn3c",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 0,
+            "decision": "continued",
+            "revision": 10,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.751Z"
+        },
+        {
+          "id": "cmvbtubdv00318ubgorfjo5tt",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.763Z"
+        },
+        {
+          "id": "cmvbtubdx00328ubg93jmhawz",
+          "kind": "agent_run",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4553,
+            "sdkTraceRef": "trace_cf741bbb4a634485a94c5508da61fefc/span_a6def0581ae94b12ad3f3ba8",
+            "outputTokens": 227
+          },
+          "phase": 2,
+          "latencyMs": 1854,
+          "costMicro": 701,
+          "createdAt": "2026-10-17T03:18:33.765Z"
+        },
+        {
+          "id": "cmvbtubdy00338ubgpc4dbaf5",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "category": "housing",
+            "taskRevision": 10,
+            "requirementsVersion": 3
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.766Z"
+        },
+        {
+          "id": "cmvbtubdz00348ubgjb1k5u12",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.767Z"
+        },
+        {
+          "id": "cmvbtube100358ubgje0c91yk",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "read_task_sources",
+            "failed": 0,
+            "result": "read",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "requested": 1
+          },
+          "phase": 2,
+          "latencyMs": 1,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.769Z"
+        },
+        {
+          "id": "cmvbtube200368ubgpbvu2e2v",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "task_source_refresh",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "decision": "automatic_refresh",
+            "attempted": 1,
+            "requested": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.770Z"
+        },
+        {
+          "id": "cmvbtube800378ubgke0oc7c0",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:33.776Z"
+        },
+        {
+          "id": "cmvbtude400388ubgrjqqwgk5",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "explicit_calendar_fact_checked",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 3
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:36.364Z"
+        },
+        {
+          "id": "cmvbtudy100398ubgjwqsho9k",
+          "kind": "jev",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "id": "gen-dec-1792207116-OASvGsB4OfLFXLsyjomT",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.00015204,
+              "input_tokens": 3620
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.96,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.96,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.94,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.13,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.91,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 713,
+          "costMicro": 152,
+          "createdAt": "2026-10-17T03:18:37.081Z"
+        },
+        {
+          "id": "cmvbtudyp003b8ubgt5lgrqkc",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 3
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:37.105Z"
+        },
+        {
+          "id": "cmvbtudz1003c8ubgkgs6t7z4",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:37.117Z"
+        },
+        {
+          "id": "cmvbtudz3003d8ubgcudglgif",
+          "kind": "agent_run",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 8469,
+            "sdkTraceRef": "trace_ff62300573c94a16863e3930f7f1edb6/span_da54888a155d4774a70ad0dc",
+            "outputTokens": 499
+          },
+          "phase": 2,
+          "latencyMs": 3336,
+          "costMicro": 1325,
+          "createdAt": "2026-10-17T03:18:37.119Z"
+        },
+        {
+          "id": "cmvbtufxv003e8ubg0ffg9zvj",
+          "kind": "jev",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "id": "gen-dec-1792207119-7S2PAW5hMhuJ4UhKDalV",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000141918,
+              "input_tokens": 3379
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.08,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.13,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.1,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.68,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.14,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 343,
+          "costMicro": 142,
+          "createdAt": "2026-10-17T03:18:39.668Z"
+        },
+        {
+          "id": "cmvbtufxy003f8ubg4desgwff",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 11
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:39.670Z"
+        },
+        {
+          "id": "cmvbtufy0003g8ubg6i2p4cej",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:39.672Z"
+        },
+        {
+          "id": "cmvbtug78003h8ubgb6c8em5t",
+          "kind": "jev",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "id": "gen-dec-1792207119-IdIEilbf5ealH6zhYKz5",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000071442,
+              "input_tokens": 1701
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.96,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.97,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.03,
+                  "3": 0.97
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.14,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 330,
+          "costMicro": 71,
+          "createdAt": "2026-10-17T03:18:40.004Z"
+        },
+        {
+          "id": "cmvbtug7b003i8ubgh4m1x98v",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.97,
+              "worthReplying": 2.96,
+              "mentionsUnverified": 0.14
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.007Z"
+        },
+        {
+          "id": "cmvbtug7e003j8ubggaxm9g27",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 11
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.010Z"
+        },
+        {
+          "id": "cmvbtug7h003k8ubgm5dvcmee",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.013Z"
+        },
+        {
+          "id": "cmvbtug8b003n8ubgtv3yq8cs",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.043Z"
+        },
+        {
+          "id": "cmvbtug8c003o8ubgrtrbm12w",
+          "kind": "agent_run",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 9536,
+            "sdkTraceRef": "trace_ff62300573c94a16863e3930f7f1edb6/span_59b03dd96bf34a18a3df4d92",
+            "outputTokens": 142
+          },
+          "phase": 2,
+          "latencyMs": 2925,
+          "costMicro": 1375,
+          "createdAt": "2026-10-17T03:18:40.044Z"
+        },
+        {
+          "id": "cmvbtug8i003u8ubg4wuop1w0",
+          "kind": "gate",
+          "inputRef": "cmvbtu9xv002w8ubgikq5xldz",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.050Z"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "input": "Studio不考虑",
+      "elapsedMs": 11640,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "market_search",
+          "market_enrich",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvbttqd800058ubgajj9olzz",
+        "ownerUserId": "cmvbttobw00008ubg9ovmukww",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p27-preview-5bbc93f0-ef8d-499c-abbc-6003b8dfab97"
+        },
+        "objective": "寻找可租住的房源",
+        "category": "housing",
+        "counterparty": "supply",
+        "status": "active",
+        "revision": 17,
+        "requirementsVersion": 4,
+        "constraints": [
+          {
+            "key": "area",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室整租"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "允许养猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "budgetScope": "all_in",
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtu9xv002w8ubgikq5xldz"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "date_range",
+              "from": "2026-11-05",
+              "to": "2026-11-05"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttygx001g8ubgue38loos"
+            }
+          },
+          {
+            "key": "bills",
+            "goalId": "home",
+            "strength": "preference",
+            "value": {
+              "kind": "text",
+              "text": "包bills"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtu9xv002w8ubgikq5xldz"
+            }
+          },
+          {
+            "key": "exclude",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "Studio"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtug9d003z8ubge4fr6y77"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "home",
+            "title": "一居室整租房源",
+            "required": true,
+            "searchTerms": [
+              "一居室整租房源",
+              "一居室整租",
+              "一居室 整租",
+              "1 bed flat",
+              "one bedroom flat"
+            ],
+            "criteria": [
+              {
+                "id": "home-subject",
+                "label": "来源描述的对象或邀约：一居室整租房源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:room_type",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:budget",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:move_in_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:a984d8175c99cebb92e729b7b21afe721a4bb408"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:bills",
+                "label": "核对当前条件：bills",
+                "strength": "preference",
+                "constraintKey": "bills",
+                "status": "conflict",
+                "evidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ],
+                "conflictingEvidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ]
+              },
+              {
+                "id": "condition:exclude",
+                "label": "核对当前条件：exclude",
+                "strength": "hard",
+                "constraintKey": "exclude",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1c322c1153aaecaecde4d9be29d226730f921b55",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "出租：伦敦Stratford一居室整租",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "要求：允许养一只猫，宠物许可会写入租约",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "费用：月租£1550，不含账单，账单金额待确认",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:a984d8175c99cebb92e729b7b21afe721a4bb408",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "入住：2026年11月5日起",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:118bc42d89badb607fcb7af23bb30686663bf328",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-late",
+            "summary": "出租：伦敦Stratford一居室整租，月租£1500，不含账单。入住：2026年12月1日起。允许养猫。",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-late",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-late"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "deliver",
+          "owner": "agent",
+          "reason": "Stratford 一居室可养猫、11月5日起入住的房源已找到；不包账单，账单金额未知，all-in 预算需先确认总额",
+          "goalId": "home"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "sent",
+          "level": "partial",
+          "outboundMessageId": "cmvbtup74004u8ubgxv6wv38c"
+        },
+        "userConfirmation": null
+      },
+      "readiness": {
+        "ready": false,
+        "missing": [
+          {
+            "goalId": "home",
+            "criterionId": "condition:budget",
+            "status": "unknown"
+          }
+        ]
+      },
+      "taskUpdate": {
+        "kind": "continued"
+      },
+      "issues": [],
+      "outbounds": [
+        {
+          "text": "排除 Studio 后，这条 Stratford 整租一居室是目前最贴合的：可养猫、11月5日起入住。唯一要确认的是账单——租金£1550不含账单，加账单是否仍在£1600内得等房东给数字。\n\n这次尚未确认完全匹配的选项。下面1条是待核实线索，先看标出的缺口。\n\n【备选 · 需要确认】\n\n1. Stratford一居室整租允许养猫\n可作备选：地点符合你指定的范围\n出租：伦敦Stratford一居室整租 要求：允许养一只猫，宠物许可会写入租约 地点：Stratford, London\n月租：费用：月租£1550，不含账单，账单金额待确认\n待确认：租金/计价单位 / 预算\n发布 2026-10-16\n来源：[A2H详情](https://a2hmarket.ai/listings/task-eval-home-cat)\n\n以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。",
+          "kind": "recommendation",
+          "status": "sent",
+          "externalMessageId": "1004"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbtug9d00408ubgvu32bj7g",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.082Z"
+        },
+        {
+          "id": "cmvbtug9i00418ubgq9t7xp86",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:40.086Z"
+        },
+        {
+          "id": "cmvbtuhd600438ubgfeli6hzu",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 0,
+            "decision": "continued",
+            "revision": 14,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.515Z"
+        },
+        {
+          "id": "cmvbtuhda00448ubgwjkkpaij",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.518Z"
+        },
+        {
+          "id": "cmvbtuhdb00458ubgou37ansd",
+          "kind": "agent_run",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4574,
+            "sdkTraceRef": "trace_3d92ae8e2b8142c681f39269eddc29d1/span_181e3da9369d443e87e0eb2a",
+            "outputTokens": 159
+          },
+          "phase": 2,
+          "latencyMs": 1422,
+          "costMicro": 685,
+          "createdAt": "2026-10-17T03:18:41.519Z"
+        },
+        {
+          "id": "cmvbtuhdc00468ubg7dzaqq76",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "category": "housing",
+            "taskRevision": 14,
+            "requirementsVersion": 4
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.520Z"
+        },
+        {
+          "id": "cmvbtuhdd00478ubgp5sak5v1",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.521Z"
+        },
+        {
+          "id": "cmvbtuhde00488ubg4508kgjm",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "read_task_sources",
+            "failed": 0,
+            "result": "read",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "requested": 1
+          },
+          "phase": 2,
+          "latencyMs": 1,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.522Z"
+        },
+        {
+          "id": "cmvbtuhdf00498ubg1mkuxsq0",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "task_source_refresh",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "decision": "automatic_refresh",
+            "attempted": 1,
+            "requested": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.523Z"
+        },
+        {
+          "id": "cmvbtuhdk004a8ubg4ld3hda1",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:41.528Z"
+        },
+        {
+          "id": "cmvbtuj8q004b8ubg5u3cc19g",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "market_search",
+            "added": 3,
+            "total": 4,
+            "queries": [
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "Stratford 一居室",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              },
+              {
+                "page": 1,
+                "entity": null,
+                "intent": "housing",
+                "keyword": "one bedroom flat Stratford",
+                "purpose": "discover",
+                "tradeType": "SELL"
+              }
+            ],
+            "decision": "searched",
+            "failures": [],
+            "planApplied": {
+              "needs": 1,
+              "hasRoute": false,
+              "preferences": 2,
+              "excludeTerms": 1,
+              "hasDateRange": false,
+              "requiredTerms": 0,
+              "budgetSpecified": true
+            }
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:43.946Z"
+        },
+        {
+          "id": "cmvbtuj8z004c8ubgopev1c67",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:43.955Z"
+        },
+        {
+          "id": "cmvbtuj91004d8ubgw84nt1z6",
+          "kind": "agent_run",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 8540,
+            "sdkTraceRef": "trace_a2a238bd7b62431ba414449e1cd408f8/span_89a44d19ab744138baa5fc81",
+            "outputTokens": 306
+          },
+          "phase": 2,
+          "latencyMs": 2421,
+          "costMicro": 1281,
+          "createdAt": "2026-10-17T03:18:43.957Z"
+        },
+        {
+          "id": "cmvbtuko7004e8ubgc2iuszr3",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "market_enrich",
+            "reason": "details already attempted; no repeated calls",
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:45.799Z"
+        },
+        {
+          "id": "cmvbtukol004f8ubgwt4fgqi3",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:45.813Z"
+        },
+        {
+          "id": "cmvbtukon004g8ubgeanj8bpn",
+          "kind": "agent_run",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 10723,
+            "sdkTraceRef": "trace_a2a238bd7b62431ba414449e1cd408f8/span_eee9e9e7b0bb4a11b05273e7",
+            "outputTokens": 42
+          },
+          "phase": 2,
+          "latencyMs": 1857,
+          "costMicro": 1513,
+          "createdAt": "2026-10-17T03:18:45.815Z"
+        },
+        {
+          "id": "cmvbtuml5004h8ubg0eomb0ur",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "explicit_calendar_fact_checked",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 4
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:48.281Z"
+        },
+        {
+          "id": "cmvbtun4s004i8ubgz847kigx",
+          "kind": "jev",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "id": "gen-dec-1792207128-glcT5nCSVwJdmTOFP4El",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000173082,
+              "input_tokens": 4121
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.96,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.96,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.14,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.9,
+                "type": "noul"
+              },
+              "is_supported_6": {
+                "noul": 0.94,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 703,
+          "costMicro": 173,
+          "createdAt": "2026-10-17T03:18:48.988Z"
+        },
+        {
+          "id": "cmvbtun5c004k8ubgcqlcj8f4",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 1,
+            "requirementsVersion": 4
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:49.008Z"
+        },
+        {
+          "id": "cmvbtun5m004l8ubg6nzfysqf",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:49.018Z"
+        },
+        {
+          "id": "cmvbtun5p004m8ubg002e5oo7",
+          "kind": "agent_run",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 10784,
+            "sdkTraceRef": "trace_a2a238bd7b62431ba414449e1cd408f8/span_49d2d37f4bd44474b02266a1",
+            "outputTokens": 550
+          },
+          "phase": 2,
+          "latencyMs": 3206,
+          "costMicro": 1664,
+          "createdAt": "2026-10-17T03:18:49.021Z"
+        },
+        {
+          "id": "cmvbtuowr004n8ubgnyaiurb0",
+          "kind": "jev",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "id": "gen-dec-1792207130-IlXSda7MSTFkHJbHk4vK",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000164976,
+              "input_tokens": 3928
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.06,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.12,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.1,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.67,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.13,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.14,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 351,
+          "costMicro": 165,
+          "createdAt": "2026-10-17T03:18:51.291Z"
+        },
+        {
+          "id": "cmvbtuowu004o8ubguofci2t9",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 13
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.294Z"
+        },
+        {
+          "id": "cmvbtuoww004p8ubgzesvke1q",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.296Z"
+        },
+        {
+          "id": "cmvbtup6p004q8ubgbgh52n27",
+          "kind": "jev",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "id": "gen-dec-1792207131-j0D3MBWRrfE2951SRkIW",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000071946,
+              "input_tokens": 1713
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.92,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.93,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.07,
+                  "3": 0.93
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.19,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 352,
+          "costMicro": 72,
+          "createdAt": "2026-10-17T03:18:51.649Z"
+        },
+        {
+          "id": "cmvbtup6q004r8ubghlq75rdg",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.92,
+              "mentionsUnverified": 0.19
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.650Z"
+        },
+        {
+          "id": "cmvbtup6s004s8ubg7ont8cs7",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "market_offer_conflicts",
+            "refs": [
+              "m1"
+            ],
+            "decision": "clear",
+            "claimsUsed": 13
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.652Z"
+        },
+        {
+          "id": "cmvbtup6t004t8ubgubt8965r",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "m1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.654Z"
+        },
+        {
+          "id": "cmvbtup7g004w8ubgunm1ej1r",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.676Z"
+        },
+        {
+          "id": "cmvbtup7h004x8ubgcrrdz0jr",
+          "kind": "agent_run",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 11659,
+            "sdkTraceRef": "trace_a2a238bd7b62431ba414449e1cd408f8/span_7fbe74b737964bd19c2751fc",
+            "outputTokens": 128
+          },
+          "phase": 2,
+          "latencyMs": 2656,
+          "costMicro": 1668,
+          "createdAt": "2026-10-17T03:18:51.677Z"
+        },
+        {
+          "id": "cmvbtup7w00578ubgnwxk0rmf",
+          "kind": "gate",
+          "inputRef": "cmvbtug9d003z8ubge4fr6y77",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.692Z"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "input": "房子找好了，不用继续了",
+      "elapsedMs": 4342,
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "close_demand",
+          "react"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvbttqd800058ubgajj9olzz",
+        "ownerUserId": "cmvbttobw00008ubg9ovmukww",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p27-preview-5bbc93f0-ef8d-499c-abbc-6003b8dfab97"
+        },
+        "objective": "寻找可租住的房源",
+        "category": "housing",
+        "counterparty": "supply",
+        "status": "completed",
+        "revision": 18,
+        "requirementsVersion": 4,
+        "constraints": [
+          {
+            "key": "area",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "Stratford"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "room_type",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "一居室整租"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "pets",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "允许养猫"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttoch00028ubgskuya9uz"
+            }
+          },
+          {
+            "key": "budget",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "money",
+              "amountPence": 160000,
+              "unit": "month"
+            },
+            "budgetScope": "all_in",
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtu9xv002w8ubgikq5xldz"
+            }
+          },
+          {
+            "key": "move_in_date",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "date_range",
+              "from": "2026-11-05",
+              "to": "2026-11-05"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbttygx001g8ubgue38loos"
+            }
+          },
+          {
+            "key": "bills",
+            "goalId": "home",
+            "strength": "preference",
+            "value": {
+              "kind": "text",
+              "text": "包bills"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtu9xv002w8ubgikq5xldz"
+            }
+          },
+          {
+            "key": "exclude",
+            "goalId": "home",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "Studio"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvbtug9d003z8ubge4fr6y77"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "home",
+            "title": "一居室整租房源",
+            "required": true,
+            "searchTerms": [
+              "一居室整租房源",
+              "一居室整租",
+              "一居室 整租",
+              "1 bed flat",
+              "one bedroom flat"
+            ],
+            "criteria": [
+              {
+                "id": "home-subject",
+                "label": "来源描述的对象或邀约：一居室整租房源",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:room_type",
+                "label": "核对当前条件：room_type",
+                "strength": "hard",
+                "constraintKey": "room_type",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:pets",
+                "label": "核对当前条件：pets",
+                "strength": "hard",
+                "constraintKey": "pets",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:budget",
+                "label": "核对当前条件：budget",
+                "strength": "hard",
+                "constraintKey": "budget",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:move_in_date",
+                "label": "核对当前条件：move_in_date",
+                "strength": "hard",
+                "constraintKey": "move_in_date",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:a984d8175c99cebb92e729b7b21afe721a4bb408"
+                ],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:bills",
+                "label": "核对当前条件：bills",
+                "strength": "preference",
+                "constraintKey": "bills",
+                "status": "conflict",
+                "evidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ],
+                "conflictingEvidenceRefs": [
+                  "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca"
+                ]
+              },
+              {
+                "id": "condition:exclude",
+                "label": "核对当前条件：exclude",
+                "strength": "hard",
+                "constraintKey": "exclude",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:1c322c1153aaecaecde4d9be29d226730f921b55"
+                ],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1c322c1153aaecaecde4d9be29d226730f921b55",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "出租：伦敦Stratford一居室整租",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:09f8a96cc2f20d8e62f5973e011d82c8ffaddcc6",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "要求：允许养一只猫，宠物许可会写入租约",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:bd8fb06fcbc3d92dc703175cd8793fb0790a8bca",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "费用：月租£1550，不含账单，账单金额待确认",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:a984d8175c99cebb92e729b7b21afe721a4bb408",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-cat",
+            "summary": "入住：2026年11月5日起",
+            "observedAt": "2026-10-17T03:18:48.277Z",
+            "entityKey": "market:task-eval-home-cat",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-cat"
+          },
+          {
+            "id": "e:118bc42d89badb607fcb7af23bb30686663bf328",
+            "goalId": "home",
+            "kind": "source_excerpt",
+            "sourceRef": "market:task-eval-home-late",
+            "summary": "出租：伦敦Stratford一居室整租，月租£1500，不含账单。入住：2026年12月1日起。允许养猫。",
+            "observedAt": "2026-10-17T03:18:27.989Z",
+            "entityKey": "market:task-eval-home-late",
+            "url": "https://a2hmarket.ai/listings/task-eval-home-late"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "deliver",
+          "owner": "agent",
+          "reason": "Stratford 一居室可养猫、11月5日起入住的房源已找到；不包账单，账单金额未知，all-in 预算需先确认总额",
+          "goalId": "home"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "sent",
+          "level": "partial",
+          "outboundMessageId": "cmvbtup74004u8ubgxv6wv38c"
+        },
+        "userConfirmation": {
+          "userId": "cmvbttobw00008ubg9ovmukww",
+          "sourceMessageId": "cmvbtup8s005c8ubgjndp106j",
+          "intent": "achieved"
+        }
+      },
+      "readiness": {
+        "ready": false,
+        "missing": [
+          {
+            "goalId": "home",
+            "criterionId": "condition:budget",
+            "status": "unknown"
+          }
+        ]
+      },
+      "taskUpdate": {
+        "kind": "completed"
+      },
+      "issues": [],
+      "outbounds": [
+        {
+          "text": "👍",
+          "kind": "reaction",
+          "status": "sent",
+          "externalMessageId": null
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvbtup8s005d8ubg2bhkapw6",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.724Z"
+        },
+        {
+          "id": "cmvbtup8x005e8ubg42hfowh8",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:51.729Z"
+        },
+        {
+          "id": "cmvbtuqm7005g8ubgol58fmjf",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "attempt": 0,
+            "decision": "completed",
+            "revision": 18,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:53.504Z"
+        },
+        {
+          "id": "cmvbtuqmf005h8ubgcy0bdfgv",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:53.511Z"
+        },
+        {
+          "id": "cmvbtuqmh005i8ubg9bdv0iji",
+          "kind": "agent_run",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4606,
+            "sdkTraceRef": "trace_e47319314d1d4174b20ed6b8ac3a279e/span_c1d73470f6964af69b227804",
+            "outputTokens": 139
+          },
+          "phase": 2,
+          "latencyMs": 1767,
+          "costMicro": 684,
+          "createdAt": "2026-10-17T03:18:53.513Z"
+        },
+        {
+          "id": "cmvbtuqmi005j8ubgn6pzjqws",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "category": "housing",
+            "taskRevision": 18,
+            "requirementsVersion": 4
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:53.514Z"
+        },
+        {
+          "id": "cmvbtuqmj005k8ubgcxmbq1wn",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:53.515Z"
+        },
+        {
+          "id": "cmvbturjh005l8ubg6aqsung3",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "outbound",
+            "kind": "reaction",
+            "decision": "auto"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:54.701Z"
+        },
+        {
+          "id": "cmvbturjj005m8ubgq58me0rg",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "outbound",
+            "kind": "reaction",
+            "decision": "auto"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:54.703Z"
+        },
+        {
+          "id": "cmvbturk3005o8ubgbtppfxfc",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:54.723Z"
+        },
+        {
+          "id": "cmvbturk5005p8ubgcwm6z934",
+          "kind": "agent_run",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 8384,
+            "sdkTraceRef": "trace_0af2740e96674b208287f20092672924/span_29062ecbbb5d4dfca5e7d9ba",
+            "outputTokens": 50
+          },
+          "phase": 2,
+          "latencyMs": 1203,
+          "costMicro": 1188,
+          "createdAt": "2026-10-17T03:18:54.725Z"
+        },
+        {
+          "id": "cmvbtuskc005q8ubgl8123onl",
+          "kind": "agent_run",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvbttqd800058ubgajj9olzz",
+            "agentName": "matchAgent",
+            "inputTokens": 8475,
+            "sdkTraceRef": "trace_0af2740e96674b208287f20092672924/span_c173d6cc9f4a43f6a01f35be",
+            "outputTokens": 19
+          },
+          "phase": 2,
+          "latencyMs": 1303,
+          "costMicro": 1192,
+          "createdAt": "2026-10-17T03:18:56.028Z"
+        },
+        {
+          "id": "cmvbtuskt005x8ubgvqch8uqu",
+          "kind": "gate",
+          "inputRef": "cmvbtup8s005c8ubgjndp106j",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T03:18:56.045Z"
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "keyword": "Stratford 一居室 整租",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "Stratford 1 bed flat",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "一居室 养猫 出租",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "Stratford 一居室 整租",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "Stratford cat friendly one bedroom",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "Stratford 养猫 出租",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "Stratford 一居室",
+      "page": 1,
+      "tradeType": "SELL"
+    },
+    {
+      "keyword": "one bedroom flat Stratford",
+      "page": 1,
+      "tradeType": "SELL"
+    }
+  ],
+  "details": [
+    "task-eval-home-cat",
+    "task-eval-home-late",
+    "task-eval-home-cat",
+    "task-eval-home-late",
+    "task-eval-home-cat",
+    "task-eval-home-cat"
+  ]
+}

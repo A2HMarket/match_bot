@@ -1,0 +1,31 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (35 tests | 1 failed) 50ms
+   ❯ reply_to_request (35)
+     × returns concise-advice feedback instead of silently cutting a market recommendation mid-sentence 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > returns concise-advice feedback instead of silently cutting a market recommendation mid-sentence
+AssertionError: expected 'invalid answer: offer is unknown, ina…' to contain '200 characters'
+
+Expected: "200 characters"
+Received: "invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: null"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:63:20
+     61|       kind: 'partial', refs: ['m1'], text: '请先确认具体地址和取货时间。'.repeat(20),
+     62|     }));
+     63|     expect(result).toContain('200 characters');
+       |                    ^
+     64|     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+     65|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 34 passed (35)
+   Start at  11:03:13
+   Duration  572ms (import 52%, transform 38%, tests 10%)
+

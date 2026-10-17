@@ -1,0 +1,373 @@
+{
+  "version": 1,
+  "frozenAt": "2026-10-17",
+  "reviewedBaselineRevision": "254e462",
+  "purpose": "Requirements fixed before implementation; expected assertions are contracts, not model prose. Synthetic cases only. Sources/runners/graders/results stored separately.",
+  "cases": [
+    {
+      "id": "desk_chair",
+      "name": "桌椅完整多轮",
+      "turns": [
+        {
+          "input": "E14想收书桌和办公椅，每件50镑以内，能自提。",
+          "expect": {
+            "task": "furniture",
+            "newTask": true,
+            "requiredGoals": ["desk", "chair"],
+            "budgetEachPence": 5000,
+            "area": "E14"
+          }
+        },
+        {
+          "input": "半小时以内",
+          "expect": {
+            "task": "furniture",
+            "replyTo": "furniture-radius-question",
+            "maxTravelMinutes": 30,
+            "keep": ["desk", "chair", "area", "budgetEachPence"]
+          }
+        },
+        {
+          "input": "桌子可以到70镑，椅子还是50",
+          "expect": {
+            "task": "furniture",
+            "deskBudgetPence": 7000,
+            "chairBudgetPence": 5000
+          }
+        },
+        {
+          "input": "椅子已经买到了，桌子继续找",
+          "expect": {
+            "task": "furniture",
+            "userConfirmedGoals": ["chair"],
+            "taskCompleted": false
+          }
+        },
+        {
+          "input": "桌子也买到了，这个需求解决了",
+          "expect": {
+            "task": "furniture",
+            "replyTo": "furniture-last-reply",
+            "taskCompleted": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "cat_housing",
+      "name": "可养猫房源",
+      "turns": [
+        {
+          "input": "Stratford想找允许养猫的一居室整租，月租1600镑以内，11月入住。",
+          "expect": {
+            "task": "housing",
+            "newTask": true,
+            "monthlyBudgetPence": 160000,
+            "pets": "cat",
+            "roomType": "one_bedroom"
+          }
+        },
+        {
+          "input": "11月5日入住，猫一定要允许",
+          "expect": {
+            "task": "housing",
+            "replyTo": "housing-move-in-question",
+            "moveInDate": "2026-11-05",
+            "petsHard": true
+          }
+        },
+        {
+          "input": "最好包bills，但总预算不能增加",
+          "expect": {
+            "task": "housing",
+            "monthlyBudgetPence": 160000,
+            "billsPreference": true
+          }
+        },
+        {
+          "input": "Studio不考虑",
+          "expect": {
+            "task": "housing",
+            "roomType": "one_bedroom",
+            "exclude": ["studio"]
+          }
+        },
+        {
+          "input": "房子找好了，不用继续了",
+          "expect": {
+            "task": "housing",
+            "taskCompleted": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "beginner_bad",
+      "name": "新手羽毛球",
+      "turns": [
+        {
+          "input": "E14想找周末羽毛球搭子，我是初学者，有适合新手的吗？",
+          "expect": {
+            "task": "badminton",
+            "newTask": true,
+            "counterparty": "PEER",
+            "level": "beginner",
+            "area": "E14"
+          }
+        },
+        {
+          "input": "半小时以内",
+          "expect": {
+            "task": "badminton",
+            "replyTo": "badminton-radius-question",
+            "maxTravelMinutes": 30,
+            "keep": ["level", "area", "counterparty"]
+          }
+        },
+        {
+          "input": "周日下午，周六不行",
+          "expect": {
+            "task": "badminton",
+            "allowedDay": "sunday",
+            "excludedDay": "saturday"
+          }
+        },
+        {
+          "input": "室内的，收费也可以",
+          "expect": {
+            "task": "badminton",
+            "indoorHard": true,
+            "doNotInventBudget": true
+          }
+        },
+        {
+          "input": "约好了，已经解决",
+          "expect": {
+            "task": "badminton",
+            "taskCompleted": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "switch_back",
+      "name": "换题再引用",
+      "turns": [
+        {
+          "input": "E14想买书桌，50镑以内",
+          "expect": {
+            "task": "desk",
+            "newTask": true
+          }
+        },
+        {
+          "input": "另外想找Stratford一居室，月租1600以内",
+          "expect": {
+            "task": "housing",
+            "newTask": true
+          }
+        },
+        {
+          "input": "可以到70",
+          "expect": {
+            "task": "desk",
+            "replyTo": "desk-budget-question",
+            "deskBudgetPence": 7000,
+            "housingBudgetUnchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ambiguous",
+      "name": "含糊补充先澄清",
+      "turns": [
+        {
+          "input": "想找桌子",
+          "expect": {
+            "task": "desk",
+            "newTask": true
+          }
+        },
+        {
+          "input": "也想找房",
+          "expect": {
+            "task": "housing",
+            "newTask": true
+          }
+        },
+        {
+          "input": "可以加一点预算",
+          "expect": {
+            "mustClarifyTask": true,
+            "mustNotMutateEitherTask": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "not_complete",
+      "name": "客套与条件句不完成",
+      "turns": [
+        {
+          "input": "E14找新手羽毛球搭子",
+          "expect": {
+            "task": "badminton",
+            "newTask": true
+          }
+        },
+        {
+          "input": "这个挺好，谢谢",
+          "expect": {
+            "task": "badminton",
+            "taskCompleted": false
+          }
+        },
+        {
+          "input": "如果约好了再说",
+          "expect": {
+            "task": "badminton",
+            "taskCompleted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "cancel",
+      "name": "用户取消",
+      "turns": [
+        {
+          "input": "想买办公椅，50镑以内",
+          "expect": {
+            "task": "chair",
+            "newTask": true
+          }
+        },
+        {
+          "input": "不找了，取消这个需求",
+          "expect": {
+            "task": "chair",
+            "taskCancelled": true,
+            "noFurtherSearch": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "scope",
+      "name": "作用域隔离",
+      "turns": [
+        {
+          "input": "E14想找房",
+          "expect": {
+            "task": "private-housing",
+            "scope": "private",
+            "newTask": true
+          }
+        },
+        {
+          "input": "刚才那个房子怎么样了",
+          "expect": {
+            "scope": "unrelated-group",
+            "mustNotRevealPrivateTask": true,
+            "mustClarifyTask": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ownership",
+      "name": "所有权隔离",
+      "turns": [
+        {
+          "input": "E14收书桌",
+          "expect": {
+            "task": "desk",
+            "owner": "user-a",
+            "newTask": true
+          }
+        },
+        {
+          "input": "把他的预算改成500",
+          "expect": {
+            "owner": "user-b",
+            "mustRejectForeignTaskMutation": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "carry_role",
+      "name": "帮带方向不串",
+      "turns": [
+        {
+          "input": "我2026年11月1日伦敦飞上海，有2公斤空余行李，找需要帮带的人",
+          "expect": {
+            "task": "carry",
+            "newTask": true,
+            "counterparty": "BUY",
+            "capacityKg": 2,
+            "departure": "2026-11-01"
+          }
+        },
+        {
+          "input": "只能带衣服",
+          "expect": {
+            "task": "carry",
+            "replyTo": "carry-item-question",
+            "allowedItems": ["clothes"],
+            "keep": ["capacityKg", "departure", "counterparty"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "no_match",
+      "name": "空/失败与替代",
+      "turns": [
+        {
+          "input": "E14周末新手羽毛球，不要非新手局",
+          "expect": {
+            "task": "badminton",
+            "newTask": true,
+            "fixtureSource": "no_exact_match",
+            "mustExplainUnknowns": true,
+            "mustNotRecommendKnownConflict": true
+          }
+        },
+        {
+          "input": "附近也可以",
+          "expect": {
+            "task": "badminton",
+            "replyTo": "badminton-radius-question",
+            "mustAskSpecificRadiusIfNeeded": true,
+            "mustNotInventRadius": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "user_solved",
+      "name": "用户自行解决",
+      "turns": [
+        {
+          "input": "找桌椅，每件50以内",
+          "expect": {
+            "task": "furniture",
+            "newTask": true,
+            "fixtureSource": "unavailable",
+            "mustDistinguishUnavailable": true
+          }
+        },
+        {
+          "input": "我自己都买到了，不用找了",
+          "expect": {
+            "task": "furniture",
+            "taskCompleted": true,
+            "mustNotClaimAgentVerifiedAllCriteria": true
+          }
+        }
+      ]
+    }
+  ]
+}

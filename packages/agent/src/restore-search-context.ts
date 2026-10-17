@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { MatchContext } from './context.js';
 import { XHS_RESEARCH_LIMITS, xhsResearchQuerySchema } from './xhs-research.js';
 import { xhsRecommendationSchema } from './xhs-recommendations.js';
-import { marketPlanSchema } from './market-strategy.js';
+import { marketPlanSchema, type marketRulesSchema, type MarketRules } from './market-strategy.js';
 import { MARKET_INTENTS } from '@matchbot/websearch';
 import {
   marketCandidateSchema,
@@ -13,7 +13,7 @@ import {
   MARKET_RESEARCH_LIMITS,
 } from './market-research.js';
 
-const contextSchema = z.object({
+export const researchContextSchema = z.object({
   userId: z.string(),
   chatId: z.string(),
   phase: z.union([z.literal(0), z.literal(1), z.literal(2)]),
@@ -21,6 +21,15 @@ const contextSchema = z.object({
   groupId: z.string().nullable(),
   source: z.object({ messageId: z.string(), userId: z.string() }).optional(),
   demand: demandDraftSchema.optional(),
+  demandId: z.string().optional(),
+  supplierSearchEmpty: z.boolean().optional(),
+  taskProgressCalls: z.number().int().nonnegative().max(100).optional(),
+  taskProgressVersion: z.number().int().nonnegative().optional(),
+  taskSourceReviewedClaims: z.number().int().nonnegative().max(96).optional(),
+  sourceReviewCache: z.record(z.string(), z.boolean()).optional(),
+  outboundDeclineReason: z
+    .enum(['unverified_claims', 'low_value', 'jev_unavailable', 'rate_limited'])
+    .optional(),
   currentRequest: currentRequestSchema.optional(),
   answerInputExhausted: z.boolean().optional(),
   isAnswerFinalization: z.boolean().optional(),
@@ -58,6 +67,21 @@ const contextSchema = z.object({
 const snapshotSchema = z.object({
   context: z.object({ context: z.record(z.string(), z.unknown()) }),
 });
+function restoreRules(rules: z.infer<typeof marketRulesSchema>): MarketRules {
+  return {
+    preferences: rules.preferences,
+    ...(rules.budget !== undefined ? { budget: rules.budget } : {}),
+    ...(rules.budgetScope ? { budgetScope: rules.budgetScope } : {}),
+    ...(rules.budgetUnit ? { budgetUnit: rules.budgetUnit } : {}),
+    ...(rules.capacityKg !== undefined ? { capacityKg: rules.capacityKg } : {}),
+    ...(rules.essentialPreferences ? { essentialPreferences: rules.essentialPreferences } : {}),
+    ...(rules.requiredArea ? { requiredArea: rules.requiredArea } : {}),
+    ...(rules.requiredTerms ? { requiredTerms: rules.requiredTerms } : {}),
+    ...(rules.excludeTerms ? { excludeTerms: rules.excludeTerms } : {}),
+    ...(rules.route ? { route: rules.route } : {}),
+    ...(rules.dateRange ? { dateRange: rules.dateRange } : {}),
+  };
+}
 
 /** 只读服务端解密快照。SDK 的 context override 只合并审批信息，不合并业务上下文（P14 实测）。 */
 export function restoreSearchContext(ctx: MatchContext, snapshot: string): MatchContext {
@@ -69,12 +93,27 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
     raw['currentRequest'] === undefined
   )
     return ctx;
-  const saved = contextSchema.parse(raw);
+  const saved = researchContextSchema.parse(raw);
   if (saved.userId !== ctx.userId || saved.chatId !== ctx.chatId || saved.phase !== ctx.phase) {
     throw new Error('Search snapshot context does not match the stored run');
   }
   return {
     ...ctx,
+    ...(saved.demandId ? { demandId: saved.demandId } : {}),
+    ...(saved.supplierSearchEmpty !== undefined
+      ? { supplierSearchEmpty: saved.supplierSearchEmpty }
+      : {}),
+    ...(saved.taskProgressCalls !== undefined
+      ? { taskProgressCalls: saved.taskProgressCalls }
+      : {}),
+    ...(saved.taskProgressVersion !== undefined
+      ? { taskProgressVersion: saved.taskProgressVersion }
+      : {}),
+    ...(saved.taskSourceReviewedClaims !== undefined
+      ? { taskSourceReviewedClaims: saved.taskSourceReviewedClaims }
+      : {}),
+    ...(saved.sourceReviewCache ? { sourceReviewCache: saved.sourceReviewCache } : {}),
+    ...(saved.outboundDeclineReason ? { outboundDeclineReason: saved.outboundDeclineReason } : {}),
     ...(saved.outboundBlocked !== undefined ? { outboundBlocked: saved.outboundBlocked } : {}),
     ...(saved.isRequestStatusRun !== undefined
       ? { isRequestStatusRun: saved.isRequestStatusRun }
@@ -110,12 +149,18 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
             ...(saved.marketPlan.capacityKg !== undefined
               ? { capacityKg: saved.marketPlan.capacityKg }
               : {}),
-            needs: saved.marketPlan.needs,
+            needs: saved.marketPlan.needs.map(({ budget, rules, ...need }) => ({
+              ...need,
+              ...(budget !== undefined ? { budget } : {}),
+              ...(rules ? { rules: restoreRules(rules) } : {}),
+            })),
             preferences: saved.marketPlan.preferences,
             ...(saved.marketPlan.essentialPreferences
               ? { essentialPreferences: saved.marketPlan.essentialPreferences }
               : {}),
             ...(saved.marketPlan.budget !== undefined ? { budget: saved.marketPlan.budget } : {}),
+            ...(saved.marketPlan.budgetScope ? { budgetScope: saved.marketPlan.budgetScope } : {}),
+            ...(saved.marketPlan.budgetUnit ? { budgetUnit: saved.marketPlan.budgetUnit } : {}),
             ...(saved.marketPlan.requiredArea
               ? { requiredArea: saved.marketPlan.requiredArea }
               : {}),

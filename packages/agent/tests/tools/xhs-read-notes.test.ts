@@ -77,6 +77,7 @@ describe('selective XHS reading', () => {
     const out = await t.invoke(rc(c), JSON.stringify({ refs: ['x1'] }));
     expect(out).toContain('x1');
     expect(c.xhsNotes?.[0]?.desc).toBe('搜索卡片摘要');
+    expect(c.sourceFailures).toContain('xiaohongshu:detail_unavailable');
     await t.invoke(rc(c), JSON.stringify({ refs: ['x1'] }));
     expect(d.xhsSearch.readNote).toHaveBeenCalledOnce();
   });

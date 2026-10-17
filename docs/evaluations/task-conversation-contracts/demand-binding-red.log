@@ -1,0 +1,46 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/record-request.test.ts (1 test | 1 failed) 8ms
+   × records a scoped task request rather than overwriting the user latest same-category demand 8ms
+ ❯ packages/db/tests/integration/task-demands.test.ts (1 test | 1 failed) 141ms
+   × keeps two same-category tasks separate and reuses only the selected task demand 140ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/record-request.test.ts > records a scoped task request rather than overwriting the user latest same-category demand
+AssertionError: expected "vi.fn()" to be called with arguments: [ ObjectContaining{…} ]
+
+Number of calls: 0
+
+ ❯ packages/agent/tests/tools/record-request.test.ts:11:25
+      9|     ctx = { userId: 'owner', chatId: '-1', sourceMessageId: 'message',…
+     10|   await tool.invoke({ context: ctx } as never, JSON.stringify({ need: …
+     11|   expect(recordForTask).toHaveBeenCalledWith(expect.objectContaining({…
+       |                         ^
+     12|   expect(findOpenByUser).not.toHaveBeenCalled(); expect(update).not.to…
+     13| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/db/tests/integration/task-demands.test.ts > keeps two same-category tasks separate and reuses only the selected task demand
+TypeError: r.demands.recordForTask is not a function
+ ❯ packages/db/tests/integration/task-demands.test.ts:15:25
+     13|   const first = await plan('1', '周六搬家'), second = await plan('2', '周日搬…
+     14|     draft = { category: 'man_and_van' as const, need: 'moving service'…
+     15|     a = await r.demands.recordForTask({ access, taskId: first.task.id,…
+       |                         ^
+     16|     b = await r.demands.recordForTask({ access, taskId: second.task.id…
+     17|   expect(a.id).not.toBe(b.id); expect(a.taskId).toBe(first.task.id); e…
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed (2)
+   Start at  08:39:10
+   Duration  424ms (import 41%, transform 34%, tests 25%, worker 1%)
+

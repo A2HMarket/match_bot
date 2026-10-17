@@ -1,4 +1,4 @@
-import { createTelegramSender } from '@matchbot/channel-telegram';
+import { createTelegramSender, stampApprovalCardText } from '@matchbot/channel-telegram';
 import { createRepositories, disconnectPrisma, getPrisma } from '@matchbot/db';
 import { closeQueues, createQueues } from '@matchbot/queue';
 import { createLogger, loadEnv } from '@matchbot/shared';
@@ -6,17 +6,20 @@ import { Bot, GrammyError, HttpError } from 'grammy';
 import { createApprovalCallbackHandler } from './approval-callback.js';
 import { createInboundHandler } from './inbound.js';
 import { startOutboundLoop } from './outbound-loop.js';
+import { startInboundDispatch } from './inbound-dispatch.js';
+import { startResumeDispatch } from './resume-dispatch.js';
 
 const env = loadEnv();
 const log = createLogger('bot', env.LOG_LEVEL);
 const repos = createRepositories(getPrisma(env.DATABASE_URL));
 const queues = createQueues(env.REDIS_URL);
-const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
+const bot = new Bot(env.TELEGRAM_BOT_TOKEN, { client: { timeoutSeconds: 10 } });
 const me = await bot.api.getMe();
 
 const inbound = createInboundHandler({
   botId: me.id,
   botUsername: me.username,
+  defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
   repos,
   queues,
   logger: log,
@@ -40,7 +43,7 @@ bot.on('callback_query:data', async (ctx) => {
   await ctx.answerCallbackQuery({ text: r.toast });
   // 处理过的卡去掉按钮并盖戳，防止重复点击，也让群里其他运营看到结论
   if (r.stamp && q.message && 'text' in q.message && q.message.text) {
-    await ctx.editMessageText(`${q.message.text}\n\n${r.stamp}`, {
+    await ctx.editMessageText(stampApprovalCardText(q.message.text, r.stamp), {
       reply_markup: { inline_keyboard: [] },
     });
   }
@@ -51,21 +54,34 @@ bot.catch((err) => {
   const e = err.error;
   const kind =
     e instanceof GrammyError ? 'telegram' : e instanceof HttpError ? 'network' : 'handler';
-  log.error({ updateId: err.ctx.update.update_id, kind, err: e }, 'update failed');
+  log.error(
+    {
+      updateId: err.ctx.update.update_id,
+      kind,
+      errorKind: e instanceof Error ? e.name : 'unknown',
+    },
+    'update failed',
+  );
 });
 const stopLoop = startOutboundLoop({
   repos,
   sender: createTelegramSender({ bot, logger: log }),
   logger: log,
+  opsChatId: env.TELEGRAM_OPS_CHAT_ID,
+  defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
 });
+const stopInboundDispatch = startInboundDispatch({ repos, queues, logger: log });
+const stopResumeDispatch = startResumeDispatch({ repos, queues, logger: log });
 
 for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   process.on(sig, () => {
     stopLoop();
+    stopInboundDispatch();
+    stopResumeDispatch();
     void bot.stop();
     void closeQueues(queues);
     void disconnectPrisma();
   });
 }
 log.info({ botId: me.id, phase: env.DEFAULT_PHASE }, 'bot started');
-await bot.start();
+await bot.start({ timeout: 5 });

@@ -1,78 +1,47 @@
 import { describe, expect, it, vi } from 'vitest';
 import { publishApproval } from '../src/publish.js';
 
+const cards = { opsChatId: '-200', defaultPhase: 0 as const };
 const runState = {
   id: 'rs1',
-  userId: 'u',
+  userId: 'owner',
   interruptions: [
-    {
-      tool: 'reply_in_group',
-      args: JSON.stringify({ text: '@Anna 3 options', supplierIds: ['a', 'b'] }),
-    },
+    { tool: 'reply_to_request', args: '{"text":"uncompiled"}', draftText: 'frozen preview' },
   ],
 } as never;
 
 describe('publishApproval', () => {
-  it('uses the compiled draft preview rather than original model arguments after curation', async () => {
-    const cards = { sendApprovalCard: vi.fn().mockResolvedValue({ messageId: '9' }) };
-    const repos = {
-      suppliers: { findByIds: vi.fn() },
-      demands: { findOpenByUser: vi.fn().mockResolvedValue([{ category: 'other' }]) },
-    } as never;
-    await publishApproval({
-      repos,
-      cards,
-      runState: {
-        id: 'rs',
-        userId: 'u',
-        interruptions: [
-          {
-            tool: 'reply_with_xhs_notes',
-            args: '{"intro":"old selection"}',
-            draftText: '实际筛选后的推荐与来源',
-          },
-        ],
-      } as never,
+  it('queues only the server snapshot identity and fixed destination, without reading a newer unrelated demand', async () => {
+    const enqueueApprovalCard = vi.fn().mockResolvedValue({ id: 'outbox' }),
+      findOpenByUser = vi.fn().mockRejectedValue(new Error('must not read unrelated requests')),
+      repos = { outbound: { enqueueApprovalCard }, demands: { findOpenByUser } };
+    await publishApproval({ repos: repos as never, cards, runState });
+    expect(enqueueApprovalCard).toHaveBeenCalledWith({
+      runStateId: 'rs1',
+      opsChatId: '-200',
+      defaultPhase: 0,
     });
-    expect(cards.sendApprovalCard).toHaveBeenCalledWith(
-      expect.objectContaining({ draftText: '实际筛选后的推荐与来源' }),
-    );
+    expect(findOpenByUser).not.toHaveBeenCalled();
   });
-  it('renders supplier lines from repo and sends one card', async () => {
-    const cards = { sendApprovalCard: vi.fn().mockResolvedValue({ messageId: '9' }) };
-    const repos = {
-      suppliers: {
-        findByIds: vi.fn().mockResolvedValue([
-          { id: 'a', name: 'Van Co', roughPrice: '£40/h', pool: 'A' },
-          { id: 'b', name: 'Move Ltd', roughPrice: null, pool: 'B' },
-        ]),
-      },
-      demands: {
-        findOpenByUser: vi.fn().mockResolvedValue([{ category: 'man_and_van', confidence: 0.94 }]),
-      },
-    } as never;
-    await publishApproval({ repos, cards, runState });
-    expect(cards.sendApprovalCard).toHaveBeenCalledWith(
-      expect.objectContaining({
-        runStateId: 'rs1',
-        draftText: '@Anna 3 options',
-        supplierLines: ['1. Van Co £40/h (A)', '2. Move Ltd (B)'],
-        confidence: 0.94,
-      }),
+  it('propagates failed durable writes so the pending snapshot can be rediscovered', async () => {
+    const enqueueApprovalCard = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('database unavailable'))
+        .mockResolvedValue({ id: 'outbox' }),
+      repos = { outbound: { enqueueApprovalCard } };
+    await expect(publishApproval({ repos: repos as never, cards, runState })).rejects.toThrow(
+      'database unavailable',
     );
+    await publishApproval({ repos: repos as never, cards, runState });
+    expect(enqueueApprovalCard).toHaveBeenCalledTimes(2);
   });
-
-  it('does nothing when there are no interruptions', async () => {
-    const cards = { sendApprovalCard: vi.fn().mockResolvedValue({ messageId: '9' }) };
-    const repos = {
-      suppliers: { findByIds: vi.fn() },
-      demands: { findOpenByUser: vi.fn().mockResolvedValue([]) },
-    } as never;
+  it('leaves a source paused by policy held rather than sending directly', async () => {
+    const enqueueApprovalCard = vi.fn().mockResolvedValue(null);
     await publishApproval({
-      repos,
+      repos: { outbound: { enqueueApprovalCard } } as never,
       cards,
-      runState: { id: 'rs2', userId: 'u', interruptions: [] } as never,
+      runState,
     });
-    expect(cards.sendApprovalCard).not.toHaveBeenCalled();
+    expect(enqueueApprovalCard).toHaveBeenCalledOnce();
   });
 });

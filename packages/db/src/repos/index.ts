@@ -12,10 +12,16 @@ import { suppliersRepo } from './suppliers.js';
 import { suppliesRepo } from './supplies.js';
 import { tracesRepo } from './traces.js';
 import { usersRepo } from './users.js';
+import { tasksRepo } from './tasks.js';
+import { executionsRepo } from './executions.js';
+import { withExecutionFence } from '../execution-fence.js';
+import type { ExecutionLease } from '@matchbot/domain';
 
-export function createRepositories(prisma: PrismaClient) {
+function rawRepositories(prisma: PrismaClient) {
   return {
     users: usersRepo(prisma),
+    tasks: tasksRepo(prisma),
+    executions: executionsRepo(prisma),
     groups: groupsRepo(prisma),
     messages: messagesRepo(prisma),
     demands: demandsRepo(prisma),
@@ -30,4 +36,34 @@ export function createRepositories(prisma: PrismaClient) {
     traces: tracesRepo(prisma),
   };
 }
-export type Repositories = ReturnType<typeof createRepositories>;
+type RawRepositories = ReturnType<typeof rawRepositories>;
+export type Repositories = RawRepositories & {
+  forExecution: (lease: ExecutionLease) => Repositories;
+};
+export function createRepositories(prisma: PrismaClient, lease?: ExecutionLease): Repositories {
+  const raw = rawRepositories(prisma);
+  if (!lease) return { ...raw, forExecution: (next) => createRepositories(prisma, next) };
+  // Mechanical facade keeps the repository contracts; only short DB operations hold the user lock.
+  const scoped = Object.fromEntries(
+    Object.entries(raw).map(([name, repo]) => {
+      if (name === 'traces' || name === 'executions') return [name, repo];
+      return [
+        name,
+        Object.fromEntries(
+          Object.keys(repo).map((method) => [
+            method,
+            (...args: unknown[]) =>
+              withExecutionFence(prisma, lease, async (tx) => {
+                const target = rawRepositories(tx as PrismaClient)[name as keyof RawRepositories];
+                const fn: unknown = Reflect.get(target, method);
+                if (typeof fn !== 'function') throw new Error('unknown repository operation');
+                const result: unknown = Reflect.apply(fn, target, args);
+                return await result;
+              }),
+          ]),
+        ),
+      ];
+    }),
+  ) as RawRepositories;
+  return { ...scoped, forExecution: (next) => createRepositories(prisma, next) };
+}

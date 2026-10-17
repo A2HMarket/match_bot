@@ -4,6 +4,7 @@ import { renderRequestStatus } from '../request-status.js';
 import { hashText } from '@matchbot/shared';
 import type { RunContext } from '@openai/agents';
 import type { AgentDeps, MatchContext } from '../context.js';
+import { taskDeliveryForOutbound } from '../task-outbound.js';
 
 export interface OutboundDraftInput {
   /** 用途；决定是否计入频控。每个出站工具必须显式给出。 */
@@ -26,6 +27,8 @@ export interface OutboundDraftInput {
     'catalogue' | 'web' | 'xhs' | 'market'; /** 群内回帖：回复哪条原消息、@ 谁（均为渠道侧 id）。 */
   replyToMessageId?: string;
   mentionUserId?: string;
+  /** Original short question/advice before generated evidence cards and source links. */
+  taskQuestionText?: string;
 }
 
 /**
@@ -148,6 +151,7 @@ export async function decideForOutbound(
       ? await deps.evaluateOutbound(deps.jev, {
           draft: d.text,
           demand,
+          ...(ctx.task && ctx.currentRequest ? { requestContext: ctx.currentRequest.text } : {}),
           supplierSummaries: d.supplierSummaries,
           recentReplies: ctx.recentReplies,
           inputRef: d.inputRef,
@@ -231,6 +235,11 @@ export async function executeOutbound(
   const row = await deps.repos.outbound.create(
     {
       channel: 'telegram',
+      phase: ctx.phase,
+      ...(ctx.execution ? { execution: ctx.execution } : {}),
+      ...(taskDeliveryForOutbound(ctx, d)
+        ? { taskDelivery: taskDeliveryForOutbound(ctx, d)! }
+        : {}),
       kind: d.kind,
       target: d.target,
       text: formatOutboundText(ctx, d),
@@ -242,9 +251,13 @@ export async function executeOutbound(
   );
   ctx.answerRecorded = true;
   deps.logger.info({ outboundId: row.id, decision, phase: ctx.phase }, 'outbound message recorded');
-  return status === 'dry_run'
+  return row.status === 'dry_run'
     ? `dry-run recorded (${row.id}); nothing was sent`
-    : `queued (${row.id})`;
+    : row.status === 'pending' || row.status === 'sending'
+      ? `queued (${row.id})`
+      : row.status === 'sent'
+        ? `not sent: this request already has a confirmed reply (${row.id})`
+        : `not sent: this request already has a failed or unconfirmed delivery (${row.id}); do not automatically resend`;
 }
 
 /** needsApproval：只有 'review' 才中断；auto / dry_run / drop 都不中断，由 execute 按 decision 处理。 */

@@ -1,0 +1,34 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/shared/tests/logger.test.ts (1 test | 1 failed) 37ms
+   × redacts current-user request context in structured logs while retaining operational fields 37ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/shared/tests/logger.test.ts > redacts current-user request context in structured logs while retaining operational fields
+AssertionError: expected '{"level":30,"time":1792204437871,"pid…' not to contain 'synthetic-private'
+
+- Expected
++ Received
+
+- synthetic-private
++ {"level":30,"time":1792204437871,"pid":38065,"hostname":"huanghaibindeMacBook-Pro.local","name":"redaction-test","status":"ok","requestContext":"synthetic-private-one","state":{"request_context":"synthetic-private-two"},"api":{"state":{"request_context":"synthetic-private-three"}}}
++
+
+ ❯ packages/shared/tests/logger.test.ts:12:29
+     10|   expect(result.status).toBe(0);
+     11|   expect(result.stdout).toContain('"status":"ok"');
+     12|   expect(result.stdout).not.toContain('synthetic-private');
+       |                             ^
+     13| });
+     14|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  10:33:57
+   Duration  108ms (tests 71%, transform 17%, import 8%, worker 3%)
+

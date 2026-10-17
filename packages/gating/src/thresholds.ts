@@ -7,6 +7,7 @@ export interface Thresholds {
   T_IS_LOCAL_REQUEST_ENTER: number;
   T_MENTIONS_UNVERIFIED_DROP: number;
   T_WORTH_REPLYING_DROP: number;
+  T_SOURCE_SUPPORT_ACCEPT: number;
 }
 export const DEFAULT_THRESHOLDS: Thresholds = {
   // 校准依据 `pnpm eval`（n=50，jev-1.13-20260917）：正类最低 0.89、负类最高 0.11，
@@ -26,4 +27,6 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   // 出站立两个硬下限，过了就自动发，没有中间带（2026-10-10：回复不经过人工过目）。
   T_MENTIONS_UNVERIFIED_DROP: 0.5,
   T_WORTH_REPLYING_DROP: 1.0,
+  // Source-level semantic support; an uncertain result remains unknown and does not silence the request.
+  T_SOURCE_SUPPORT_ACCEPT: 0.8,
 };

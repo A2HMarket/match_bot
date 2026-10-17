@@ -4,6 +4,7 @@ import type { MatchContext } from '../../src/context.js';
 import { bindCurrentRequest } from '../../src/current-request.js';
 import { createKnowledgeSource } from '../../src/knowledge-evidence.js';
 import { replyToRequestTool } from '../../src/tools/reply-to-request.js';
+import { taskSchema } from '@matchbot/domain';
 
 function setup(phase: 0 | 1 | 2, ok = true) {
   const d = {
@@ -54,6 +55,425 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('rejects inferred seller identities before a marketplace draft reaches the semantic gate', async () => {
+    const { d, c, t } = setup(0);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '这两条是不同卖家，需要分别取货。',
+      }),
+    );
+    expect(result).toContain('Seller identity');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+  });
+  it('returns concise-advice feedback instead of silently cutting a market recommendation mid-sentence', async () => {
+    const { d, c, t } = setup(0);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '请先确认具体地址和取货时间。'.repeat(20),
+      }),
+    );
+    expect(result).toContain('200 characters');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('does not enqueue a background promise as a clarification', async () => {
+    const { d, c, t } = setup(0);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'clarification',
+        refs: [],
+        text: '我会继续留意房源，有合适的通知你。你方便哪天？',
+      }),
+    );
+    expect(result).toContain('background');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it.each(['answer', 'partial', 'no_match', 'clarification', 'unavailable'])(
+    'rejects an invented search failure even when labelled %s',
+    async (kind) => {
+      const { d, c, t } = setup(0);
+      c.informationQueries = ['GP registration'];
+      c.sourceFailures = ['processing:jev_unavailable'];
+      const result = await t.invoke(
+        { context: c } as never,
+        JSON.stringify({
+          kind,
+          text: '我这边的房源搜索没能正常跑起来，你手上有具体想核对的房源吗？',
+          refs: ['k1'],
+        }),
+      );
+      expect(result).toContain('No recorded source failure');
+      expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    },
+  );
+  it.each([
+    '如果搜索失败，可以稍后再试。你更方便周六还是周日？',
+    '房源不能养猫。你是否还考虑其他区域？',
+    'If the search fails, try again later. Which day works?',
+  ])(
+    'keeps conditional advice and property constraints distinct from source outages: %s',
+    async (text) => {
+      const { d, c, t } = setup(0);
+      await t.invoke(
+        { context: c } as never,
+        JSON.stringify({ kind: 'clarification', text, refs: [] }),
+      );
+      expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    },
+  );
+  it('allows a factual source failure while rejecting conditional wording placed after an invented outage', async () => {
+    const { d, c, t } = setup(0);
+    const input = {
+      kind: 'clarification',
+      text: '搜索接口报错，如果稍后恢复可以再查。你更方便哪天？',
+      refs: [],
+    };
+    expect(await t.invoke({ context: c } as never, JSON.stringify(input))).toContain(
+      'No recorded source failure',
+    );
+    c.sourceFailures = ['information:timeout'];
+    await t.invoke({ context: c } as never, JSON.stringify(input));
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('requires an actual search before claiming a marketplace search failed or found nothing', async () => {
+    const { d, c } = setup(0);
+    bindCurrentRequest(c, 'E14收书桌，50镑以内');
+    Object.assign(d, { answerRequests: true, marketSearch: { find: vi.fn(), detail: vi.fn() } });
+    const tool = replyToRequestTool(d as never);
+    const result = await tool.invoke(
+      { context: c } as never,
+      JSON.stringify({ kind: 'no_match', refs: [], text: '搜索接口报错，没有找到结果。' }),
+    );
+    expect(result).toContain('search');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(c.outboundInputFailures).toBeUndefined();
+  });
+  it('can explain no confirmed match after revisiting saved source details without pretending a broad search', async () => {
+    const { d, c } = setup(0);
+    bindCurrentRequest(c, 'E14收书桌');
+    c.marketDetailIds = ['saved-desk'];
+    Object.assign(d, { answerRequests: true, marketSearch: { find: vi.fn(), detail: vi.fn() } });
+    await replyToRequestTool(d as never).invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'no_match',
+        refs: [],
+        text: '复查的旧线索还不能确认可用，可以再找其他在售信息。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('recognizes the actual Xiaohongshu failure key when explaining a failed source query', async () => {
+    const { d, c, t } = setup(0);
+    c.sourceFailures = ['xiaohongshu:timeout'];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'unavailable',
+        refs: [],
+        text: '小红书搜索失败，这次没能核对到展览信息，可以稍后重试。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('supplies the selected post timestamp and London check date to Jev without fabricating an original repost date', async () => {
+    const { d, c, t } = setup(2);
+    bindCurrentRequest(c, 'E14收书桌，50镑以内');
+    c.marketPlan = {
+      intent: 'second_hand',
+      needs: [{ id: 'desk', terms: ['书桌'] }],
+      preferences: [],
+      budget: 50,
+    };
+    c.marketListings = [
+      {
+        id: 'desk',
+        ref: 'm1',
+        title: 'E14书桌',
+        description: '出售书桌一张，£40，伦敦E14自提。',
+        priceLabel: '£40',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        url: 'https://a2hmarket.ai/listings/desk',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: '2026-10-16T00:00:00Z',
+      },
+    ];
+    const needsApproval = t.needsApproval;
+    if (typeof needsApproval !== 'function') throw new Error('expected outbound gate');
+    const args = { kind: 'partial', refs: ['m1'], text: '这张书桌报价符合预算。' };
+    await needsApproval({ context: c } as never, args, 'source-metadata');
+    const verdictInput = (d.evaluateOutbound.mock.calls[0] as unknown as [unknown, unknown])[1];
+    expect(JSON.stringify(verdictInput)).toContain('2026-10-16T00:00:00Z');
+    expect(JSON.stringify(verdictInput)).toContain('Europe/London');
+    c.marketListings[0]!.isRepost = true;
+    d.evaluateOutbound.mockClear();
+    await needsApproval({ context: c } as never, args, 'missing-original-date');
+    expect(JSON.stringify(d.evaluateOutbound.mock.calls)).not.toContain('2026-10-16T00:00:00Z');
+  });
+  it('returns eligible refs after a mixed valid/conflicting selection without silently rewriting it', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, 'Stratford找一居室，月租1600镑');
+    c.marketPlan = {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      budget: 1600,
+      preferences: [],
+      requiredArea: ['Stratford'],
+    };
+    const listing = {
+      id: 'home',
+      ref: 'm1',
+      title: 'Stratford一居室整租',
+      description: '出租：伦敦Stratford一居室整租\n费用：月租£1550\n地点：Stratford',
+      priceLabel: '£1550/月',
+      tradeType: 'SELL' as const,
+      status: 'ON_SALE',
+      tags: [],
+      url: 'https://a2hmarket.ai/listings/home',
+      sourceUrl: null,
+      isRepost: false,
+      availableFrom: null,
+      availableUntil: null,
+      sourcePublishedAt: null,
+      createdAt: null,
+    };
+    c.marketListings = [
+      listing,
+      {
+        ...listing,
+        id: 'expensive',
+        ref: 'm2',
+        description: '出租：伦敦Stratford一居室整租，月租£1800',
+        priceLabel: '£1800/月',
+        url: 'https://a2hmarket.ai/listings/expensive',
+      },
+    ];
+    const rejected = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1', 'm2'],
+        text: '这两条可以比较。',
+      }),
+    );
+    expect(rejected).toContain('"eligible":[{"ref":"m1"');
+    expect(rejected).toContain('"excludedRefs":["m2"]');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+    expect(c.outboundBlocked).not.toBe(true);
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '先看这条月租符合预算的房源。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('does not claim an unknown rent-plus-bills total fits a rent-only budget', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, 'Stratford找一居室，月租1600镑');
+    c.currentRequest!.demand.budgetScope = 'rent_only';
+    c.marketPlan = {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      budget: 1600,
+      preferences: [],
+      requiredArea: ['Stratford'],
+    };
+    c.marketListings = [
+      {
+        id: 'home',
+        ref: 'm1',
+        title: 'Stratford一居室整租',
+        description: '出租：Stratford一居室整租\n费用：月租£1550，不含账单\n地点：Stratford',
+        priceLabel: '£1550/月',
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        tags: [],
+        url: 'https://a2hmarket.ai/listings/home',
+        sourceUrl: null,
+        isRepost: false,
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ];
+    const bad = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '实际每月总支出会比房租高，但仍在预算范围内。',
+      }),
+    );
+    expect(bad).toContain('total');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '房租符合预算，账单另算，总支出目前还未核实。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('accepts a structural reference to the first cited option without accepting an invented price', async () => {
+    const { d, c, t } = setup(0);
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ ...args, text: '我会先看第1条官方说明：没有NHS number也能注册GP。' }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ ...args, text: '第1条官方说明注册需要£15。' }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('does not treat the platform name A2H as a numerical factual claim', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, '找允许养猫的一居室');
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'no_match',
+        refs: [],
+        text: '这次在A2H没有确认到允许养猫的房源，我会优先核对原帖的宠物许可。你还接受哪些相邻区域？',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('requires source progress before a selected-task answer but does not turn this into a gate rejection', async () => {
+    const { d, c } = setup(0);
+    Object.assign(d, { taskRequests: true });
+    c.task = taskSchema.parse({
+      id: 't',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '注册GP',
+      status: 'active',
+      revision: 0,
+      goals: [],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    const tool = replyToRequestTool(d as never);
+    expect(await tool.invoke({ context: c } as never, JSON.stringify(args))).toContain(
+      'record_task_progress',
+    );
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(c.outboundBlocked).not.toBe(true);
+  });
+  it('retains later source facts for Jev when a single relevant item does not need bundle filtering', async () => {
+    const { d, c, t } = setup(2);
+    bindCurrentRequest(c, '伦敦收无线激光打印机，预算60镑');
+    c.marketTarget = 'SELL';
+    c.marketPlan = {
+      intent: 'second_hand',
+      needs: [{ id: 'printer', terms: ['打印机'] }],
+      budget: 60,
+      preferences: ['无线'],
+    };
+    c.marketListings = [
+      {
+        ref: 'm1',
+        id: 'printer',
+        title: '伦敦激光打印机',
+        description:
+          '出售：HP激光打印机\n价格：£50\n地点：E14 自提\n' +
+          '普通使用说明。'.repeat(60) +
+          '\n原帖明确：支持无线打印。',
+        tags: [],
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        url: 'https://a2hmarket.ai/listings/printer',
+        sourceUrl: null,
+        isRepost: false,
+        priceLabel: '£50',
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ];
+    await t.needsApproval(
+      { context: c } as never,
+      {
+        kind: 'partial',
+        text: '我先看m1这条，原帖写支持无线打印，收货前可以请贴主演示。',
+        refs: ['m1'],
+      },
+      'long-source',
+    );
+    const input = d.evaluateOutbound.mock.calls[0] as unknown as [
+      unknown,
+      { supplierSummaries: string[] },
+    ];
+    expect(input[1].supplierSummaries.join('\n')).toContain('支持无线打印');
+    expect(JSON.stringify(input[1])).not.toContain('m1这条');
+  });
+  it('renders only the affordable item from a bundle under separate task budgets', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, 'E14买书桌和办公椅，桌子70镑，椅子50镑');
+    c.marketTarget = 'SELL';
+    c.marketPlan = {
+      intent: 'second_hand',
+      needs: [
+        { id: 'desk', terms: ['书桌'], budget: 70 },
+        { id: 'chair', terms: ['办公椅'], budget: 50 },
+      ],
+      preferences: [],
+      requiredArea: ['E14'],
+    };
+    c.marketListings = [
+      {
+        ref: 'm1',
+        id: 'bundle',
+        title: '伦敦桌椅',
+        description: '- 书桌｜£60\n- 办公椅｜£65\n地点：E14 自提',
+        tags: [],
+        tradeType: 'SELL',
+        status: 'ON_SALE',
+        url: 'https://a2hmarket.ai/listings/bundle',
+        sourceUrl: null,
+        isRepost: false,
+        priceLabel: '帖子报价',
+        availableFrom: null,
+        availableUntil: null,
+        sourcePublishedAt: null,
+        createdAt: null,
+      },
+    ];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ kind: 'partial', text: '我会先看这张书桌，椅子还要继续找。', refs: ['m1'] }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+    expect(draft.text).toContain('£60');
+    expect(draft.text).not.toContain('£65');
+    expect(draft.text).toContain('尚未确认到：办公椅');
+  });
   it('does not match a smaller price as a substring of another price', async () => {
     const { d, c, t } = setup(0);
     c.knowledgeSources = [

@@ -26,6 +26,42 @@ function turnSpan(over: Record<string, unknown> = {}) {
 }
 
 describe('createTraceProcessor', () => {
+  it('links task model calls to the input without retaining model text', async () => {
+    const d = deps();
+    const proc = createTraceProcessor(d as never);
+    await proc.onSpanEnd(
+      turnSpan({ traceMetadata: { phase: '2', inputRef: 'message-a', taskId: 'task-a' } }),
+    );
+    expect(d.traces.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputRef: 'message-a',
+        output: expect.objectContaining({ taskId: 'task-a', sdkTraceRef: 't1/s1' }) as unknown,
+      }),
+    );
+  });
+  it('waits for outstanding persistence when the SDK flushes or shuts down', async () => {
+    const d = deps();
+    let finish: (() => void) | undefined;
+    d.traces.create.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({});
+        }),
+    );
+    const proc = createTraceProcessor(d as never);
+    const write = proc.onSpanEnd(turnSpan());
+    let flushed = false;
+    const flush = proc.forceFlush().then(() => {
+      flushed = true;
+    });
+    await Promise.resolve();
+    expect(flushed).toBe(false);
+    finish?.();
+    await write;
+    await flush;
+    await proc.shutdown();
+    expect(flushed).toBe(true);
+  });
   it('writes one agent_run trace per turn span with usage-derived cost (PoC V6)', async () => {
     const d = deps();
     const proc = createTraceProcessor(d as never);

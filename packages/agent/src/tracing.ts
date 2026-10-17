@@ -32,42 +32,61 @@ export function createTraceProcessor(p: {
   traces: Repositories['traces'];
   logger: Logger;
 }): TracingProcessor {
+  const pending = new Set<Promise<void>>();
+  const flush = async () => {
+    while (pending.size) await Promise.all([...pending]);
+  };
+  const recordSpan = async (span: Parameters<TracingProcessor['onSpanEnd']>[0]) => {
+    try {
+      const data = span.spanData as TurnSpanData;
+      if (data.type !== 'turn') return;
+      const usage = data.usage ?? {};
+      const inputTokens = usage.input_tokens ?? 0;
+      const outputTokens = usage.output_tokens ?? 0;
+      const costMicro = Math.round(
+        inputTokens * PRICE_IN_MICRO_PER_TOKEN + outputTokens * PRICE_OUT_MICRO_PER_TOKEN,
+      );
+      const latencyMs =
+        span.startedAt && span.endedAt
+          ? Math.max(0, Date.parse(span.endedAt) - Date.parse(span.startedAt))
+          : 0;
+      const inputRef: unknown = span.traceMetadata?.['inputRef'];
+      const taskId: unknown = span.traceMetadata?.['taskId'];
+      await p.traces.create({
+        kind: 'agent_run',
+        inputRef: typeof inputRef === 'string' ? inputRef : `${span.traceId}/${span.spanId}`,
+        output: {
+          turn: data.turn ?? null,
+          agentName: data.agent_name ?? null,
+          inputTokens,
+          outputTokens,
+          ...(typeof inputRef === 'string'
+            ? { sdkTraceRef: `${span.traceId}/${span.spanId}` }
+            : {}),
+          ...(typeof taskId === 'string' ? { taskId } : {}),
+        },
+        phase: toPhase(span.traceMetadata?.['phase']),
+        latencyMs,
+        costMicro,
+      });
+    } catch (err) {
+      p.logger.error(
+        { errorKind: err instanceof Error ? err.name : 'unknown_error' },
+        'decision-trace processor failed to record turn span',
+      );
+    }
+  };
   return {
     async onTraceStart() {},
     async onTraceEnd() {},
     async onSpanStart() {},
-    async onSpanEnd(span) {
-      try {
-        const data = span.spanData as TurnSpanData;
-        if (data.type !== 'turn') return;
-        const usage = data.usage ?? {};
-        const inputTokens = usage.input_tokens ?? 0;
-        const outputTokens = usage.output_tokens ?? 0;
-        const costMicro = Math.round(
-          inputTokens * PRICE_IN_MICRO_PER_TOKEN + outputTokens * PRICE_OUT_MICRO_PER_TOKEN,
-        );
-        const latencyMs =
-          span.startedAt && span.endedAt
-            ? Math.max(0, Date.parse(span.endedAt) - Date.parse(span.startedAt))
-            : 0;
-        await p.traces.create({
-          kind: 'agent_run',
-          inputRef: `${span.traceId}/${span.spanId}`,
-          output: {
-            turn: data.turn ?? null,
-            agentName: data.agent_name ?? null,
-            inputTokens,
-            outputTokens,
-          },
-          phase: toPhase(span.traceMetadata?.['phase']),
-          latencyMs,
-          costMicro,
-        });
-      } catch (err) {
-        p.logger.error({ err }, 'decision-trace processor failed to record turn span');
-      }
+    onSpanEnd(span) {
+      const write = recordSpan(span);
+      pending.add(write);
+      void write.then(() => pending.delete(write));
+      return write;
     },
-    async shutdown() {},
-    async forceFlush() {},
+    shutdown: flush,
+    forceFlush: flush,
   };
 }

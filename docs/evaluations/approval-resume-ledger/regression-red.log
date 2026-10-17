@@ -1,0 +1,78 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/db/tests/integration/approval-execution.test.ts (4 tests | 4 failed) 121ms
+   ❯ durable approval execution (4)
+     × consumes once and records both decision and dispatch intent, without replaying legacy approvals 98ms
+     × does not consume an expired or unbound snapshot, and ignores without leaving a waiting request 10ms
+     × shares the user fence with inbound, retries boundedly, and refuses stale completion 7ms
+     × links a new interruption or existing outbox after a crash instead of rerunning the approved call 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/db/tests/integration/approval-execution.test.ts > durable approval execution > consumes once and records both decision and dispatch intent, without replaying legacy approvals
+TypeError: repos.approvals.decide is not a function
+ ❯ packages/db/tests/integration/approval-execution.test.ts:25:39
+     23|     const { repos, runState, now } = await seed(tx);
+     24|     const decision = { runStateId: runState.id, reviewer: 'operator', …
+     25|     const row = await repos.approvals.decide(decision);
+       |                                       ^
+     26|     expect(row).toMatchObject({ resumeStatus: 'accepted', decision: 'a…
+     27|     expect(await repos.approvals.decide(decision)).toBeNull();
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  packages/db/tests/integration/approval-execution.test.ts > durable approval execution > does not consume an expired or unbound snapshot, and ignores without leaving a waiting request
+TypeError: repos.approvals.decide is not a function
+ ❯ packages/db/tests/integration/approval-execution.test.ts:37:34
+     35|     const { repos, runState, message, now } = await seed(tx);
+     36|     await tx.runState.update({ where: { id: runState.id }, data: { exp…
+     37|     expect(await repos.approvals.decide({ runStateId: runState.id, rev…
+       |                                  ^
+     38|     await tx.runState.update({ where: { id: runState.id }, data: { exp…
+     39|     expect(await repos.approvals.decide({ runStateId: runState.id, rev…
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  packages/db/tests/integration/approval-execution.test.ts > durable approval execution > shares the user fence with inbound, retries boundedly, and refuses stale completion
+TypeError: repos.approvals.decide is not a function
+ ❯ packages/db/tests/integration/approval-execution.test.ts:47:44
+     45|   it('shares the user fence with inbound, retries boundedly, and refus…
+     46|     const { repos, user, message, runState, now } = await seed(tx);
+     47|     const approval = await repos.approvals.decide({ runStateId: runSta…
+       |                                            ^
+     48|     if (!approval) throw new Error('missing decision');
+     49|     const job = { runStateId: runState.id, approvalId: approval.id };
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  packages/db/tests/integration/approval-execution.test.ts > durable approval execution > links a new interruption or existing outbox after a crash instead of rerunning the approved call
+TypeError: repos.approvals.decide is not a function
+ ❯ packages/db/tests/integration/approval-execution.test.ts:66:44
+     64|   it('links a new interruption or existing outbox after a crash instea…
+     65|     const { repos, runState, user, message, now } = await seed(tx);
+     66|     const approval = await repos.approvals.decide({ runStateId: runSta…
+       |                                            ^
+     67|     if (!approval) throw new Error('missing decision');
+     68|     const job = { runStateId: runState.id, approvalId: approval.id };
+ ❯ packages/db/tests/integration/setup.ts:12:7
+ ❯ Proxy._transactionWithCallback node_modules/.pnpm/@prisma+client@7.10.0_prisma@7.10.0_@types+react@19.3.0_magicast@0.5.5_react-dom@19.3.0_7776eb48b2ec952df31b26acaa6bc38a/node_modules/@prisma/client/src/runtime/getPrismaClient.ts:861:18
+ ❯ withTestDb packages/db/tests/integration/setup.ts:11:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  06:27:46
+   Duration  383ms (tests 41%, transform 33%, import 26%, worker 1%)
+

@@ -2,6 +2,45 @@ import { describe, expect, it } from 'vitest';
 import { renderMarketChoiceReply } from '../src/market-choice-presentation.js';
 import type { MarketCandidate } from '../src/market-research.js';
 describe('market choice practical details', () => {
+  it('shows a single paragraph only once while retaining its price, location, condition and links', () => {
+    const description =
+      '出售书桌一张，单价£40。桌面100×60cm，可拆卸，正常使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。';
+    const listing: MarketCandidate = {
+      id: 'desk',
+      ref: 'm1',
+      title: 'E14书桌',
+      description,
+      tags: [],
+      tradeType: 'SELL',
+      status: 'ON_SALE',
+      url: 'https://a2hmarket.ai/listings/desk',
+      sourceUrl: 'https://www.xiaohongshu.com/explore/desk',
+      isRepost: true,
+      priceLabel: '£40',
+      sourcePublishedAt: '2026-10-16T00:00:00Z',
+      createdAt: null,
+      availableFrom: null,
+      availableUntil: null,
+    };
+    const { text } = renderMarketChoiceReply({
+      listings: [listing],
+      selections: [{ ref: 'm1', name: listing.title, evidence: description }],
+      zh: true,
+      plan: {
+        intent: 'second_hand',
+        needs: [{ id: 'desk', terms: ['书桌'] }],
+        budget: 50,
+        requiredArea: ['E14'],
+        preferences: [],
+      },
+    });
+    expect(text.split('单价£40')).toHaveLength(2);
+    expect(text.split('支持自提')).toHaveLength(2);
+    expect(text).toContain('100×60cm');
+    expect(text).toContain('正常使用痕迹');
+    expect(text).toContain(listing.url);
+    expect(text).toContain(listing.sourceUrl);
+  });
   it('shows the room term and layout from its own source without converting that to confirmed move-in', () => {
     const listing: MarketCandidate = {
       id: 'listing_a',

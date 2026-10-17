@@ -3,6 +3,9 @@ import type { Message, PrismaClient } from '../generated/client.js';
 
 export function messagesRepo(prisma: PrismaClient) {
   return {
+    findById(id: string): Promise<Message | null> {
+      return prisma.message.findUnique({ where: { id } });
+    },
     /**
      * 同一条渠道消息是否已落过库。私聊 groupId 为空，Postgres 的 unique 不把两个 NULL
      * 视为重复，所以私聊按 userId 查——队列重投时靠它识别，而不是靠 unique 碰运气。
@@ -38,17 +41,32 @@ export function messagesRepo(prisma: PrismaClient) {
         },
       });
     },
-    recentByUser(userId: string, sinceHours: number): Promise<Message[]> {
+    recentByUser(
+      userId: string,
+      sinceHours: number,
+      scope?: { groupId: string | null },
+    ): Promise<Message[]> {
       return prisma.message.findMany({
-        where: { userId, receivedAt: { gte: new Date(Date.now() - sinceHours * 3600e3) } },
+        where: {
+          userId,
+          ...(scope ? { groupId: scope.groupId } : {}),
+          receivedAt: { gte: new Date(Date.now() - sinceHours * 3600e3) },
+        },
         orderBy: { receivedAt: 'desc' },
         take: 50,
       });
     },
     async redactOlderThan(days: number): Promise<number> {
       const r = await prisma.message.updateMany({
-        where: { receivedAt: { lt: new Date(Date.now() - days * 86400e3) }, NOT: { text: '' } },
-        data: { text: '' },
+        where: {
+          receivedAt: { lt: new Date(Date.now() - days * 86400e3) },
+          OR: [
+            { text: { not: '' } },
+            { executionSnapshot: { not: null } },
+            { replyToBotText: { not: null } },
+          ],
+        },
+        data: { text: '', executionSnapshot: null, replyToBotText: null },
       });
       return r.count;
     },
