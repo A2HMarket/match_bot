@@ -7,6 +7,7 @@ import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
 import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
+import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -16,7 +17,7 @@ const parameters = z.object({
     .min(1)
     .max(1400)
     .describe(
-      'Useful answer in user language: reasoning, practical steps or ONE key question. Facts must be supported by supplied sources; mark interpretations/unknowns. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable only explain the local search outcome and next step.',
+      'Useful answer in user language: reasoning, practical steps or ONE key question. When refs contain m offers, MAX 200 characters: priority plus ONE next step, code renders facts. Facts must be supported by supplied sources; mark interpretations/unknowns. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable only explain the local search outcome and next step.',
     ),
   refs: z
     .array(z.string())
@@ -263,6 +264,7 @@ export function replyToRequestTool(deps: AgentDeps) {
         deps.answerRequests &&
         (deps.marketSearch || deps.webSearch || deps.xhsSearch) &&
         !ctx.marketQueries?.length &&
+        !ctx.marketDetailIds?.length &&
         !ctx.informationQueries?.length &&
         !ctx.xhsQueries?.length &&
         ctx.xhsNotes === undefined &&
@@ -277,6 +279,16 @@ export function replyToRequestTool(deps: AgentDeps) {
           kind: 'research_required',
         };
       const market = args.refs.filter((r) => /^m\d+$/.test(r));
+      if (market.length && hasUnqualifiedSellerIdentity(args.text))
+        return {
+          error:
+            'Seller identity is not established by anonymous offer refs. State that it is unknown; do not infer the same/different sellers or pickup addresses from separate posts.',
+        };
+      if (market.length && args.text.length > 200)
+        return {
+          error:
+            'Keep market advice within 200 characters. Give the priority and ONE practical next step; code renders the source facts. Shorten the advice yourself without removing its important uncertainty.',
+        };
       let text = args.text;
       let evidence: string[] = [];
       if (market.length) {
@@ -326,8 +338,7 @@ export function replyToRequestTool(deps: AgentDeps) {
               ].join(', ') +
               '; omit or cite supporting offer evidence.',
           };
-        const advice = args.text.length > 320 ? args.text.slice(0, 320) + '…' : args.text;
-        text = advice + '\n\n' + rendered.text;
+        text = args.text + '\n\n' + rendered.text;
         evidence = rendered.evidence;
       } else {
         const sources = args.refs.map((ref) =>

@@ -55,6 +55,46 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('rejects inferred seller identities before a marketplace draft reaches the semantic gate', async () => {
+    const { d, c, t } = setup(0);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '这两条是不同卖家，需要分别取货。',
+      }),
+    );
+    expect(result).toContain('Seller identity');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+  });
+  it('returns concise-advice feedback instead of silently cutting a market recommendation mid-sentence', async () => {
+    const { d, c, t } = setup(0);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '请先确认具体地址和取货时间。'.repeat(20),
+      }),
+    );
+    expect(result).toContain('200 characters');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('does not enqueue a background promise as a clarification', async () => {
+    const { d, c, t } = setup(0);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'clarification',
+        refs: [],
+        text: '我会继续留意房源，有合适的通知你。你方便哪天？',
+      }),
+    );
+    expect(result).toContain('background');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
   it.each(['answer', 'partial', 'no_match', 'clarification', 'unavailable'])(
     'rejects an invented search failure even when labelled %s',
     async (kind) => {
@@ -114,6 +154,34 @@ describe('reply_to_request', () => {
     expect(result).toContain('search');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
     expect(c.outboundInputFailures).toBeUndefined();
+  });
+  it('can explain no confirmed match after revisiting saved source details without pretending a broad search', async () => {
+    const { d, c } = setup(0);
+    bindCurrentRequest(c, 'E14收书桌');
+    c.marketDetailIds = ['saved-desk'];
+    Object.assign(d, { answerRequests: true, marketSearch: { find: vi.fn(), detail: vi.fn() } });
+    await replyToRequestTool(d as never).invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'no_match',
+        refs: [],
+        text: '复查的旧线索还不能确认可用，可以再找其他在售信息。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  });
+  it('recognizes the actual Xiaohongshu failure key when explaining a failed source query', async () => {
+    const { d, c, t } = setup(0);
+    c.sourceFailures = ['xiaohongshu:timeout'];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'unavailable',
+        refs: [],
+        text: '小红书搜索失败，这次没能核对到展览信息，可以稍后重试。',
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
   });
   it('supplies the selected post timestamp and London check date to Jev without fabricating an original repost date', async () => {
     const { d, c, t } = setup(2);

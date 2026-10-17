@@ -65,6 +65,10 @@ export function xhsReadNotesTool(deps: AgentDeps) {
           desc: note.desc.slice(0, XHS_RESEARCH_LIMITS.excerptChars),
         });
       }
+      if (failedRefs.length) {
+        ctx.sourceFailures ??= [];
+        ctx.sourceFailures.push('xiaohongshu:detail_unavailable');
+      }
       await record(
         ctx,
         {

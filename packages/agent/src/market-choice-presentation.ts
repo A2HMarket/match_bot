@@ -113,14 +113,17 @@ function renderChoice(
   const links =
     `[${zh ? 'A2H详情' : 'A2H listing'}](${n.url})` +
     (n.sourceUrl ? ` · [${zh ? '原帖' : 'Original post'}](${n.sourceUrl})` : '');
+  const details = uniqueSourceDetails([
+    compact(selection.evidence),
+    ...practicalDetails(row, plan, zh),
+    priceLine(row, plan, zh),
+    describeLocation(row, zh),
+  ]);
   return [
     `${index}. ${compact(selection.name, 100)}`,
     `${zh ? (row.essentialMissing.length ? '可作备选：' : '推荐理由：') : 'Why: '}${explainChoice(row, plan, zh)}`,
-    compact(selection.evidence),
-    ...practicalDetails(row, plan, zh),
+    ...details,
     row.warning ? `${zh ? '注意原文：' : 'Source caution: '}${compact(row.warning, 100)}` : '',
-    priceLine(row, plan, zh),
-    describeLocation(row, zh),
     row.missing.length
       ? `${zh ? '待确认：' : 'Unconfirmed: '}${row.missing.map((label) => translate(label, zh)).join(' / ')}`
       : '',
@@ -129,6 +132,23 @@ function renderChoice(
   ]
     .filter(Boolean)
     .join('\n');
+}
+function uniqueSourceDetails(lines: string[]): string[] {
+  const kept: string[] = [];
+  const content = (s: string) =>
+    s
+      .replace(
+        /^(?:原文信息|Source detail|分项报价|Item quotes|月租|Monthly rent|买家报价|Buyer offer|费用|Fee|单品报价|Item price|地点原文|Location quote)[：:]\s*/i,
+        '',
+      )
+      .replace(/\s+/g, '');
+  for (const line of lines.filter(Boolean)) {
+    const value = content(line);
+    // Short values such as "unconfirmed" can concern different fields; do not merge those labels.
+    if (value.length >= 8 && kept.some((old) => content(old).includes(value))) continue;
+    kept.push(line);
+  }
+  return kept;
 }
 function introduction(choices: MarketChoices, zh: boolean): string {
   if (!choices.primary.length)

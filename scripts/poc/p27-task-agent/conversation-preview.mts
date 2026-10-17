@@ -80,7 +80,8 @@ const processor = createTraceProcessor({ traces: repos.traces, logger });
 configureModelProvider(env, [processor]);
 const queries: unknown[] = [],
   details: string[] = [],
-  results: unknown[] = [];
+  results: unknown[] = [],
+  draftChecks: unknown[] = [];
 const deps: AgentDeps = {
   env,
   repos,
@@ -88,7 +89,12 @@ const deps: AgentDeps = {
   answerRequests: true,
   taskRequests: true,
   thresholds: DEFAULT_THRESHOLDS,
-  evaluateOutbound,
+  evaluateOutbound: async (client, input) => {
+    const verdict = await evaluateOutbound(client, input);
+    // This harness accepts synthetic input and an isolated DB only; keep rejected drafts for honest diagnosis.
+    draftChecks.push({ ...input, verdict });
+    return verdict;
+  },
   jev: createJevClient({
     baseUrl: env.JEV_BASE_URL,
     apiKey: env.JEV_API_KEY,
@@ -138,6 +144,7 @@ const save = (status: string) =>
           'frozen synthetic source corpus and user; real generation/Jev; isolated PG; Phase 2 gates; simulated sender only, no public search or Telegram; inbound worker/Jev not covered',
         corpusHash: createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
         results,
+        draftChecks,
         queries,
         details,
       },

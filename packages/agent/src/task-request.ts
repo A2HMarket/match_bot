@@ -20,11 +20,18 @@ function describeConstraint(constraint: TaskConstraint): string {
             : '')
       );
     case 'duration':
-      return `${value.minutes} minutes`;
+      return (
+        `${value.minutes} minutes` +
+        (constraint.key === 'max_travel_minutes'
+          ? ' [journey duration limit; do not infer a round trip]'
+          : '')
+      );
     case 'location':
       return value.area;
     case 'date_range':
-      return `${value.from} to ${value.to}`;
+      return value.from === value.to
+        ? `${value.from} [exact requested date]`
+        : `${value.from} to ${value.to} [acceptable window; no requirement to use the earliest day]`;
     case 'boolean':
       return value.value ? 'yes' : 'no';
     case 'text':

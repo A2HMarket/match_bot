@@ -14,7 +14,7 @@ const labels: Record<string, string> = {
   pets: '宠物许可',
   move_in_date: '起租时间',
   room_type: '房型',
-  max_travel_minutes: '总通勤时间',
+  max_travel_minutes: '路程用时',
   level: '活动水平',
   day: '活动日期',
   time: '活动时间',

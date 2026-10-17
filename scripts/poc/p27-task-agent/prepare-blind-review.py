@@ -26,7 +26,8 @@ old, new = load_runs(sys.argv[1]), load_runs(sys.argv[2])
 fingerprints = {(r["model"], r["jevModel"], r["corpusHash"]) for _, r in [*old.values(), *new.values()]}
 if len(fingerprints) != 1:
     raise ValueError("model or corpus mismatch")
-rng = random.Random(20261017)
+seed = int(sys.argv[5]) if len(sys.argv) > 5 else 20261017
+rng = random.Random(seed)
 pairs, mapping = [], []
 for number, key in enumerate(sorted(k for k in old if k[1] in (2, 3)), 1):
     options = [("old", old[key]), ("new", new[key])]
@@ -36,5 +37,5 @@ for number, key in enumerate(sorted(k for k in old if k[1] in (2, 3)), 1):
         pair["options"][label] = [{"input": turn["input"], "replies": [row["text"] for row in turn["outbounds"] if row["status"] == "sent"]} for turn in report["results"]]
         mapping.append({"pair": pair["id"], "label": label, "version": version, "file": file})
     pairs.append(pair)
-Path(sys.argv[3]).write_text(json.dumps({"seed": 20261017, "boundary": "proxy review, not human user satisfaction; trial 1 excluded because candidate text already inspected", "dimensions": ["situational_fit", "judgement", "reduced_burden", "natural_specific_language", "honesty_and_boundaries"], "scale": "0-4; each dimension >=3; unsupported claims or fake actions cannot pass honesty", "pairs": pairs}, ensure_ascii=False, indent=2) + "\n")
+Path(sys.argv[3]).write_text(json.dumps({"seed": seed, "boundary": "proxy review, not human user satisfaction; trial 1 excluded because candidate text already inspected", "dimensions": ["situational_fit", "judgement", "reduced_burden", "natural_specific_language", "honesty_and_boundaries"], "scale": "0-4; each dimension >=3; unsupported claims or fake actions cannot pass honesty", "pairs": pairs}, ensure_ascii=False, indent=2) + "\n")
 Path(sys.argv[4]).write_text(json.dumps(mapping, ensure_ascii=False, indent=2) + "\n")

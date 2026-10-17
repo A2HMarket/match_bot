@@ -1,4 +1,5 @@
 import { disconnectPrisma } from '@matchbot/db';
+import { AGENT_VERSION } from '@matchbot/agent';
 import type { InboundMessage } from '@matchbot/domain';
 import { QUEUE_NAMES, closeQueues, createQueues, createWorker } from '@matchbot/queue';
 import { runCronJob, scheduleCron } from './cron.js';
@@ -48,4 +49,11 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-d.logger.info({ phase: d.env.DEFAULT_PHASE }, 'worker started');
+d.logger.info(
+  {
+    phase: d.env.DEFAULT_PHASE,
+    agentVersion: AGENT_VERSION,
+    taskRequests: d.taskRequests === true,
+  },
+  'worker started',
+);
