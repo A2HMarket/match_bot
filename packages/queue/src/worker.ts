@@ -23,7 +23,7 @@ export function createWorker<T>(
   opts: { concurrency?: number } = {},
 ): Worker {
   const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
-  return new Worker(
+  const worker = new Worker(
     name,
     async (job, token) => {
       const result = await handler(schemas[name].parse(job.data) as T, job.name);
@@ -37,4 +37,7 @@ export function createWorker<T>(
     },
     { connection, concurrency: opts.concurrency ?? 4 },
   );
+  // BullMQ treats a supplied Redis instance as shared; this factory created it and must release it.
+  worker.once('closed', () => connection.disconnect());
+  return worker;
 }
