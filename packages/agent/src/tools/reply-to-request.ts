@@ -6,8 +6,12 @@ import { buildMarketChoices } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
-import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
+import {
+  hasGuaranteedPurchaseClaim,
+  hasUnrecordedSourceFailureClaim,
+} from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
+import { taskDeliveryForOutbound } from '../task-outbound.js';
 import { claimsCompleteMarketFit, claimsUnverifiedTravelFit } from '../market-summary-claims.js';
 
 const parameters = z.object({
@@ -274,7 +278,20 @@ export function replyToRequestTool(deps: AgentDeps) {
           )
           .trim(),
       };
+      // Discover a missing question plan before factual repairs consume the bounded input attempts.
+      taskDeliveryForOutbound(ctx, {
+        kind: args.kind === 'clarification' ? 'clarification' : 'recommendation',
+        target: ctx.chatId,
+        text: args.text,
+        inputRef: ctx.sourceMessageId,
+        supplierSummaries: [],
+      });
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
+      if (hasGuaranteedPurchaseClaim(args.text))
+        return {
+          error:
+            'Stock and successful purchase are not guaranteed by published opening hours. Describe the source-backed channel and say what still needs checking; do not promise the user can buy on arrival.',
+        };
       if (hasUnrecordedSourceFailureClaim(args.text, ctx.sourceFailures))
         return {
           error:

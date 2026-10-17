@@ -120,7 +120,9 @@ export function marketSearchTool(
             : category === 'other' && (args.intent === 'carry' || args.intent === 'companion');
       if (!allowed)
         return deny(
-          'not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search',
+          deps.answerRequests
+            ? 'This request is outside the A2H marketplace routes. Do not retry market_search or call legacy upsert tools. Use search_information for public shops/services, then reply_to_request with useful evidence and one necessary practical question.'
+            : 'not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search',
         );
       if (ctx.marketIntent && ctx.marketIntent !== args.intent)
         return deny('do not switch marketplace intent within this run');

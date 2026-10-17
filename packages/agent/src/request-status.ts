@@ -45,10 +45,16 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
         ? '\n\n区域和条件就按你前面说的。房型、费用、起租和宠物许可还需要核实，确认后才好比较。'
         : '\n\nYour required area and conditions are retained. The next step is to verify the room type, rent, move-in terms and pet permission without treating missing facts as a match.')
     );
+  const knownObstacle =
+    /急用|现在就要|出门不方便|出不了门|走不了|行动不便|urgent|cannot leave|can't (?:leave|get out)|unable to go out/i.test(
+      ctx.currentRequest.text,
+    );
   if (!zh)
     return (
       intro +
-      '\n\nThe next step is to check the exact terms, price, date and location. Which missing detail would help you decide first?'
+      (knownObstacle
+        ? '\n\nYour practical difficulty is retained; you do not need to repeat it. The next step is to verify a feasible channel within those limits, keeping unknown availability explicit.'
+        : '\n\nWhat is making this difficult right now: finding a suitable channel, timing, or getting there?')
     );
   const category = ctx.currentRequest.demand.category;
   const intent = ctx.marketIntent;
@@ -68,6 +74,8 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
                 ? '参考起价不能代表整单报价，档期和服务范围也需要确认。建议按物品数量或房型、楼层、日期索取固定报价，并确认发票等要求。你还有哪些必须包含的服务？'
                 : /点心|早茶/.test(text)
                   ? '现价、菜单和营业时段需要以店家最新信息核对，旧菜单不能直接当成当前预算依据。可以把超预算选项单独标出。你只考虑传统粤式茶楼，还是普通点心店也可以？'
-                  : '下一步应优先核对官方现价、开放时间或时刻表，把已确认的信息和未知条件分开。你希望先补全哪一项信息？';
+                  : knownObstacle
+                    ? '你已经说过的困难不用再补。接下来要按这些限制核对可行渠道和实际可用情况，不能把未知说成确定。'
+                    : '你现在主要卡在找不到渠道，还是时间、出行不方便？这会影响先找哪种办法；已经说过的条件不用重复。';
   return intro + '\n\n' + next;
 }

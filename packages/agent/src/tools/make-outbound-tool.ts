@@ -35,9 +35,9 @@ export function makeOutboundTool<A>(
         error:
           'invalid answer: no background monitoring or contact/booking action was performed or scheduled. Give a useful action the user can take now; do not promise later monitoring or invent a completed action.',
       };
-    const draft = await cfg.toDraft(ctx, args);
-    if ('error' in draft) return draft;
     try {
+      const draft = await cfg.toDraft(ctx, args);
+      if ('error' in draft) return draft;
       taskDeliveryForOutbound(ctx, draft);
       return draft;
     } catch (error) {

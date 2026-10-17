@@ -55,6 +55,97 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('reports an unplanned question before source-number repair, so later validation does not consume the last retry', async () => {
+    const { c, t } = setup(0);
+    c.execution = {
+      userId: 'u',
+      messageId: 'm',
+      token: '00000000-0000-4000-8000-000000000001',
+      fence: 1,
+    };
+    c.task = taskSchema.parse({
+      id: 'task',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找正规渠道',
+      status: 'active',
+      revision: 1,
+      requirementsVersion: 1,
+      goals: [],
+      constraints: [],
+      evidence: [],
+      pendingQuestion: null,
+      nextStep: { action: 'deliver', owner: 'agent', reason: 'partial' },
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    c.taskProgressVersion = 1;
+    const input = JSON.stringify({
+      kind: 'partial',
+      text: '可以联系111。你现在出门不方便吗？这会影响渠道。',
+      refs: ['k1'],
+    });
+    expect(await t.invoke({ context: c } as never, input)).toContain('Record the one missing');
+    c.task.nextStep = {
+      action: 'ask_user',
+      owner: 'agent',
+      constraintKey: 'custom:access_difficulty',
+      reason: 'access',
+    };
+    expect(await t.invoke({ context: c } as never, input)).toContain('unsupported numerical');
+  });
+  it('does not turn published opening hours into guaranteed medicine access', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, '狗岛找止疼药');
+    c.knowledgeSources = [
+      createKnowledgeSource(
+        {
+          title: 'Official store',
+          url: 'https://www.boots.com/store',
+          text: 'Pharmacy in Isle of Dogs. Saturday opening hours 09:00 to 19:00. Stock is not shown.',
+        },
+        1,
+      ),
+    ];
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'answer',
+        text: '这家周六营业，走过去就能买到止疼药。',
+        refs: ['k1'],
+      }),
+    );
+    expect(result).toContain('Stock');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+  });
+  it('can give a source-backed channel and one non-clinical question in the same answer', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, '狗岛找止疼药');
+    c.knowledgeSources = [
+      createKnowledgeSource(
+        {
+          title: 'NHS pharmacy finder',
+          url: 'https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy',
+          text: 'Find a pharmacy by town, city or postcode in England.',
+        },
+        1,
+      ),
+    ];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        text: '先用NHS药房查询找购买渠道，具体库存还需问门店。你是现在急用，还是出门取药不方便？',
+        refs: ['k1'],
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+    expect(draft.text).toContain('来源：');
+    expect(draft.text).toContain('出门取药不方便');
+  });
   it('rejects inferred seller identities before a marketplace draft reaches the semantic gate', async () => {
     const { d, c, t } = setup(0);
     const result = await t.invoke(

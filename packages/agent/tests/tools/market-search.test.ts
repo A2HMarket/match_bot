@@ -82,6 +82,17 @@ const args = {
 };
 
 describe('market research tools', () => {
+  it('redirects an unsupported retail request to information research without telling it to repeat legacy writes', async () => {
+    const d = deps(),
+      c = ctx({ demand: { category: 'other', need: '狗岛找止疼药', confidence: 1 } });
+    const result = await marketSearchTool({ ...d, answerRequests: true } as never).invoke(
+      rc(c),
+      JSON.stringify(search()),
+    );
+    expect(result).toContain('search_information');
+    expect(result).not.toContain('upsert_demand');
+    expect(d.marketSearch.find).not.toHaveBeenCalled();
+  });
   it('executes the current user target direction even when the model requests the opposite side', async () => {
     const d = deps(),
       c = ctx({ marketTarget: 'SELL' });

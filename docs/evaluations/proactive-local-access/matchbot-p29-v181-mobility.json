@@ -1,0 +1,1453 @@
+{
+  "runId": "b16eb505-187d-40f2-9c98-705a41adfc7b",
+  "sample": "mobility",
+  "agentVersion": "0.18.1",
+  "sourceFingerprint": "0862551aa2f93bc357f6a004214312ab006ecd159f3f63f35aed61f4e1d3590d",
+  "status": "completed",
+  "elapsedMs": 29640,
+  "boundary": "synthetic users and bounded source fixtures, NOT live facts; real DeepSeek/Jev; isolated DB; pending outbox only, NO sender",
+  "queries": [
+    {
+      "query": "pharmacy Isle of Dogs Canary Wharf opening hours",
+      "domains": []
+    },
+    {
+      "query": "NHS pharmacy finder Isle of Dogs E14",
+      "domains": [
+        "nhs.uk"
+      ]
+    },
+    {
+      "query": "Boots Canary Wharf Canada Square pharmacy opening hours",
+      "domains": []
+    },
+    {
+      "query": "Isle of Dogs pharmacy delivery service",
+      "domains": []
+    },
+    {
+      "query": "NHS pharmacy delivery medicines home",
+      "domains": []
+    },
+    {
+      "query": "Boots pharmacy home delivery service UK",
+      "domains": []
+    },
+    {
+      "query": "NHS 111 pharmacy advice urgent medicine",
+      "domains": []
+    }
+  ],
+  "results": [
+    {
+      "index": 0,
+      "input": "狗岛找止疼药",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "search_information",
+          "search_information",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvch8mih0005d0bgck5uowdw",
+        "ownerUserId": "cmvch8kqy0000d0bgorvvr28h",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p29-b16eb505-187d-40f2-9c98-705a41adfc7b"
+        },
+        "objective": "在狗岛寻找止疼药购买渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvch8krh0002d0bgjp6c6khl"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "painkiller",
+            "title": "止疼药",
+            "required": true,
+            "searchTerms": [
+              "止疼药",
+              "止痛药",
+              "painkiller",
+              "paracetamol",
+              "ibuprofen",
+              "pharmacy Isle of Dogs"
+            ],
+            "criteria": [
+              {
+                "id": "painkiller_subject",
+                "label": "来源描述的对象或邀约：止疼药",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:0cfef7e639cdb0b64c0ebf74cc6f7598ea29f103",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:bd6a67fa9ddd0a3ee9e0e3356aa16452",
+            "summary": "London Canary Wharf Canada Square is a Boots store with pharmacy services. This fixture establishes a pharmacy channel in Canary Wharf only, not Isle of Dogs location, travel duration, opening now, painkiller stock or delivery.",
+            "observedAt": "2026-10-17T14:13:39.786Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.boots.com/stores/190-london-canary-whf-canada-e14-5ax"
+          },
+          {
+            "id": "e:dd67cc834c518ffbcd08737b463e39b3aaaa6997",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:e7e625c5a72a6eefa5e14398d0caba49",
+            "summary": "Find a pharmacy by town, city or postcode in England. The directory links to pharmacy details. It does not confirm a medicine is in stock or that delivery is available.",
+            "observedAt": "2026-10-17T14:13:39.786Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "Only a Canary Wharf pharmacy channel is attested, not an Isle of Dogs branch or stock; whether the user needs it now or cannot get out changes whether to suggest a nearby branch lookup or a delivery-capable retailer.",
+          "goalId": "painkiller",
+          "constraintKey": "custom:access_difficulty"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "NHS Find a pharmacy",
+          "url": "https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy",
+          "text": "Find a pharmacy by town, city or postcode in England. The directory links to pharmacy details. It does not confirm a medicine is in stock or that delivery is available.",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:13:34.278Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Find a pharmacy by town, city or postcode in England. The directory links to pharmacy details. It does not confirm a medicine is in stock or that delivery is available."
+            }
+          ]
+        },
+        {
+          "title": "Boots London Canary Wharf Canada Square",
+          "url": "https://www.boots.com/stores/190-london-canary-whf-canada-e14-5ax",
+          "text": "London Canary Wharf Canada Square is a Boots store with pharmacy services. This fixture establishes a pharmacy channel in Canary Wharf only, not Isle of Dogs location, travel duration, opening now, painkiller stock or delivery.",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:13:34.278Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "London Canary Wharf Canada Square is a Boots store with pharmacy services. This fixture establishes a pharmacy channel in Canary Wharf only, not Isle of Dogs location, travel duration, opening now, painkiller stock or delivery."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "oneAnswer": true,
+        "hasSources": true,
+        "sameTask": true,
+        "researched": true,
+        "noWrongMarketRetries": true,
+        "noArrivalGuarantee": true,
+        "noUnaskedMedicationAdvice": true,
+        "practicalQuestion": true
+      },
+      "drafts": [
+        {
+          "text": "狗岛本地药房的具体门店和库存我这边没查到，只确认了 Canary Wharf Canada Square 有一家带药房服务的 Boots，但营业时间、是否有你要的止疼药都没核实。NHS 的药房目录可以按邮编查 E14 附近门店，不过它也不显示库存。\n\n你是现在就要用，还是不方便出门？这决定我建议你查最近门店还是找能送货的零售商。\n\n来源：[1. NHS Find a pharmacy](https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy) · [2. Boots London Canary Wharf Canada Squar](https://www.boots.com/stores/190-london-canary-whf-canada-e14-5ax)",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvch8krk0003d0bgpipjxcak",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:30.272Z"
+        },
+        {
+          "id": "cmvch8ksf0004d0bgyl84jcce",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:30.303Z"
+        },
+        {
+          "id": "cmvch8miw0008d0bg6m20osqs",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "attempt": 0,
+            "decision": "new",
+            "revision": 1,
+            "scopedCandidateCount": 0
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:32.552Z"
+        },
+        {
+          "id": "cmvch8mj90009d0bgn1jj3mzi",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:32.565Z"
+        },
+        {
+          "id": "cmvch8mjc000ad0bgb3tinofi",
+          "kind": "agent_run",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 3204,
+            "sdkTraceRef": "trace_d681fc65e5994d7f86faa9a8502c8ec9/span_1814cca4e7b24192af4bbdfa",
+            "outputTokens": 246
+          },
+          "phase": 2,
+          "latencyMs": 2230,
+          "costMicro": 517,
+          "createdAt": "2026-10-17T14:13:32.568Z"
+        },
+        {
+          "id": "cmvch8mjd000bd0bgkb11ly84",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "category": "other",
+            "taskRevision": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:32.569Z"
+        },
+        {
+          "id": "cmvch8mjn000cd0bga2lp3rxe",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:32.579Z"
+        },
+        {
+          "id": "cmvch8nuv000dd0bg2ugcgiyu",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:34.279Z"
+        },
+        {
+          "id": "cmvch8nuz000ed0bga3zoba43",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": [
+              "nhs.uk"
+            ]
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:34.283Z"
+        },
+        {
+          "id": "cmvch8nvk000fd0bgy9t953qr",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:34.304Z"
+        },
+        {
+          "id": "cmvch8nvo000gd0bgzi7wavqo",
+          "kind": "agent_run",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 8797,
+            "sdkTraceRef": "trace_a8c32bd70bd7441dae0e2d2e558a4005/span_ac3e11bcc85d4db3884be36d",
+            "outputTokens": 86
+          },
+          "phase": 2,
+          "latencyMs": 1714,
+          "costMicro": 1256,
+          "createdAt": "2026-10-17T14:13:34.308Z"
+        },
+        {
+          "id": "cmvch8p08000hd0bgalt5hcfj",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:35.768Z"
+        },
+        {
+          "id": "cmvch8p0a000id0bgsng82800",
+          "kind": "agent_run",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 9287,
+            "sdkTraceRef": "trace_a8c32bd70bd7441dae0e2d2e558a4005/span_5fc81a5ddfff45ac882d0da6",
+            "outputTokens": 62
+          },
+          "phase": 2,
+          "latencyMs": 1462,
+          "costMicro": 1318,
+          "createdAt": "2026-10-17T14:13:35.770Z"
+        },
+        {
+          "id": "cmvch8q0p000jd0bg48g2c14m",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:37.081Z"
+        },
+        {
+          "id": "cmvch8q15000kd0bggi269lqt",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:37.097Z"
+        },
+        {
+          "id": "cmvch8q17000ld0bgbu4ekcko",
+          "kind": "agent_run",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 9385,
+            "sdkTraceRef": "trace_a8c32bd70bd7441dae0e2d2e558a4005/span_2d9519c442a44249b0b88667",
+            "outputTokens": 61
+          },
+          "phase": 2,
+          "latencyMs": 1329,
+          "costMicro": 1331,
+          "createdAt": "2026-10-17T14:13:37.099Z"
+        },
+        {
+          "id": "cmvch8srk000md0bgblwvier8",
+          "kind": "jev",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "id": "gen-dec-1792246420-TboaWacFNGmRhcSVESJO",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000109704,
+              "input_tokens": 2612
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.16,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.52,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.15,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.17,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 848,
+          "costMicro": 110,
+          "createdAt": "2026-10-17T14:13:40.640Z"
+        },
+        {
+          "id": "cmvch8ssm000od0bg3xugvg2f",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:40.678Z"
+        },
+        {
+          "id": "cmvch8ssx000pd0bgmnijwlzq",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:40.689Z"
+        },
+        {
+          "id": "cmvch8st0000qd0bgjh9nibuz",
+          "kind": "agent_run",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 9675,
+            "sdkTraceRef": "trace_a8c32bd70bd7441dae0e2d2e558a4005/span_35898be5fb814253bd517909",
+            "outputTokens": 303
+          },
+          "phase": 2,
+          "latencyMs": 3592,
+          "costMicro": 1439,
+          "createdAt": "2026-10-17T14:13:40.692Z"
+        },
+        {
+          "id": "cmvch8ui4000rd0bgraggkems",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:42.892Z"
+        },
+        {
+          "id": "cmvch8utu000sd0bgn7xnfpj6",
+          "kind": "jev",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "id": "gen-dec-1792246423-fViCD4uIJweagcvNuLvU",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.00005187,
+              "input_tokens": 1235
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.59,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.59,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0.01,
+                  "2": 0.39,
+                  "3": 0.6
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.17,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 419,
+          "costMicro": 52,
+          "createdAt": "2026-10-17T14:13:43.314Z"
+        },
+        {
+          "id": "cmvch8utx000td0bg8i8c7y3q",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.97,
+              "worthReplying": 2.59,
+              "mentionsUnverified": 0.17
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:43.317Z"
+        },
+        {
+          "id": "cmvch8uu1000ud0bgljcldbsg",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:43.321Z"
+        },
+        {
+          "id": "cmvch8uve000xd0bg8j79uf6f",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:43.370Z"
+        },
+        {
+          "id": "cmvch8uvh000yd0bguhmevt58",
+          "kind": "agent_run",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "turn": 5,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 10485,
+            "sdkTraceRef": "trace_a8c32bd70bd7441dae0e2d2e558a4005/span_9c0c299c4f224db49d0def88",
+            "outputTokens": 169
+          },
+          "phase": 2,
+          "latencyMs": 2680,
+          "costMicro": 1515,
+          "createdAt": "2026-10-17T14:13:43.373Z"
+        },
+        {
+          "id": "cmvch8uw7001ad0bgg6cegpfb",
+          "kind": "gate",
+          "inputRef": "cmvch8krh0002d0bgjp6c6khl",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:43.399Z"
+        }
+      ],
+      "usage": {
+        "input": 50833,
+        "output": 927
+      }
+    },
+    {
+      "index": 1,
+      "input": "现在急用，但我出不了门",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "reply_request_status"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvch8mih0005d0bgck5uowdw",
+        "ownerUserId": "cmvch8kqy0000d0bgorvvr28h",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p29-b16eb505-187d-40f2-9c98-705a41adfc7b"
+        },
+        "objective": "在狗岛寻找止疼药购买渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 5,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvch8krh0002d0bgjp6c6khl"
+            }
+          },
+          {
+            "key": "custom:access_difficulty",
+            "goalId": "painkiller",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "出不了门，需要可配送/送货上门"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvch8uwg001bd0bgkdtjn9i9"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "painkiller",
+            "title": "止疼药",
+            "required": true,
+            "searchTerms": [
+              "止疼药",
+              "止痛药",
+              "painkiller",
+              "paracetamol",
+              "ibuprofen",
+              "pharmacy Isle of Dogs"
+            ],
+            "criteria": [
+              {
+                "id": "painkiller_subject",
+                "label": "来源描述的对象或邀约：止疼药",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:custom:access_difficulty",
+                "label": "核对当前条件：custom:access_difficulty",
+                "strength": "hard",
+                "constraintKey": "custom:access_difficulty",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:0cfef7e639cdb0b64c0ebf74cc6f7598ea29f103",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:bd6a67fa9ddd0a3ee9e0e3356aa16452",
+            "summary": "London Canary Wharf Canada Square is a Boots store with pharmacy services. This fixture establishes a pharmacy channel in Canary Wharf only, not Isle of Dogs location, travel duration, opening now, painkiller stock or delivery.",
+            "observedAt": "2026-10-17T14:13:51.007Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.boots.com/stores/190-london-canary-whf-canada-e14-5ax"
+          },
+          {
+            "id": "e:dd67cc834c518ffbcd08737b463e39b3aaaa6997",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:e7e625c5a72a6eefa5e14398d0caba49",
+            "summary": "Find a pharmacy by town, city or postcode in England. The directory links to pharmacy details. It does not confirm a medicine is in stock or that delivery is available.",
+            "observedAt": "2026-10-17T14:13:51.007Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "deliver",
+          "owner": "agent",
+          "reason": "No verified Isle of Dogs delivery pharmacy found; give NHS pharmacy directory lookup route plus Boots Canary Wharf pharmacy channel, with stock/delivery explicitly unconfirmed.",
+          "goalId": "painkiller"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "NHS Find a pharmacy",
+          "url": "https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy",
+          "text": "Find a pharmacy by town, city or postcode in England. The directory links to pharmacy details. It does not confirm a medicine is in stock or that delivery is available.",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:13:46.899Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Find a pharmacy by town, city or postcode in England. The directory links to pharmacy details. It does not confirm a medicine is in stock or that delivery is available."
+            }
+          ]
+        },
+        {
+          "title": "Boots London Canary Wharf Canada Square",
+          "url": "https://www.boots.com/stores/190-london-canary-whf-canada-e14-5ax",
+          "text": "London Canary Wharf Canada Square is a Boots store with pharmacy services. This fixture establishes a pharmacy channel in Canary Wharf only, not Isle of Dogs location, travel duration, opening now, painkiller stock or delivery.",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:13:46.899Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "London Canary Wharf Canada Square is a Boots store with pharmacy services. This fixture establishes a pharmacy channel in Canary Wharf only, not Isle of Dogs location, travel duration, opening now, painkiller stock or delivery."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "oneAnswer": false,
+        "hasSources": false,
+        "sameTask": true,
+        "researched": true,
+        "noWrongMarketRetries": true,
+        "noArrivalGuarantee": true,
+        "noUnaskedMedicationAdvice": true,
+        "retainsObstacle": true
+      },
+      "drafts": [
+        {
+          "text": "还没核实到能推荐的合适线索，有些关键条件还不清楚。\n\n你已经说过的困难不用再补。接下来要按这些限制核对可行渠道和实际可用情况，不能把未知说成确定。",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvch8uwh001cd0bgebot0gwk",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:43.409Z"
+        },
+        {
+          "id": "cmvch8uwp001dd0bg9affjjv3",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:43.417Z"
+        },
+        {
+          "id": "cmvch8wir001fd0bgj8w1ld05",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "attempt": 0,
+            "decision": "continued",
+            "revision": 4,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:45.507Z"
+        },
+        {
+          "id": "cmvch8wiy001gd0bg3opxhwju",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:45.514Z"
+        },
+        {
+          "id": "cmvch8wj0001hd0bgu59h1x5w",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4521,
+            "sdkTraceRef": "trace_6e79778a9ca14e3981419715d265a1fd/span_97290405d0b74b4ba78bc058",
+            "outputTokens": 185
+          },
+          "phase": 2,
+          "latencyMs": 2081,
+          "costMicro": 685,
+          "createdAt": "2026-10-17T14:13:45.516Z"
+        },
+        {
+          "id": "cmvch8wj1001id0bg5gga47yp",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "category": "other",
+            "taskRevision": 4,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:45.517Z"
+        },
+        {
+          "id": "cmvch8wj3001jd0bgf8h4vayz",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:45.519Z"
+        },
+        {
+          "id": "cmvch8xlg001kd0bgeu6dargg",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:46.900Z"
+        },
+        {
+          "id": "cmvch8xlr001ld0bgmnh9sivr",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:46.911Z"
+        },
+        {
+          "id": "cmvch8xm4001md0bgmgyxgr9g",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:46.924Z"
+        },
+        {
+          "id": "cmvch8xm6001nd0bgrbd00dzo",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 9117,
+            "sdkTraceRef": "trace_dd84356f3d7b40cdbdd514cce351200d/span_54c2d8540e3d4b3c85d1bec5",
+            "outputTokens": 74
+          },
+          "phase": 2,
+          "latencyMs": 1397,
+          "costMicro": 1297,
+          "createdAt": "2026-10-17T14:13:46.926Z"
+        },
+        {
+          "id": "cmvch8z4t001od0bg8pjpdob5",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:48.893Z"
+        },
+        {
+          "id": "cmvch8z4x001pd0bg5qjw2pjf",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:48.897Z"
+        },
+        {
+          "id": "cmvch8z5c001qd0bg4ilp7u9p",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:48.912Z"
+        },
+        {
+          "id": "cmvch8z5f001rd0bgqnfmno9p",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 9587,
+            "sdkTraceRef": "trace_dd84356f3d7b40cdbdd514cce351200d/span_7699cc0d4b01455ab1d263e8",
+            "outputTokens": 76
+          },
+          "phase": 2,
+          "latencyMs": 1988,
+          "costMicro": 1363,
+          "createdAt": "2026-10-17T14:13:48.915Z"
+        },
+        {
+          "id": "cmvch91in001sd0bgsjpc4q1w",
+          "kind": "jev",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "id": "gen-dec-1792246431-NqVTH66WKJhKRY6A8c87",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000158298,
+              "input_tokens": 3769
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.16,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.38,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.09,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.15,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.14,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.16,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 971,
+          "costMicro": 158,
+          "createdAt": "2026-10-17T14:13:51.983Z"
+        },
+        {
+          "id": "cmvch91jd001ud0bgihwq1a27",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "attempt": 1,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:52.009Z"
+        },
+        {
+          "id": "cmvch91jx001vd0bgjylx7zco",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:52.029Z"
+        },
+        {
+          "id": "cmvch91k0001wd0bg3qxmtn1p",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 9907,
+            "sdkTraceRef": "trace_dd84356f3d7b40cdbdd514cce351200d/span_7bbb7a3394b442649e25196b",
+            "outputTokens": 314
+          },
+          "phase": 2,
+          "latencyMs": 3117,
+          "costMicro": 1475,
+          "createdAt": "2026-10-17T14:13:52.032Z"
+        },
+        {
+          "id": "cmvch93ex001xd0bgm1vsf2gu",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "invalid answer: unsupported numerical values 111; omit these factual claims or cite supporting evidence. Citation IDs are not user text."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 1,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:54.441Z"
+        },
+        {
+          "id": "cmvch93fd001yd0bgk9j2ci1t",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:54.457Z"
+        },
+        {
+          "id": "cmvch93fh001zd0bg6dsvdq0b",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 10550,
+            "sdkTraceRef": "trace_dd84356f3d7b40cdbdd514cce351200d/span_830a5ce229724e639bc496e9",
+            "outputTokens": 233
+          },
+          "phase": 2,
+          "latencyMs": 2428,
+          "costMicro": 1542,
+          "createdAt": "2026-10-17T14:13:54.461Z"
+        },
+        {
+          "id": "cmvch94vy0020d0bgd4r9bh97",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "invalid answer: unsupported numerical values 111; omit these factual claims or cite supporting evidence. Citation IDs are not user text."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 2,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:56.350Z"
+        },
+        {
+          "id": "cmvch94wg0021d0bg4vortdnz",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:56.368Z"
+        },
+        {
+          "id": "cmvch94wl0022d0bg9mtxyhuv",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 5,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 10820,
+            "sdkTraceRef": "trace_dd84356f3d7b40cdbdd514cce351200d/span_add7ce340d6548cc86b88834",
+            "outputTokens": 234
+          },
+          "phase": 2,
+          "latencyMs": 1912,
+          "costMicro": 1580,
+          "createdAt": "2026-10-17T14:13:56.373Z"
+        },
+        {
+          "id": "cmvch96d50023d0bg2gs7tt4t",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_answer",
+            "kind": "partial",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:58.265Z"
+        },
+        {
+          "id": "cmvch96d60024d0bgexr9j6u3",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "Record the one missing condition with record_task_progress next action=ask_user and its constraintKey before asking the user."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 3,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:58.266Z"
+        },
+        {
+          "id": "cmvch96d70025d0bgkr9csppf",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "outbound_retry",
+            "tool": "reply_to_request",
+            "reason": "input_retry_limit",
+            "attempts": 3,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:58.267Z"
+        },
+        {
+          "id": "cmvch96dd0026d0bgpinkkvq1",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:58.273Z"
+        },
+        {
+          "id": "cmvch96df0027d0bgk40rf6cv",
+          "kind": "agent_run",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "turn": 6,
+            "taskId": "cmvch8mih0005d0bgck5uowdw",
+            "agentName": "matchAgent",
+            "inputTokens": 11091,
+            "sdkTraceRef": "trace_dd84356f3d7b40cdbdd514cce351200d/span_83d60fa995b449b69f257988",
+            "outputTokens": 236
+          },
+          "phase": 2,
+          "latencyMs": 1903,
+          "costMicro": 1619,
+          "createdAt": "2026-10-17T14:13:58.275Z"
+        },
+        {
+          "id": "cmvch96dv002ld0bg0gjswlrs",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_status",
+            "reason": "invalid_evidence"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:58.291Z"
+        },
+        {
+          "id": "cmvch97j0002md0bgw7csiwat",
+          "kind": "jev",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "id": "gen-dec-1792246439-6y5fYJOYcoE1wmjjP3hB",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000045066,
+              "input_tokens": 1073
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.97,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 1.36,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.46,
+                "probabilities": {
+                  "0": 0.09,
+                  "1": 0.5,
+                  "2": 0.37,
+                  "3": 0.04
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.06,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 1478,
+          "costMicro": 45,
+          "createdAt": "2026-10-17T14:13:59.772Z"
+        },
+        {
+          "id": "cmvch97j2002nd0bg0wkp79ds",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.97,
+              "worthReplying": 1.36,
+              "mentionsUnverified": 0.06
+            },
+            "decision": "auto",
+            "replyPurpose": "request_status",
+            "isVerifiedRequestStatus": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:59.774Z"
+        },
+        {
+          "id": "cmvch97jp002qd0bgkvkvgysd",
+          "kind": "gate",
+          "inputRef": "cmvch8uwg001bd0bgkdtjn9i9",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:59.797Z"
+        }
+      ],
+      "usage": {
+        "input": 65593,
+        "output": 1352
+      }
+    }
+  ]
+}

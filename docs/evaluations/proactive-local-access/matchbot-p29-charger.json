@@ -1,0 +1,763 @@
+{
+  "runId": "ced91934-4383-495e-b6b0-5c93e27cac33",
+  "sample": "charger",
+  "agentVersion": "0.18.0",
+  "sourceFingerprint": "3ce46548b8ac39e3baf9fd4c9aef108d030342fc9c0f8da2b3f38dea818b5ea0",
+  "status": "completed",
+  "elapsedMs": 20774,
+  "boundary": "synthetic users and bounded source fixtures, NOT live facts; real DeepSeek/Jev; isolated DB; pending outbox only, NO sender",
+  "queries": [
+    {
+      "query": "Canary Wharf phone accessories shop charging cable",
+      "domains": []
+    },
+    {
+      "query": "Isle of Dogs electronics shop phone charger",
+      "domains": []
+    },
+    {
+      "query": "Currys Canary Wharf store address",
+      "domains": []
+    },
+    {
+      "query": "Argos Canary Wharf collection store",
+      "domains": []
+    }
+  ],
+  "results": [
+    {
+      "index": 0,
+      "input": "狗岛哪里能买手机充电线？手机快没电了",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "search_information",
+          "search_information",
+          "record_task_progress",
+          "reply_to_request",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvch4nin0005frbg0rq0twxy",
+        "ownerUserId": "cmvch4lce0000frbg1bgqgdr0",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p29-ced91934-4383-495e-b6b0-5c93e27cac33"
+        },
+        "objective": "寻找在狗岛购买手机充电线的渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 3,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvch4ld30002frbgcnppgom6"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "charging_cable",
+            "title": "手机充电线",
+            "required": true,
+            "searchTerms": [
+              "手机充电线",
+              "USB-C 充电线",
+              "Canary Wharf phone accessories"
+            ],
+            "criteria": [
+              {
+                "id": "cable_item",
+                "label": "来源描述的对象或邀约：手机充电线",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "cable_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:66bdf0929f8ebbb235bf359156109f8c1c784d56",
+            "goalId": "charging_cable",
+            "kind": "source_excerpt",
+            "sourceRef": "web:da228ecc9e992572410475b59c92a969",
+            "summary": "The Currys store finder lists electrical retail stores. Product availability and compatible charging cable stock at a particular branch are not confirmed by this fixture.",
+            "observedAt": "2026-10-17T14:10:40.675Z",
+            "entityKey": "information:charging_cable",
+            "url": "https://www.currys.co.uk/store-finder"
+          },
+          {
+            "id": "e:c93ef77b1f135ba7a64fc3459eb9bbe11eae3fb0",
+            "goalId": "charging_cable",
+            "kind": "source_excerpt",
+            "sourceRef": "web:9dd8235c817115b8da28baef90078007",
+            "summary": "Tesco Isle Of Dogs Express is a supermarket at 41 Millharbour, London E14. The official locator provides store opening details. This fixture does not establish charging cable stock, connector type or delivery.",
+            "observedAt": "2026-10-17T14:10:40.675Z",
+            "entityKey": "information:charging_cable",
+            "url": "https://www.tesco.com/store-locator/london/41-millharbour"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "Connector type (USB-C vs Lightning) decides which nearby shops are worth trying and whether a supermarket checkout cable is an option.",
+          "goalId": "charging_cable",
+          "constraintKey": "custom:connector_type"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "checks": {
+        "oneAnswer": true,
+        "hasSources": true,
+        "sameTask": true,
+        "researched": true,
+        "noWrongMarketRetries": true,
+        "noArrivalGuarantee": true,
+        "noUnaskedMedicationAdvice": true,
+        "practicalQuestion": true
+      },
+      "drafts": [
+        {
+          "text": "狗岛本岛上我没核实到明确卖充电线的店：Tesco Isle of Dogs Express（41 Millharbour, E14）是超市，官方页面只给营业信息，不能确认有线和接口；Currys 的店铺查询只列电器零售门店，也没法确认某家分店有货。所以别把这两家当成“走过去就有”，更稳的是往 Canary Wharf 商场那边走一趟，但具体哪家有货得现场看或先打电话问。\n\n你手机是 USB-C 还是 Lightning 接口？这决定便利店收银台那种短线能不能用，也决定值不值得跑一趟。\n\n来源：[1. Tesco Isle Of Dogs Express](https://www.tesco.com/store-locator/london/41-millharbour) · [2. Currys store finder](https://www.currys.co.uk/store-finder)",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvch4ld60003frbgfwcea2u9",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:24.426Z"
+        },
+        {
+          "id": "cmvch4le70004frbg3r1lkekg",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:24.463Z"
+        },
+        {
+          "id": "cmvch4nj90008frbgdz813q2e",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "attempt": 0,
+            "decision": "new",
+            "revision": 1,
+            "scopedCandidateCount": 0
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:27.237Z"
+        },
+        {
+          "id": "cmvch4njq0009frbgvfixe7xd",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:27.255Z"
+        },
+        {
+          "id": "cmvch4nju000afrbg9uccbx1b",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 3212,
+            "sdkTraceRef": "trace_406eb0701c0e4ba283e172ef4855d1b8/span_cd4da18b825246f69f3793cf",
+            "outputTokens": 274
+          },
+          "phase": 2,
+          "latencyMs": 2740,
+          "costMicro": 526,
+          "createdAt": "2026-10-17T14:10:27.258Z"
+        },
+        {
+          "id": "cmvch4njw000bfrbg3ycjavvs",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "category": "other",
+            "taskRevision": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:27.260Z"
+        },
+        {
+          "id": "cmvch4nka000cfrbgis4l8o3a",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:27.274Z"
+        },
+        {
+          "id": "cmvch4osj000dfrbg6ihs1y9x",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:28.867Z"
+        },
+        {
+          "id": "cmvch4osp000efrbg8vo83kjd",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 8684,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_9fe0dd0d0d4642879b12c350",
+            "outputTokens": 84
+          },
+          "phase": 2,
+          "latencyMs": 1582,
+          "costMicro": 1239,
+          "createdAt": "2026-10-17T14:10:28.873Z"
+        },
+        {
+          "id": "cmvch4pys000ffrbgud5stbup",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 1,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:30.388Z"
+        },
+        {
+          "id": "cmvch4pyv000gfrbgbd3fylvo",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:30.391Z"
+        },
+        {
+          "id": "cmvch4pzd000hfrbglzjwom8x",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:30.409Z"
+        },
+        {
+          "id": "cmvch4pzh000ifrbgk8rlpi7d",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 8804,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_d6397c772bef4c04a95ffeb2",
+            "outputTokens": 78
+          },
+          "phase": 2,
+          "latencyMs": 1540,
+          "costMicro": 1254,
+          "createdAt": "2026-10-17T14:10:30.413Z"
+        },
+        {
+          "id": "cmvch4rl2000jfrbgj84efti7",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:32.486Z"
+        },
+        {
+          "id": "cmvch4rl6000kfrbg0iy2rpxz",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:32.490Z"
+        },
+        {
+          "id": "cmvch4rlm000lfrbg8x01d5ih",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:32.506Z"
+        },
+        {
+          "id": "cmvch4rlp000mfrbgn0kuiooa",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 9256,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_251238f090bb4ec8a672c18e",
+            "outputTokens": 77
+          },
+          "phase": 2,
+          "latencyMs": 2097,
+          "costMicro": 1317,
+          "createdAt": "2026-10-17T14:10:32.509Z"
+        },
+        {
+          "id": "cmvch4u9n000nfrbg2frktlbg",
+          "kind": "jev",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "id": "gen-dec-1792246235-x0j6im4Y2HQOqAk5Gs5r",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000111216,
+              "input_tokens": 2648
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.33,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.21,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.68,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.62,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 853,
+          "costMicro": 111,
+          "createdAt": "2026-10-17T14:10:35.963Z"
+        },
+        {
+          "id": "cmvch4uag000pfrbgvrnm1845",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:35.992Z"
+        },
+        {
+          "id": "cmvch4uar000qfrbgn5ncjt9i",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:36.003Z"
+        },
+        {
+          "id": "cmvch4uau000rfrbgbthr2slx",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 9565,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_95ff12ba0f4448c4ba8ed5ef",
+            "outputTokens": 229
+          },
+          "phase": 2,
+          "latencyMs": 3497,
+          "costMicro": 1403,
+          "createdAt": "2026-10-17T14:10:36.006Z"
+        },
+        {
+          "id": "cmvch4we9000sfrbg7cfwl595",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_answer",
+            "kind": "answer",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:38.721Z"
+        },
+        {
+          "id": "cmvch4wed000tfrbgfhi0f2zx",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "Record the one missing condition with record_task_progress next action=ask_user and its constraintKey before asking the user."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 1,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:38.725Z"
+        },
+        {
+          "id": "cmvch4wep000ufrbgawow0huz",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:38.737Z"
+        },
+        {
+          "id": "cmvch4wes000vfrbgy7k3qipu",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 5,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 10211,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_009654c82b9641ff9e467f1d",
+            "outputTokens": 252
+          },
+          "phase": 2,
+          "latencyMs": 2734,
+          "costMicro": 1500,
+          "createdAt": "2026-10-17T14:10:38.740Z"
+        },
+        {
+          "id": "cmvch4xxc000xfrbg1sqf2av2",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "attempt": 2,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:40.704Z"
+        },
+        {
+          "id": "cmvch4xxl000yfrbg75qngo2z",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:40.713Z"
+        },
+        {
+          "id": "cmvch4xxo000zfrbgahvz4g0q",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 6,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 10498,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_96cca3441d684adca8e2b086",
+            "outputTokens": 236
+          },
+          "phase": 2,
+          "latencyMs": 1976,
+          "costMicro": 1536,
+          "createdAt": "2026-10-17T14:10:40.716Z"
+        },
+        {
+          "id": "cmvch507i0010frbg0r22wp7u",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:43.662Z"
+        },
+        {
+          "id": "cmvch51710011frbgne7jm5rp",
+          "kind": "jev",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "id": "gen-dec-1792246244-yjE6EEImxISNoeAU5wPa",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000053928,
+              "input_tokens": 1284
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.86,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.86,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.14,
+                  "3": 0.86
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.18,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 1275,
+          "costMicro": 54,
+          "createdAt": "2026-10-17T14:10:44.941Z"
+        },
+        {
+          "id": "cmvch51740012frbgl58yxylz",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.86,
+              "mentionsUnverified": 0.18
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:44.944Z"
+        },
+        {
+          "id": "cmvch51750013frbg5rfo0sbu",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:44.945Z"
+        },
+        {
+          "id": "cmvch518u0016frbg1kpo5rxj",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:45.006Z"
+        },
+        {
+          "id": "cmvch518x0017frbgcycm80jo",
+          "kind": "agent_run",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "turn": 7,
+            "taskId": "cmvch4nin0005frbg0rq0twxy",
+            "agentName": "matchAgent",
+            "inputTokens": 10961,
+            "sdkTraceRef": "trace_a0b6f30e46dc48c182844e9f84c722f6/span_eb266d6a48fe4487b80a62b1",
+            "outputTokens": 210
+          },
+          "phase": 2,
+          "latencyMs": 4292,
+          "costMicro": 1593,
+          "createdAt": "2026-10-17T14:10:45.009Z"
+        },
+        {
+          "id": "cmvch51a7001nfrbgdu24vuek",
+          "kind": "gate",
+          "inputRef": "cmvch4ld30002frbgcnppgom6",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:10:45.055Z"
+        }
+      ],
+      "usage": {
+        "input": 71191,
+        "output": 1440
+      }
+    }
+  ]
+}

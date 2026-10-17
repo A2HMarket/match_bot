@@ -1,0 +1,49 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/reply-request-status.test.ts (11 tests | 2 failed) 21ms
+   ❯ reply_request_status (11)
+     × does not ask an obstacle already supplied: 现在急用，出不了门 9ms
+     × does not ask an obstacle already supplied: Need painkillers urgently, I cannot leave home 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-request-status.test.ts > reply_request_status > does not ask an obstacle already supplied: 现在急用，出不了门
+TypeError: Cannot read properties of undefined (reading 'text')
+ ❯ packages/agent/tests/tools/reply-request-status.test.ts:51:18
+     49|     const {c,d,t}=setup(2);bindCurrentRequest(c,input);await t.invoke(…
+     50|     const draft=d.repos.outbound.create.mock.calls[0]?.[0] as {text:st…
+     51|     expect(draft.text).not.toMatch(/[?？]/);
+       |                  ^
+     52|   });
+     53|   it('asks about the practical obstacle instead of making the user cho…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/reply-request-status.test.ts > reply_request_status > does not ask an obstacle already supplied: Need painkillers urgently, I cannot leave home
+AssertionError: expected 'I haven\'t confirmed a suitable lead …' not to match /[?？]/
+
+- Expected:
+/[?？]/
+
++ Received:
+"I haven't confirmed a suitable lead yet; some important details are still unclear.
+
+What is making this difficult right now: finding a suitable channel, timing, or getting there? If you have already explained the obstacle, you do not need to repeat it."
+
+ ❯ packages/agent/tests/tools/reply-request-status.test.ts:51:28
+     49|     const {c,d,t}=setup(2);bindCurrentRequest(c,input);await t.invoke(…
+     50|     const draft=d.repos.outbound.create.mock.calls[0]?.[0] as {text:st…
+     51|     expect(draft.text).not.toMatch(/[?？]/);
+       |                            ^
+     52|   });
+     53|   it('asks about the practical obstacle instead of making the user cho…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  22:06:53
+   Duration  450ms (import 67%, transform 27%, tests 5%, worker 1%)
+

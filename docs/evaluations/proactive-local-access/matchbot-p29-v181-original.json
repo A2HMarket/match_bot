@@ -1,0 +1,881 @@
+{
+  "runId": "3cf9e872-304b-48ef-8458-1b33d1090afc",
+  "sample": "original",
+  "agentVersion": "0.18.1",
+  "sourceFingerprint": "0862551aa2f93bc357f6a004214312ab006ecd159f3f63f35aed61f4e1d3590d",
+  "status": "completed",
+  "elapsedMs": 22065,
+  "boundary": "synthetic user; real public web/DeepSeek/Jev; isolated DB; pending outbox only, NO sender",
+  "queries": [
+    {
+      "query": "pharmacy Isle of Dogs Canary Wharf opening hours",
+      "domains": []
+    },
+    {
+      "query": "NHS pharmacy finder Isle of Dogs E14",
+      "domains": [
+        "nhs.uk"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "index": 0,
+      "input": "狗岛找止疼药",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvch8n9t0005dhbgq6wulrwg",
+        "ownerUserId": "cmvch8lex0000dhbg8834l5fn",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p29-3cf9e872-304b-48ef-8458-1b33d1090afc"
+        },
+        "objective": "在狗岛寻找止疼药购买渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvch8lfh0002dhbgan6blqml"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "painkillers",
+            "title": "止疼药",
+            "required": true,
+            "searchTerms": [
+              "止痛药",
+              "painkillers",
+              "paracetamol",
+              "ibuprofen",
+              "pharmacy Isle of Dogs"
+            ],
+            "criteria": [
+              {
+                "id": "is_painkiller",
+                "label": "来源描述的对象或邀约：止疼药",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "supported",
+                "evidenceRefs": [
+                  "e:bf018cba30bfccff01fc3eb124cec7b6582fb4f2",
+                  "e:6370d738c547eb72b0cfc252f22a1cea419e9698"
+                ],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:8ba11f604d92c5774502fd9817bcddb2ffa1b4ab",
+            "goalId": "painkillers",
+            "kind": "source_excerpt",
+            "sourceRef": "web:217db29085f1009a888875f22679fa62",
+            "summary": "ALLEN'S PHARMACY",
+            "observedAt": "2026-10-17T14:13:49.245Z",
+            "entityKey": "information:painkillers",
+            "url": "https://www.nhs.uk/services/pharmacy/allen-s-pharmacy/FHD94"
+          },
+          {
+            "id": "e:6370d738c547eb72b0cfc252f22a1cea419e9698",
+            "goalId": "painkillers",
+            "kind": "source_excerpt",
+            "sourceRef": "web:f9acacfcc49c61165f7631b3cccd0fe8",
+            "summary": "TOWN PHARMACY (FH732) Address: 143 MANCHESTER ROAD, ISLE OF DOGS, LONDON, ENGLAND, E14 3DN Primary sector: Pharmacy\\n",
+            "observedAt": "2026-10-17T14:13:49.245Z",
+            "entityKey": "information:painkillers",
+            "url": "https://www.dsptoolkit.nhs.uk/OrganisationSearch/FH732"
+          },
+          {
+            "id": "e:bf018cba30bfccff01fc3eb124cec7b6582fb4f2",
+            "goalId": "painkillers",
+            "kind": "source_excerpt",
+            "sourceRef": "web:217db29085f1009a888875f22679fa62",
+            "summary": "19 CASTALIA SQUARE, ISLE OF DOGS, LONDON, E14 3PQ",
+            "observedAt": "2026-10-17T14:13:49.245Z",
+            "entityKey": "information:painkillers",
+            "url": "https://www.nhs.uk/services/pharmacy/allen-s-pharmacy/FHD94"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "Two Isle of Dogs pharmacies are confirmed by address; whether the user needs it now or cannot get out changes whether to point to a walk-in branch or an NHS urgent/late option.",
+          "goalId": "painkillers",
+          "constraintKey": "custom:access_difficulty"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "4622 - ISLE OF DOGS Isle of Dogs: in London,",
+          "url": "https://storelocator.asda.com/london/london/151-east-ferry-road-isle-of-dogs",
+          "text": "Service\nDrive Thru Collection Point\nClick to book your grocery collection at a time to suit you. We'll pick and pack it ready for your arrival\n7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 11:00 AM - 5:00 PM\nBook a slot\n\nService\nPharmacy\nOur Asda Pharmacies are open 7 days a week, including late evenings and bank holidays.\nNot available at this store\nFind others nearby\n\nService\nOpticians ([联系方式已隐藏])\nAt Asda Opticians we offer eye tests, great value contact lenses which are available to buy in-store and online, and clear complete prices on prescription glasses.\n9:00 AM - 6:30 PM 9:00 AM - 7:30 PM 9:00 AM - 6:30 PM 9:00 AM - 7:30 PM 9:00 AM - 6:30 PM 9:00 AM - 6:30 PM 12:00 PM - 6:00 PM\nFind out more [...] Scan & Go\n8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 11:00 AM - 5:00 PM\nDropdown\nYou can use our Scan & Go Mobile App in this store.\nStore Hours:\n| Day of the Week | Hours |\n --- |\n| Monday | 8:00 AM - 10:00 PM |\n| Tuesday | 8:00 AM - 10:00 PM |\n| Wednesday | 8:00 AM - 10:00 PM |\n| Thursday | 8:00 AM - 10:00 PM |\n| Friday | 8:00 AM - 10:00 PM |\n| Saturday | 8:00 AM - 10:00 PM |\n| Sunday | 11:00 AM - 5:00 PM |\nRead More [...] Skip to content\nMenu\nLocator\nStore Locator\nRollbackCommunity ChampionIn-Store ServicesContact Us\nGroceriesRollbackCommunity ChampionIn-Store ServicesContact Us\nReturn to Nav\nGet Directions\nASDA Isle of Dogs\n6:00 AM - 12:00 AM Open 24 Hours Open 24 Hours Open 24 Hours Open 24 Hours 12:00 AM - 10:00 PM 12:00 PM - 6:00 PM\nMain Number\n[联系方式已隐藏]\n[联系方式已隐藏]\n151 East Ferry Road, Isle of Dogs\nLondon E14 3BT\nOptician:\n[联系方式已隐藏]\n[联系方式已隐藏]\nLink to Google maps\nOpening Hours\nStore Hours:\n| Day of the Week | Hours |\n --- |\n| Monday | 6:00 AM - 12:00 AM |\n| Tuesday | Open 24 hours |\n| Wednesday | Open 24 hours |\n| Thursday | Open 24 hours |\n| Friday | Open 24 hours |\n| Saturday | 12:00 AM - 10:00 PM |\n| Sunday | 12:00 PM - 6:00 PM |\\nSkip to content\nMenu\nLocator\nStore Locator\nRollbackCommunity ChampionIn-Store ServicesContact Us\nGroceriesRollbackCommunity ChampionIn-Store ServicesContact Us\nReturn to Nav\nGet Directions\nASDA Isle of Dogs\n6:00 AM - 12:00 AM Open 24 Hours Open 24 Hours Open 24 Hours Open 24 Hours 12:00 AM - 10:00 PM 12:00 PM - 6:00 PM\nMain Number\n[联系方式已隐藏]\n[联系方式已隐藏]\n151 East Ferry Road, Isle of Dogs\nLondon E14 3BT\nOptician:\n[联系方式已隐藏]\n[联系方式已隐藏]\nLink to Google maps\nOpening Hours\nStore Hours:\n| Day of the Week | Hours |\n --- |\n| Monday | 6:00 AM - 12:00 AM |\n| Tuesday | Open 24 hours |\n| Wednesday | Open 24 hours |\n| Thursday | Open 24 hours |\n| Friday | Open 24 hours |\n| Saturday | 12:00 AM - 10:00 PM |\n| Sunday | 12:00 PM - 6:00 PM |\nWe are offering a quieter hour 2.00pm - 3.00pm every Monday to Thursday - During this time we're reducing the noise levels in store by switching off our Asda Radio and reducing tannoy announcements to emergencies only.\nfind out more about...\nMain Services\n\nService\nDrive Thru Collection Point\nClick to book your grocery collection at a time to suit you. We'll pick and pack it ready for your arrival\n7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 11:00 AM - 5:00 PM\nBook a slot\n\nService\nPharmacy\nOur Asda Pharmacies are open 7 days a week, including late evenings and bank holidays.\nNot available at this store\nFind others nearby\n\nService\nOpticians ([联系方式已隐藏])\nAt Asda Opticians we offer eye tests, great value contact lenses which are available to buy in-store and online, and clear complete prices on prescription glasses.\n9:00 AM - 6:30 PM 9:00 AM - 7:30 PM 9:00 AM - 6:30 PM 9:00 AM - 7:30 PM 9:00 AM - 6:30 PM 9:00 AM - 6:30 PM 12:00 PM - 6:00 PM\nFind out more\n\nService\nCafe\nVisit our in-store Café for a drink or freshly prepared food. Short on time? No problem. We can prepare your order to take away.\n8:30 AM - 5:00 PM 8:30 AM - 5:00 PM 8:30 AM - 5:00 PM 8:30 AM - 5:00 PM 8:30 AM - 5:00 PM 8:30 AM - 5:00 PM 11:00 AM - 4:00 PM\nFind out more\n\nService\nTravel Money Bureau\nFind competitive travel money exchange rates at our travel money bureau.\nNot available at this store\nFind others nearby\nFacilities\n\nAccessible toilet\n\nAdapted Cutlery (knife, fork, mug)\n\nAdapted Trolley\n\nAssisted Shops\n\nBaby Changing\n\nCar Park\n\nCash Machine\n\nDisabled Facilities\n\nGeorge Fitting Rooms\n\nGoToShop\n\nHand Car Wash\n\nHearing Loops (T-Loop)\n\nMobility Scooters\n\nMy Hailo\n\nPayPoint\n\nTemporary Disabled Parking Pass\n\nWheelchairs\nServices\n\nGeorge\nDropdown\nVisit George to discover clothing, home accessories and footwear for the whole family, including school uniforms, women’s dresses and accessories.\n\nMore\nMore\n\nGeorge Click & Collect\n8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 6:00 PM\nDropdown\nGo to the Internal Touch Screen near the entrance of the store  \nThis is a Standard Refund store (up to 14 working days)\nStore Hours:\n| Day of th",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:13:42.987Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Drive Thru Collection Point"
+            },
+            {
+              "id": "k1:p2",
+              "text": "Click to book your grocery collection at a time to suit you. We'll pick and pack it ready for your arrival"
+            },
+            {
+              "id": "k1:p3",
+              "text": "7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 7:00 AM - 8:00 PM 11:00 AM - 5:00 PM"
+            },
+            {
+              "id": "k1:p4",
+              "text": "Our Asda Pharmacies are open 7 days a week, including late evenings and bank holidays."
+            },
+            {
+              "id": "k1:p5",
+              "text": "Not available at this store"
+            },
+            {
+              "id": "k1:p6",
+              "text": "Find others nearby"
+            },
+            {
+              "id": "k1:p7",
+              "text": "Opticians ([联系方式已隐藏])"
+            },
+            {
+              "id": "k1:p8",
+              "text": "At Asda Opticians we offer eye tests, great value contact lenses which are available to buy in-store and online, and clear complete prices on prescription glasses."
+            },
+            {
+              "id": "k1:p9",
+              "text": "9:00 AM - 6:30 PM 9:00 AM - 7:30 PM 9:00 AM - 6:30 PM 9:00 AM - 7:30 PM 9:00 AM - 6:30 PM 9:00 AM - 6:30 PM 12:00 PM - 6:00 PM"
+            },
+            {
+              "id": "k1:p10",
+              "text": "Find out more [...] Scan & Go"
+            },
+            {
+              "id": "k1:p11",
+              "text": "8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 8:00 AM - 10:00 PM 11:00 AM - 5:00 PM"
+            },
+            {
+              "id": "k1:p12",
+              "text": "You can use our Scan & Go Mobile App in this store."
+            }
+          ]
+        },
+        {
+          "title": "Cassilis Road - London, Isle of Dogs",
+          "url": "https://www.coop.co.uk/store-finder/E14-9LQ/cassilis-road",
+          "text": "Opening hours · Thursday:7am to 11pm · Friday:7am to 11pm · Saturday:7am to 11pm · Sunday:7am to 11pm · Monday:7am to 11pm · Tuesday:7am to 11pm · Wednesday:7am to\\n",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:13:42.987Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "Opening hours · Thursday:7am to 11pm · Friday:7am to 11pm · Saturday:7am to 11pm · Sunday:7am to 11pm · Monday:7am to 11pm · Tuesday:7am to 11pm · Wednesday:7am to\\n"
+            }
+          ]
+        },
+        {
+          "title": "London Canary Wharf Jubilee Place",
+          "url": "https://www.boots.com/stores/700-london-canary-whf-jubile-e14-5ny",
+          "text": "Store: Mon 08:00 - 20:00 Tues. Sat 10:00 - 19:00 Sun 12:00 - 18:00 Pharmacy: Mon 08:00 - 21:00 Tues 08:00 - 21:00 Wed … 08:00 - 21:00 Sat 10:00 - 19:00 Sun 12:\\n",
+          "ref": "k3",
+          "fetchedAt": "2026-10-17T14:13:42.987Z",
+          "passages": [
+            {
+              "id": "k3:p1",
+              "text": "Store: Mon 08:00 - 20:00 Tues. Sat 10:00 - 19:00 Sun 12:00 - 18:00 Pharmacy: Mon 08:00 - 21:00 Tues 08:00 - 21:00 Wed … 08:00 - 21:00 Sat 10:00 - 19:00 Sun 12:\\n"
+            }
+          ]
+        },
+        {
+          "title": "Late night pharmacy options near Canary Wharf",
+          "url": "https://www.facebook.com/groups/1458438024296291/posts/3656158384524233",
+          "text": "The Boots in Jubilee Place, Canary Wharf, is no longer a 'midnight pharmacy' the nearest are: Boots, Greenwich Retail Park SE7 7SR (08:00-23:59\\n",
+          "ref": "k4",
+          "fetchedAt": "2026-10-17T14:13:42.987Z",
+          "passages": [
+            {
+              "id": "k4:p1",
+              "text": "The Boots in Jubilee Place, Canary Wharf, is no longer a 'midnight pharmacy' the nearest are: Boots, Greenwich Retail Park SE7 7SR (08:00-23:59\\n"
+            }
+          ]
+        },
+        {
+          "title": "Boots, Unit 14 Canada Square Canary Wharf London E14 5Ax | NPN - The National Pharmacy Network",
+          "url": "https://www.npn.org.uk/pharmacies/1083655-boots-unit-14-canada-square-canary-wharf-london-greater-london-e14-5ax-england",
+          "text": "Seasonal flu vaccination service: at-risk groups (NHS)\n Seasonal flu vaccination service: not at-risk groups (paid-for)\n Travel clinic (paid for)\nPharmacy First Services\n Earache\n Impetigo\n Infected Insect Bites\n Shingles\n Sinusitis\n Sore Throat\n Urinary Tract Infection\nFacilities\nAccessibility\n Induction loop\nOther Facilities\n Consultation room\nLocation\nPharmacy Address:\nBoots, Unit 14 Canada Square Canary Wharf London E14 5Ax\nGoogle Map of this Pharmacy location:\nStreet View\nSee this Pharmacy on Google Maps\nPharmacy Opening Hours\n Monday8am-9pm\n Tuesday8am-9pm\n Wednesday8am-9pm\n Thursday8am-9pm\n Friday8am-9pm\n Saturday9am-7pm\n Sunday12pm-6pm\nContact details for this Pharmacy\n Telephone number: [联系方式已隐藏]\n Website: www.Boots.com\nNPN - The National Pharmacy Network [...] NPN - The National Pharmacy Network\nClaim Pharmacy\nBoots\nPremises type: Community\nUnit 14 Canada Square Canary Wharf London E14 5Ax\nFor Boots stores special opening hours, e.g. Christmas and Bank Holidays, please click on this link to Boots.com for more detail... Boots store locator\nServices\nHelp and Advice Services\n New Medicine Service (NHS)\nContraception Services\n Emergency contraception (paid-for)\nHealthy Living Services\n Weight management (NHS)\nScreening and Test Services\n NHS Blood Pressure Check Service\nDispensing Services\n NHS Prescriptions\n Prescriptions\nCommunity Pharmacy Services\n Appointment booking available for consultations\n Multi-lingual staff\n Private consultation room\nVaccination Services\n Seasonal flu vaccination service: at-risk groups (NHS) [...] NPN - The National Pharmacy Network   \nAn interactive directory of pharmacies and pharmacy services, hyper-optimised for Google search.\nBy grouping pharmacies together online, we create a vast network that boosts both individual member pharmacies and the network itself.\nHelpful Links\n Directory of Pharmacies in England\n Directory of Pharmacies in Northern Ireland\n Directory of Pharmacies in Scotland\n Directory of Pharmacies in Wales\n Add a Pharmacy\n Full Disclaimer\n Privacy Policy\n Cookies Policy\n Terms & Conditions\n Directory of Dentists in England\n Directory of Opticians in England\n Directory of Physical Therapists in England\nContact Us\n300 Vauxhall Bridge Road, London, England, SW1V 1AA\n© 2026 LSA Networks LTD. All Rights Reserved.\\nNPN - The National Pharmacy Network\nClaim Pharmacy\nBoots\nPremises type: Community\nUnit 14 Canada Square Canary Wharf London E14 5Ax\nFor Boots stores special opening hours, e.g. Christmas and Bank Holidays, please click on this link to Boots.com for more detail... Boots store locator\nServices\nHelp and Advice Services\n New Medicine Service (NHS)\nContraception Services\n Emergency contraception (paid-for)\nHealthy Living Services\n Weight management (NHS)\nScreening and Test Services\n NHS Blood Pressure Check Service\nDispensing Services\n NHS Prescriptions\n Prescriptions\nCommunity Pharmacy Services\n Appointment booking available for consultations\n Multi-lingual staff\n Private consultation room\nVaccination Services\n Seasonal flu vaccination service: at-risk groups (NHS)\n Seasonal flu vaccination service: not at-risk groups (paid-for)\n Travel clinic (paid for)\nPharmacy First Services\n Earache\n Impetigo\n Infected Insect Bites\n Shingles\n Sinusitis\n Sore Throat\n Urinary Tract Infection\nFacilities\nAccessibility\n Induction loop\nOther Facilities\n Consultation room\nLocation\nPharmacy Address:\nBoots, Unit 14 Canada Square Canary Wharf London E14 5Ax\nGoogle Map of this Pharmacy location:\nStreet View\nSee this Pharmacy on Google Maps\nPharmacy Opening Hours\n Monday8am-9pm\n Tuesday8am-9pm\n Wednesday8am-9pm\n Thursday8am-9pm\n Friday8am-9pm\n Saturday9am-7pm\n Sunday12pm-6pm\nContact details for this Pharmacy\n Telephone number: [联系方式已隐藏]\n Website: www.Boots.com\nNPN - The National Pharmacy Network   \nAn interactive directory of pharmacies and pharmacy services, hyper-optimised for Google search.\nBy grouping pharmacies together online, we create a vast network that boosts both individual member pharmacies and the network itself.\nHelpful Links\n Directory of Pharmacies in England\n Directory of Pharmacies in Northern Ireland\n Directory of Pharmacies in Scotland\n Directory of Pharmacies in Wales\n Add a Pharmacy\n Full Disclaimer\n Privacy Policy\n Cookies Policy\n Terms & Conditions\n Directory of Dentists in England\n Directory of Opticians in England\n Directory of Physical Therapists in England\nContact Us\n300 Vauxhall Bridge Road, London, England, SW1V 1AA\n© 2026 LSA Networks LTD. All Rights Reserved.  \nDisclaimer: All content is for informational purposes only. LSA Networks LTD makes no representations as to the accuracy, completeness, suitability or validity of any information on this website and will not be liable for any errors or omissions or any damages arising from its display or use. Full disclaimer and privacy policy.",
+          "ref": "k5",
+          "fetchedAt": "2026-10-17T14:13:42.988Z",
+          "passages": [
+            {
+              "id": "k5:p1",
+              "text": "Seasonal flu vaccination service: at-risk groups (NHS)"
+            },
+            {
+              "id": "k5:p2",
+              "text": "Seasonal flu vaccination service: not at-risk groups (paid-for)"
+            },
+            {
+              "id": "k5:p3",
+              "text": "Travel clinic (paid for)"
+            },
+            {
+              "id": "k5:p4",
+              "text": "Pharmacy First Services"
+            },
+            {
+              "id": "k5:p5",
+              "text": "Infected Insect Bites"
+            },
+            {
+              "id": "k5:p6",
+              "text": "Urinary Tract Infection"
+            },
+            {
+              "id": "k5:p7",
+              "text": "Other Facilities"
+            },
+            {
+              "id": "k5:p8",
+              "text": "Consultation room"
+            },
+            {
+              "id": "k5:p9",
+              "text": "Pharmacy Address:"
+            },
+            {
+              "id": "k5:p10",
+              "text": "Boots, Unit 14 Canada Square Canary Wharf London E14 5Ax"
+            },
+            {
+              "id": "k5:p11",
+              "text": "Google Map of this Pharmacy location:"
+            },
+            {
+              "id": "k5:p12",
+              "text": "See this Pharmacy on Google Maps"
+            }
+          ]
+        },
+        {
+          "title": "ALLEN'S PHARMACY - NHS",
+          "url": "https://www.nhs.uk/services/pharmacy/allen-s-pharmacy/FHD94",
+          "text": "Back)\nALLEN'S PHARMACY\n19 CASTALIA SQUARE, ISLE OF DOGS, LONDON, E14 3PQ\nAbout this pharmacy\n Contact details and opening times\nFind another pharmacy \nReport an issue with information on this NHS profile\\nBack)\nALLEN'S PHARMACY\n19 CASTALIA SQUARE, ISLE OF DOGS, LONDON, E14 3PQ\nAbout this pharmacy\n Contact details and opening times\nFind another pharmacy \nReport an issue with information on this NHS profile",
+          "ref": "k6",
+          "fetchedAt": "2026-10-17T14:13:45.452Z",
+          "passages": [
+            {
+              "id": "k6:p1",
+              "text": "ALLEN'S PHARMACY"
+            },
+            {
+              "id": "k6:p2",
+              "text": "19 CASTALIA SQUARE, ISLE OF DOGS, LONDON, E14 3PQ"
+            },
+            {
+              "id": "k6:p3",
+              "text": "About this pharmacy"
+            },
+            {
+              "id": "k6:p4",
+              "text": "Contact details and opening times"
+            },
+            {
+              "id": "k6:p5",
+              "text": "Find another pharmacy"
+            },
+            {
+              "id": "k6:p6",
+              "text": "Report an issue with information on this NHS profile\\nBack)"
+            },
+            {
+              "id": "k6:p7",
+              "text": "ALLEN'S PHARMACY"
+            },
+            {
+              "id": "k6:p8",
+              "text": "19 CASTALIA SQUARE, ISLE OF DOGS, LONDON, E14 3PQ"
+            },
+            {
+              "id": "k6:p9",
+              "text": "About this pharmacy"
+            },
+            {
+              "id": "k6:p10",
+              "text": "Contact details and opening times"
+            },
+            {
+              "id": "k6:p11",
+              "text": "Find another pharmacy"
+            },
+            {
+              "id": "k6:p12",
+              "text": "Report an issue with information on this NHS profile"
+            }
+          ]
+        },
+        {
+          "title": "Overview - Allens Pharmacy",
+          "url": "https://www.nhs.uk/services/service-directory/allens-pharmacy/N10502829",
+          "text": "Address. 19 Castalia Square Isle of Dogs London Greater London E14 3PQ. Get directions (opens in Google Maps) · Phone. [联系方式已隐藏].\\n",
+          "ref": "k7",
+          "fetchedAt": "2026-10-17T14:13:45.452Z",
+          "passages": [
+            {
+              "id": "k7:p1",
+              "text": "Address. 19 Castalia Square Isle of Dogs London Greater London E14 3PQ. Get directions (opens in Google Maps) · Phone. [联系方式已隐藏].\\n"
+            }
+          ]
+        },
+        {
+          "title": "cubitt town pharmacy (fh732)",
+          "url": "https://www.dsptoolkit.nhs.uk/OrganisationSearch/FH732",
+          "text": "TOWN PHARMACY (FH732) Address: 143 MANCHESTER ROAD, ISLE OF DOGS, LONDON, ENGLAND, E14 3DN Primary sector: Pharmacy\\n",
+          "ref": "k8",
+          "fetchedAt": "2026-10-17T14:13:45.452Z",
+          "passages": [
+            {
+              "id": "k8:p1",
+              "text": "TOWN PHARMACY (FH732) Address: 143 MANCHESTER ROAD, ISLE OF DOGS, LONDON, ENGLAND, E14 3DN Primary sector: Pharmacy\\n"
+            }
+          ]
+        },
+        {
+          "title": "Island Health",
+          "url": "https://www.islandhealth.nhs.uk",
+          "text": "Data Sharing\nRead more about NHS Data Sharing and register your preference with us now.\nRead more about Data Sharing\nBack to top\nContact Us\nIsland Health Primary Care LTD  \n145 East Ferry Road  \nLondon  \nE14 3BQ  \n[联系方式已隐藏]\nX logo (White) linkInstagram logo (White) link\nOpening hours\nMonday\n08:00-18:30\n08:00-18:30\n08:00-18:30\n08:00-18:30\n08:00-18:30\nClosed\nLinks\nAppointmentsHow to RegisterLetters and Medical reportsSick certificatesPrescriptions\nIsland Health logo\nDesigned by Imogen Morris-Ley\n|  © 2023 Island Health Primary Care LTD  |  Privacy Notice [...] X logo (Black) linkInstagram logo (black) link\nHealthy Lifestyle group\nHealthy island volunteers leaflet for more information talk to your GP or Social prescriber or visit the www.healthyislandth.con\nHealthy island volunteers leaflet\nfor more information talk to your GP or Social prescriber or visit the www.healthyislandth.con.png)\nCoffee morning leaflet find out more information on: \nwomen's fitness class leaflet find out more information on: \nBereavement support group\nlast Friday of every month at 9.30 to 11am\nat Island house, Roserton Street, E14 3PG.png)\nClick here for more information on upcoming wellbeing events.\nLGBTQ+\nPride flag with circle in the Middle saying \nCheck out our page on LQBTQ+ friendly health resources.\nRead more about our LQBTQ+ resources [...] Island health logo\ncancel button\nIsland Health PUBLIC NOTICE\nWelcome to Island Health\nBy clicking “Accept All Cookies”, you agree to the storing of cookies on your device to enhance site navigation, analyse site usage, and assist in our marketing efforts. View our Privacy Policy for more information.\nPreferencesDenyAccept\nBy clicking “Accept All Cookies”, you agree to the storing of cookies on your device to enhance site navigation, analyse site usage, and assist in our marketing efforts. View our Privacy Policy for more information.\nPreferencesDenyAccept\nhomepageNHS home page\nIsland Health\nRead More on our about page\nChanges are Here!\n‍From 1st August 2025,   \nall appointments will be received via medical e-Consult forms on our website\nBook An Appointment / Admin Request\\nIsland health logo\ncancel button\nIsland Health PUBLIC NOTICE\nWelcome to Island Health\nBy clicking “Accept All Cookies”, you agree to the storing of cookies on your device to enhance site navigation, analyse site usage, and assist in our marketing efforts. View our Privacy Policy for more information.\nPreferencesDenyAccept\nBy clicking “Accept All Cookies”, you agree to the storing of cookies on your device to enhance site navigation, analyse site usage, and assist in our marketing efforts. View our Privacy Policy for more information.\nPreferencesDenyAccept\nhomepageNHS home page\nIsland Health\nRead More on our about page\nChanges are Here!\n‍From 1st August 2025,   \nall appointments will be received via medical e-Consult forms on our website\nBook An Appointment / Admin Request\nRequest for Acute Prescription\nLearn more about the services at our practice\nClick here to watch the full series\nillustrated calendar with tick box, in yellow box.\nAppointmentsillustrated blue computer screen in yellow circle.\nRepeat Prescriptionsillustrated blue checklist in yellow circle.\nSick CertificatesHealthy Island Partnership logo in a yellow circle\nHealth and Wellbeingillustrated blue computer screen in yellow circle.\nLetters and medical reportsillustrated blue checklist in yellow circle.\nHow to Register\nConsult from Home\nBeat the queues and use our new Consult from home service! Request treatment and advice from your GP by completing a simple on-line form. We will call you back by the end of the next working day.\nLearn more on our Consult from home page\nSurgery Closures\nSeptember 2026\n15th September 2026 - Protected Learning Time (1pm - 6:30pm)\nOctober 2026\n15th October 2026 - Protected Learning Time (1pm - 6:30pm)  \n‍\nNovember 2026\n17th November 2026 - Protected Learning Time (1pm - 6:30pm)\nDecember 2026\n17th December 2026 - Protected Learning Time (1pm - 6:30pm)  \n25th December 2026 - Christmas Day  \n28th December 2026 - Bank Holiday (Boxing Day)\nJanuary 2027\n1st January 2027 - Bank Holiday (New Year's Day)  \n19th January 2027 - Protected Learning Time (1pm -6.30pm)\nFebruary 2027\n25th February 2027 -  Protected Learning Time (1pm - 6pm)\nFollow us on Social Media!\nStay informed. Follow us on X and Instagram for news, advice and updates.\nX logo (Black) linkInstagram logo (black) link\nHealthy Lifestyle group\nHealthy island volunteers leaflet for more information talk to your GP or Social prescriber or visit the www.healthyislandth.con\nHealthy island volunteers leaflet\nfor more information talk to your GP or Social prescriber or visit the www.healthyislandth.con.png)\nCoffee morning leaflet find out more information on: \nwomen's fitness class leaflet find out more information on: \nBereavement support group\nlast Friday of every month at 9.30 to 11am\nat Island house, Roserton Street, E14 3PG.png)\nClick here for more information on upcoming wellbeing",
+          "ref": "k9",
+          "fetchedAt": "2026-10-17T14:13:45.452Z",
+          "passages": [
+            {
+              "id": "k9:p1",
+              "text": "Read more about NHS Data Sharing and register your preference with us now."
+            },
+            {
+              "id": "k9:p2",
+              "text": "Read more about Data Sharing"
+            },
+            {
+              "id": "k9:p3",
+              "text": "Island Health Primary Care LTD"
+            },
+            {
+              "id": "k9:p4",
+              "text": "145 East Ferry Road"
+            },
+            {
+              "id": "k9:p5",
+              "text": "X logo (White) linkInstagram logo (White) link"
+            },
+            {
+              "id": "k9:p6",
+              "text": "AppointmentsHow to RegisterLetters and Medical reportsSick certificatesPrescriptions"
+            },
+            {
+              "id": "k9:p7",
+              "text": "Island Health logo"
+            },
+            {
+              "id": "k9:p8",
+              "text": "Designed by Imogen Morris-Ley"
+            },
+            {
+              "id": "k9:p9",
+              "text": "|  © 2023 Island Health Primary Care LTD  |  Privacy Notice [...] X logo (Black) linkInstagram logo (black) link"
+            },
+            {
+              "id": "k9:p10",
+              "text": "Healthy Lifestyle group"
+            },
+            {
+              "id": "k9:p11",
+              "text": "Healthy island volunteers leaflet for more information talk to your GP or Social prescriber or visit the www.healthyislandth.con"
+            },
+            {
+              "id": "k9:p12",
+              "text": "Healthy island volunteers leaflet"
+            }
+          ]
+        },
+        {
+          "title": "Clinical Pharmacist",
+          "url": "https://beta.jobs.nhs.uk/candidate/jobadvert/E0136-26-0023",
+          "text": "We are looking to recruit an enthusiastic and dynamic Clinical Pharmacist, to be part of a team working in primary care across the Isle of Dogs\\n",
+          "ref": "k10",
+          "fetchedAt": "2026-10-17T14:13:45.452Z",
+          "passages": [
+            {
+              "id": "k10:p1",
+              "text": "We are looking to recruit an enthusiastic and dynamic Clinical Pharmacist, to be part of a team working in primary care across the Isle of Dogs\\n"
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "oneAnswer": true,
+        "hasSources": true,
+        "sameTask": true,
+        "researched": true,
+        "noWrongMarketRetries": true,
+        "noArrivalGuarantee": true,
+        "noUnaskedMedicationAdvice": true,
+        "practicalQuestion": true
+      },
+      "drafts": [
+        {
+          "text": "狗岛上能查到两家药房：Allen's Pharmacy（19 Castalia Square, E14 3PQ）和 Town Pharmacy（143 Manchester Road, E14 3DN），都在岛内。具体有没有你要的止疼药、今天是否营业，公开信息里查不到，得打电话或到店问药剂师。\n\n你是现在就要用，还是不方便出门？这决定我建议你直接去店里，还是先看晚一点/能送的方式。\n\n来源：[1. ALLEN'S PHARMACY - NHS](https://www.nhs.uk/services/pharmacy/allen-s-pharmacy/FHD94) · [2. cubitt town pharmacy fh732](https://www.dsptoolkit.nhs.uk/OrganisationSearch/FH732)",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvch8lfj0003dhbg9oy0wjbz",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:31.135Z"
+        },
+        {
+          "id": "cmvch8lgc0004dhbgiut6lzl5",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:31.164Z"
+        },
+        {
+          "id": "cmvch8naa0008dhbgi94cul1y",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvch8n9t0005dhbgq6wulrwg",
+            "attempt": 0,
+            "decision": "new",
+            "revision": 1,
+            "scopedCandidateCount": 0
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:33.538Z"
+        },
+        {
+          "id": "cmvch8nal0009dhbgxz17mfe4",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:33.549Z"
+        },
+        {
+          "id": "cmvch8nao000adhbgbo6tysvs",
+          "kind": "agent_run",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 3204,
+            "sdkTraceRef": "trace_521f669ee176413c98a049f77933d557/span_e7cccaad25164cb58b59db49",
+            "outputTokens": 272
+          },
+          "phase": 2,
+          "latencyMs": 2353,
+          "costMicro": 525,
+          "createdAt": "2026-10-17T14:13:33.552Z"
+        },
+        {
+          "id": "cmvch8nap000bdhbgu0stdzts",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvch8n9t0005dhbgq6wulrwg",
+            "category": "other",
+            "taskRevision": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:33.553Z"
+        },
+        {
+          "id": "cmvch8nb0000cdhbgjbywouje",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:33.564Z"
+        },
+        {
+          "id": "cmvch8ukt000ddhbgbikwyv0w",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "information_search",
+            "count": 5,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 7048,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:42.989Z"
+        },
+        {
+          "id": "cmvch8wh9000edhbg3hrr2fhy",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "information_search",
+            "count": 5,
+            "reason": null,
+            "status": "ok",
+            "domains": [
+              "nhs.uk"
+            ]
+          },
+          "phase": 2,
+          "latencyMs": 2460,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:45.453Z"
+        },
+        {
+          "id": "cmvch8whx000fdhbgazjgrfah",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:45.477Z"
+        },
+        {
+          "id": "cmvch8wi2000gdhbg0vqcb22j",
+          "kind": "agent_run",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvch8n9t0005dhbgq6wulrwg",
+            "agentName": "matchAgent",
+            "inputTokens": 8797,
+            "sdkTraceRef": "trace_212149b517f54444be53babdd32cf224/span_ac9a4d6e397b4a3082f72098",
+            "outputTokens": 86
+          },
+          "phase": 2,
+          "latencyMs": 11899,
+          "costMicro": 1256,
+          "createdAt": "2026-10-17T14:13:45.482Z"
+        },
+        {
+          "id": "cmvch8zzk000hdhbguebb28zh",
+          "kind": "jev",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "id": "gen-dec-1792246429-DYr48q8pBUrpongcHRmp",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000154392,
+              "input_tokens": 3676
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.4,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.16,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.51,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.24,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.94,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.95,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 749,
+          "costMicro": 154,
+          "createdAt": "2026-10-17T14:13:50.000Z"
+        },
+        {
+          "id": "cmvch9009000jdhbgtqc40tt6",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvch8n9t0005dhbgq6wulrwg",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:50.025Z"
+        },
+        {
+          "id": "cmvch900j000kdhbg6gf3oxcr",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:50.035Z"
+        },
+        {
+          "id": "cmvch900l000ldhbghnsim5cu",
+          "kind": "agent_run",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvch8n9t0005dhbgq6wulrwg",
+            "agentName": "matchAgent",
+            "inputTokens": 11452,
+            "sdkTraceRef": "trace_212149b517f54444be53babdd32cf224/span_be19d809bf744b0ba767e9c5",
+            "outputTokens": 334
+          },
+          "phase": 2,
+          "latencyMs": 4556,
+          "costMicro": 1697,
+          "createdAt": "2026-10-17T14:13:50.037Z"
+        },
+        {
+          "id": "cmvch91ri000mdhbggw7jd6um",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k6",
+              "k8"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:52.302Z"
+        },
+        {
+          "id": "cmvch92bl000ndhbg702ytoja",
+          "kind": "jev",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "id": "gen-dec-1792246432-gplaFKqKl2O47csEb5Q3",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.00005565,
+              "input_tokens": 1325
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.88,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.89,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.11,
+                  "3": 0.89
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.18,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 720,
+          "costMicro": 56,
+          "createdAt": "2026-10-17T14:13:53.025Z"
+        },
+        {
+          "id": "cmvch92bn000odhbgbdq4qptk",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.88,
+              "mentionsUnverified": 0.18
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:53.027Z"
+        },
+        {
+          "id": "cmvch92bq000pdhbg3efmel5s",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k6",
+              "k8"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:53.030Z"
+        },
+        {
+          "id": "cmvch92cz000sdhbgf3y86zhj",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:53.075Z"
+        },
+        {
+          "id": "cmvch92d2000tdhbg2am66hhc",
+          "kind": "agent_run",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvch8n9t0005dhbgq6wulrwg",
+            "agentName": "matchAgent",
+            "inputTokens": 12286,
+            "sdkTraceRef": "trace_212149b517f54444be53babdd32cf224/span_22f7fd55f4ea403da400ae6e",
+            "outputTokens": 173
+          },
+          "phase": 2,
+          "latencyMs": 3040,
+          "costMicro": 1768,
+          "createdAt": "2026-10-17T14:13:53.078Z"
+        },
+        {
+          "id": "cmvch92dn0011dhbg4ks12anh",
+          "kind": "gate",
+          "inputRef": "cmvch8lfh0002dhbgan6blqml",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:13:53.099Z"
+        }
+      ],
+      "usage": {
+        "input": 35739,
+        "output": 865
+      }
+    }
+  ]
+}

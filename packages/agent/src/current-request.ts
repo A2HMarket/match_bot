@@ -22,6 +22,10 @@ function categoryFor(
     )
   )
     return 'other';
+  if (
+    /止[疼痛]药|买药|找药|药房|药店|painkillers?|pharmac(?:y|ies)|paracetamol|ibuprofen/i.test(text)
+  )
+    return 'other';
   if (/退租.*清洁|清洁.*退租|end.of.tenancy|eot cleaning/i.test(text)) return 'eot_cleaning';
   if (/搬家|man.{0,8}van|need.{0,8}van|moving service/i.test(text)) return 'man_and_van';
   if (/安装|组装|assemble|assembly/i.test(text)) return 'furniture_service';

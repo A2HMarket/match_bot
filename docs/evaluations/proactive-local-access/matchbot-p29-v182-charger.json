@@ -1,0 +1,744 @@
+{
+  "runId": "ae78239a-7724-40be-afb2-8f4b3d345c8d",
+  "sample": "charger",
+  "agentVersion": "0.18.2",
+  "sourceFingerprint": "c7ef1412bf03ebeb9c6e781bee0418ffc90b155d3408947b1210d55a768f56fb",
+  "status": "completed",
+  "elapsedMs": 18600,
+  "boundary": "synthetic users and bounded source fixtures, NOT live facts; real DeepSeek/Jev; isolated DB; pending outbox only, NO sender",
+  "queries": [
+    {
+      "query": "phone charger cable shop Isle of Dogs Canary Wharf",
+      "domains": []
+    },
+    {
+      "query": "Argos Canary Wharf opening hours",
+      "domains": []
+    },
+    {
+      "query": "Argos Canary Wharf store opening hours",
+      "domains": []
+    },
+    {
+      "query": "Currys Canary Wharf store address",
+      "domains": []
+    }
+  ],
+  "results": [
+    {
+      "index": 0,
+      "input": "狗岛哪里能买手机充电线？手机快没电了",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "search_information",
+          "record_task_progress",
+          "reply_to_request",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvchea1w0005v4bgidx9h5ni",
+        "ownerUserId": "cmvche7zh0000v4bgiogro4fe",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p29-ae78239a-7724-40be-afb2-8f4b3d345c8d"
+        },
+        "objective": "寻找在狗岛购买手机充电线的渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 3,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "goalId": "charging_cable",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvche8040002v4bg7u58huxs"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "charging_cable",
+            "title": "手机充电线",
+            "required": true,
+            "searchTerms": [
+              "手机充电线",
+              "USB-C 充电线",
+              "lightning 充电线",
+              "Canary Wharf phone accessories"
+            ],
+            "criteria": [
+              {
+                "id": "cable_item",
+                "label": "来源描述的对象或邀约：手机充电线",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "cable_area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:66bdf0929f8ebbb235bf359156109f8c1c784d56",
+            "goalId": "charging_cable",
+            "kind": "source_excerpt",
+            "sourceRef": "web:da228ecc9e992572410475b59c92a969",
+            "summary": "The Currys store finder lists electrical retail stores. Product availability and compatible charging cable stock at a particular branch are not confirmed by this fixture.",
+            "observedAt": "2026-10-17T14:18:08.881Z",
+            "entityKey": "information:charging_cable",
+            "url": "https://www.currys.co.uk/store-finder"
+          },
+          {
+            "id": "e:c93ef77b1f135ba7a64fc3459eb9bbe11eae3fb0",
+            "goalId": "charging_cable",
+            "kind": "source_excerpt",
+            "sourceRef": "web:9dd8235c817115b8da28baef90078007",
+            "summary": "Tesco Isle Of Dogs Express is a supermarket at 41 Millharbour, London E14. The official locator provides store opening details. This fixture does not establish charging cable stock, connector type or delivery.",
+            "observedAt": "2026-10-17T14:18:08.881Z",
+            "entityKey": "information:charging_cable",
+            "url": "https://www.tesco.com/store-locator/london/41-millharbour"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "Connector type (USB-C vs Lightning) decides which cable to ask for and whether a nearby shop's stock is even relevant.",
+          "goalId": "charging_cable",
+          "constraintKey": "connector_type"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "Tesco Isle Of Dogs Express",
+          "url": "https://www.tesco.com/store-locator/london/41-millharbour",
+          "text": "Tesco Isle Of Dogs Express is a supermarket at 41 Millharbour, London E14. The official locator provides store opening details. This fixture does not establish charging cable stock, connector type or delivery.",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:17:57.838Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Tesco Isle Of Dogs Express is a supermarket at 41 Millharbour, London E14. The official locator provides store opening details. This fixture does not establish charging cable stock, connector type or delivery."
+            }
+          ]
+        },
+        {
+          "title": "Currys store finder",
+          "url": "https://www.currys.co.uk/store-finder",
+          "text": "The Currys store finder lists electrical retail stores. Product availability and compatible charging cable stock at a particular branch are not confirmed by this fixture.",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:17:57.838Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "The Currys store finder lists electrical retail stores. Product availability and compatible charging cable stock at a particular branch are not confirmed by this fixture."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "oneAnswer": true,
+        "hasSources": true,
+        "sameTask": true,
+        "researched": true,
+        "noWrongMarketRetries": true,
+        "noArrivalGuarantee": true,
+        "noUnaskedMedicationAdvice": true,
+        "practicalQuestion": true
+      },
+      "drafts": [
+        {
+          "text": "狗岛本岛上我没查到确认卖充电线的店。岛上的 Tesco Express（41 Millharbour, E14）是超市，官方信息只给了地址和营业时间，没说明有没有充电线、哪种接口，去了不一定买得到。\n\n更稳的是去 Canary Wharf 的电器零售店：Currys 官方门店查询能列出附近门店，但不显示某家分店的具体库存，建议先查最近门店再打电话确认有货，省得白跑。急着撑到回家的话，先借根线或用充电宝更快。\n\n你手机是 USB-C 还是 Lightning 接口？\n\n来源：[1. Tesco Isle Of Dogs Express](https://www.tesco.com/store-locator/london/41-millharbour) · [2. Currys store finder](https://www.currys.co.uk/store-finder)",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvche8070003v4bg1yoh3qtl",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:53.671Z"
+        },
+        {
+          "id": "cmvche8150004v4bgv5n2pm02",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:53.705Z"
+        },
+        {
+          "id": "cmvchea2d0008v4bgbbb59a4c",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "attempt": 0,
+            "decision": "new",
+            "revision": 1,
+            "scopedCandidateCount": 0
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:56.341Z"
+        },
+        {
+          "id": "cmvchea2r0009v4bgbn2ymxvo",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:56.355Z"
+        },
+        {
+          "id": "cmvchea2v000av4bg621afw2l",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 3212,
+            "sdkTraceRef": "trace_c1a07a01d8354c16aa71f49394f1dd51/span_886a48dd7cb443abbf5b4d4d",
+            "outputTokens": 284
+          },
+          "phase": 2,
+          "latencyMs": 2607,
+          "costMicro": 529,
+          "createdAt": "2026-10-17T14:17:56.359Z"
+        },
+        {
+          "id": "cmvchea2w000bv4bglarfjsxy",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "category": "other",
+            "taskRevision": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:56.360Z"
+        },
+        {
+          "id": "cmvchea35000cv4bgp2v3r1ef",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:56.369Z"
+        },
+        {
+          "id": "cmvcheb7y000dv4bg3c4xs6jr",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:57.838Z"
+        },
+        {
+          "id": "cmvcheb83000ev4bgverywts3",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:57.843Z"
+        },
+        {
+          "id": "cmvcheb8o000fv4bg8p3t5xnw",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:57.864Z"
+        },
+        {
+          "id": "cmvcheb8t000gv4bg7gb15zgb",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "agentName": "matchAgent",
+            "inputTokens": 8969,
+            "sdkTraceRef": "trace_6ce8685705d24f3781538c7b3f0186f8/span_7a3944eab48742a8b204fa59",
+            "outputTokens": 80
+          },
+          "phase": 2,
+          "latencyMs": 1482,
+          "costMicro": 1278,
+          "createdAt": "2026-10-17T14:17:57.869Z"
+        },
+        {
+          "id": "cmvchecgf000hv4bglr4sjdi1",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:59.439Z"
+        },
+        {
+          "id": "cmvchecgj000iv4bgbu0b50n8",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:59.443Z"
+        },
+        {
+          "id": "cmvchecgy000jv4bgm13s1rx0",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:17:59.458Z"
+        },
+        {
+          "id": "cmvchech3000kv4bgeahqw6px",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "agentName": "matchAgent",
+            "inputTokens": 9425,
+            "sdkTraceRef": "trace_6ce8685705d24f3781538c7b3f0186f8/span_b70bf98e81b14e0f97ed52bd",
+            "outputTokens": 78
+          },
+          "phase": 2,
+          "latencyMs": 1594,
+          "costMicro": 1341,
+          "createdAt": "2026-10-17T14:17:59.463Z"
+        },
+        {
+          "id": "cmvchefox000lv4bgo7sbv3ci",
+          "kind": "jev",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "id": "gen-dec-1792246683-iPtQZ7M0DtUDK1ymvuBZ",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000111258,
+              "input_tokens": 2649
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.41,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.19,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.66,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.6,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 988,
+          "costMicro": 111,
+          "createdAt": "2026-10-17T14:18:03.633Z"
+        },
+        {
+          "id": "cmvchefps000nv4bgomeenp8t",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:03.664Z"
+        },
+        {
+          "id": "cmvchefq3000ov4bgnjhd6eiq",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:03.675Z"
+        },
+        {
+          "id": "cmvchefq5000pv4bg1w978369",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "agentName": "matchAgent",
+            "inputTokens": 9736,
+            "sdkTraceRef": "trace_6ce8685705d24f3781538c7b3f0186f8/span_d2503ae6e69340aea42416db",
+            "outputTokens": 228
+          },
+          "phase": 2,
+          "latencyMs": 4215,
+          "costMicro": 1427,
+          "createdAt": "2026-10-17T14:18:03.677Z"
+        },
+        {
+          "id": "cmvchehz5000qv4bg4zh3e6dv",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "Record the one missing condition with record_task_progress next action=ask_user and its constraintKey before asking the user."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 1,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:06.593Z"
+        },
+        {
+          "id": "cmvchehzh000rv4bgohzcvx7y",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:06.605Z"
+        },
+        {
+          "id": "cmvchehzj000sv4bg5d1j8mfb",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "agentName": "matchAgent",
+            "inputTokens": 10379,
+            "sdkTraceRef": "trace_6ce8685705d24f3781538c7b3f0186f8/span_ef0cc80545ba4ae3a1a5e7c8",
+            "outputTokens": 230
+          },
+          "phase": 2,
+          "latencyMs": 2929,
+          "costMicro": 1517,
+          "createdAt": "2026-10-17T14:18:06.607Z"
+        },
+        {
+          "id": "cmvchejre000uv4bgvhi89xtr",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "attempt": 2,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:08.906Z"
+        },
+        {
+          "id": "cmvchejrm000vv4bgke9aiq87",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:08.914Z"
+        },
+        {
+          "id": "cmvchejro000wv4bgbe0evou0",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 5,
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "agentName": "matchAgent",
+            "inputTokens": 10644,
+            "sdkTraceRef": "trace_6ce8685705d24f3781538c7b3f0186f8/span_bfb4066525034a2eb3034bbc",
+            "outputTokens": 234
+          },
+          "phase": 2,
+          "latencyMs": 2308,
+          "costMicro": 1556,
+          "createdAt": "2026-10-17T14:18:08.916Z"
+        },
+        {
+          "id": "cmvchells000xv4bg1tjwbayi",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:11.296Z"
+        },
+        {
+          "id": "cmvchem6y000yv4bge2ne1lcq",
+          "kind": "jev",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "id": "gen-dec-1792246691-RmzdChZCKgqheQzF331i",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000053844,
+              "input_tokens": 1282
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.91,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.91,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.09,
+                  "3": 0.91
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.16,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 759,
+          "costMicro": 54,
+          "createdAt": "2026-10-17T14:18:12.059Z"
+        },
+        {
+          "id": "cmvchem71000zv4bg8330z8pd",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.91,
+              "mentionsUnverified": 0.16
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:12.061Z"
+        },
+        {
+          "id": "cmvchem740010v4bgzi2a0yif",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1",
+              "k2"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:12.064Z"
+        },
+        {
+          "id": "cmvchem8p0013v4bgtx7lh63m",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:12.121Z"
+        },
+        {
+          "id": "cmvchem8s0014v4bgmkykyc2f",
+          "kind": "agent_run",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "turn": 6,
+            "taskId": "cmvchea1w0005v4bgidx9h5ni",
+            "agentName": "matchAgent",
+            "inputTokens": 11102,
+            "sdkTraceRef": "trace_6ce8685705d24f3781538c7b3f0186f8/span_b31084922e744949b69f4f0e",
+            "outputTokens": 207
+          },
+          "phase": 2,
+          "latencyMs": 3207,
+          "costMicro": 1612,
+          "createdAt": "2026-10-17T14:18:12.124Z"
+        },
+        {
+          "id": "cmvchem9j001iv4bgd47avx4h",
+          "kind": "gate",
+          "inputRef": "cmvche8040002v4bg7u58huxs",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:18:12.151Z"
+        }
+      ],
+      "usage": {
+        "input": 63467,
+        "output": 1341
+      }
+    }
+  ]
+}
