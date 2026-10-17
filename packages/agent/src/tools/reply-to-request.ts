@@ -18,7 +18,7 @@ const parameters = z.object({
     .min(1)
     .max(1400)
     .describe(
-      'Useful answer in user language: reasoning, practical steps or ONE key question. When refs contain m offers, MAX 200 characters: priority plus ONE next step, code renders facts. Facts must be supported by supplied sources; mark interpretations/unknowns. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable only explain the local search outcome and next step.',
+      'Useful answer in user language. With m refs, MAX 200 characters about ONLY those selected offers: respond to the current change and give a judgement or next step. Do not describe excluded/unselected alternatives, even to explain why they lost. Code renders facts. Keep unknowns explicit. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable explain only this search and next step.',
     ),
   refs: z
     .array(z.string())

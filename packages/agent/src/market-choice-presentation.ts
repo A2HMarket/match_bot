@@ -125,7 +125,7 @@ function renderChoice(
     ...details,
     row.warning ? `${zh ? '注意原文：' : 'Source caution: '}${compact(row.warning, 100)}` : '',
     row.missing.length
-      ? `${zh ? '待确认：' : 'Unconfirmed: '}${row.missing.map((label) => translate(label, zh)).join(' / ')}`
+      ? `${zh ? '待确认：' : 'Unconfirmed: '}${missingLabels(row, plan, zh).join(' / ')}`
       : '',
     stamp,
     (zh ? '来源：' : 'Source: ') + links,
@@ -136,16 +136,36 @@ function renderChoice(
 function missingLabels(row: MarketChoice, plan: MarketPlan, zh: boolean): string[] {
   return [
     ...new Set(
-      row.missing.map((label) =>
-        plan.intent === 'housing' &&
-        plan.budgetScope === 'all_in' &&
-        row.assessment.itemPriceGBP &&
-        ['预算', '租金/计价单位'].includes(label)
-          ? zh
-            ? '含账单总价'
-            : 'total including bills'
-          : translate(label, zh),
-      ),
+      row.missing
+        .filter(
+          (label) =>
+            !(
+              label === '预算' &&
+              row.assessment.checks.some((c) => c.label === 'budget' && c.status === 'met')
+            ) &&
+            !(
+              label === '地点' &&
+              row.assessment.checks.some((c) => c.label === 'area' && c.status === 'met')
+            ),
+        )
+        .map((label) =>
+          plan.intent === 'housing' &&
+          plan.budgetScope === 'all_in' &&
+          row.assessment.itemPriceGBP &&
+          ['预算', '租金/计价单位'].includes(label)
+            ? zh
+              ? '含账单总价'
+              : 'total including bills'
+            : label === '自提条件'
+              ? zh
+                ? '取货安排'
+                : 'collection arrangements'
+              : label === '来源核对'
+                ? zh
+                  ? '实际可用情况'
+                  : 'actual availability'
+                : translate(label, zh),
+        ),
     ),
   ];
 }
