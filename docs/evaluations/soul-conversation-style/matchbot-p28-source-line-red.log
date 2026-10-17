@@ -1,0 +1,38 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/market-choice-presentation.test.ts (4 tests | 1 failed) 11ms
+   ❯ market choice practical details (4)
+     × shows a single paragraph only once while retaining its price, location, condition and links 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/market-choice-presentation.test.ts > market choice practical details > shows a single paragraph only once while retaining its price, location, condition and links
+AssertionError: expected '1. E14书桌（待核实）\n出售书桌一张，单价£40。桌面100×60c…' to match /^来源：\[A2H详情\]/m
+
+- Expected:
+/^来源：\[A2H详情\]/m
+
++ Received:
+"1. E14书桌（待核实）
+出售书桌一张，单价£40。桌面100×60cm，可拆卸，正常使用痕迹。地点：伦敦E14 Canary Wharf。支持自提。
+单品报价：待确认
+还需确认：价格/计价单位
+[A2H详情](https://a2hmarket.ai/listings/desk) · [原帖](https://www.xiaohongshu.com/explore/desk)"
+
+ ❯ packages/agent/tests/market-choice-presentation.test.ts:153:19
+    151|     expect(brief).toContain(listing.sourceUrl);
+    152|     // Telegram deliberately interprets links only on code-generated S…
+    153|     expect(brief).toMatch(/^来源：\[A2H详情\]/m);
+       |                   ^
+    154|     expect(brief).not.toContain('相关线索');
+    155|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (4)
+   Start at  21:22:16
+   Duration  231ms (transform 61%, import 31%, tests 7%, worker 1%)
+

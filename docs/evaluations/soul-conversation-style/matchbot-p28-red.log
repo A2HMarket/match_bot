@@ -1,0 +1,71 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/market-choice-presentation.test.ts (3 tests | 2 failed) 9ms
+   ❯ market choice practical details (3)
+     × shows a single paragraph only once while retaining its price, location, condition and links 6ms
+     × keeps a brief backup visibly unconfirmed rather than implying a fit 2ms
+ ❯ packages/agent/tests/soul.test.ts (3 tests | 1 failed) 36ms
+   ❯ versioned SOUL (3)
+     × injects the actual versioned file into the normal answering agent without widening its tools 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/market-choice-presentation.test.ts > market choice practical details > shows a single paragraph only once while retaining its price, location, condition and links
+AssertionError: expected 266 to be less than 266
+ ❯ packages/agent/tests/market-choice-presentation.test.ts:45:26
+     43|     expect(text).toContain(listing.sourceUrl);
+     44|     const brief = renderMarketChoiceReply({...input,format:'brief'}).t…
+     45|     expect(brief.length).toBeLessThan(text.length);
+       |                          ^
+     46|     expect(brief).toContain('£40');
+     47|     expect(brief).toContain('正常使用痕迹');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  packages/agent/tests/market-choice-presentation.test.ts > market choice practical details > keeps a brief backup visibly unconfirmed rather than implying a fit
+AssertionError: expected '这次尚未确认完全匹配的选项。下面1条是待核实线索，先看标出的缺口。\n\n…' to contain '含账单总价'
+
+- Expected
++ Received
+
+- 含账单总价
++ 这次尚未确认完全匹配的选项。下面1条是待核实线索，先看标出的缺口。
++
++ 【备选 · 需要确认】
++
++ 1. 伦敦一居室
++ 可作备选：原文与这次物品或同行需求相关
++ 出租：伦敦一居室 费用：月租£1550，不含账单
++ 待确认：租金/计价单位
++ 原帖日期未确认
++ 来源：[A2H详情](https://a2hmarket.ai/listings/home)
+
+ ❯ packages/agent/tests/market-choice-presentation.test.ts:94:18
+     92|     expect(choices.primary).toHaveLength(0);
+     93|     expect(text).toContain('待核实');
+     94|     expect(text).toContain('含账单总价');
+       |                  ^
+     95|     expect(text).toContain('不含账单');
+     96|     expect(text).toContain(listing.url);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  packages/agent/tests/soul.test.ts > versioned SOUL > injects the actual versioned file into the normal answering agent without widening its tools
+Error: ENOENT: no such file or directory, open '/Users/huanghaibin/Workspace/match_bot/packages/agent/SOUL.md'
+ ❯ packages/agent/tests/soul.test.ts:11:18
+      9| describe('versioned SOUL', () => {
+     10|   it('injects the actual versioned file into the normal answering agen…
+     11|     const soul = readFileSync(new URL('../SOUL.md', new URL('../src/',…
+       |                  ^
+     12|     const agent = createMatchAgent(deps as never,{phase:0,finalAnswerO…
+     13|     const prompt = await agent.getSystemPrompt(new RunContext(context)…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  3 failed | 3 passed (6)
+   Start at  20:10:43
+   Duration  578ms (import 52%, transform 41%, tests 7%, worker 1%)
+
