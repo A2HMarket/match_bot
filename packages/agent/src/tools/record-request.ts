@@ -8,7 +8,7 @@ export function recordRequestTool(deps: AgentDeps) {
   return tool({
     name: 'record_request',
     description:
-      'Record the current request for supplier matching. Provide only a short generic English topic, at most 60 characters, with no personal names/contacts. Category, explicit budget and area come from the bound current message. This writes internal request data, never posts or contacts anyone.',
+      'Record the selected task request for supplier matching, keeping other tasks separate. Provide only a short generic English topic, at most 60 characters, with no personal names/contacts. Category, budget, location and time come from the server-bound current task. This writes internal request data, never posts or contacts anyone.',
     parameters: z.object({ need: z.string().min(2).max(60) }),
     needsApproval: false,
     errorFunction: () =>
@@ -18,6 +18,23 @@ export function recordRequestTool(deps: AgentDeps) {
       const draft = ctx.currentRequest?.demand;
       if (!draft) return 'no bound request';
       assertSafeXhsKeyword(args.need);
+      if (ctx.task) {
+        if (['completed', 'cancelled', 'expired'].includes(ctx.task.status))
+          return 'task is already closed; do not record or search it again';
+        const row = await deps.repos.demands.recordForTask({
+          access: {
+            userId: ctx.userId,
+            scope: { channel: ctx.channel ?? 'telegram', chatId: ctx.chatId },
+          },
+          taskId: ctx.task.id,
+          requirementsVersion: ctx.task.requirementsVersion,
+          sourceMessageId: ctx.sourceMessageId,
+          draft: { ...draft, need: args.need },
+        });
+        ctx.demandId = row.id;
+        ctx.demand = { ...draft, need: args.need };
+        return 'current task request recorded; category=' + draft.category + ', id=' + row.id;
+      }
       const existing = (await deps.repos.demands.findOpenByUser(ctx.userId)).find(
         (d) => d.category === draft.category,
       );

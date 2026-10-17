@@ -1,5 +1,6 @@
 import {
   assessTaskReadiness,
+  canAskTaskQuestion,
   TaskTransitionError,
   type OutboundDraft,
   type UserTask,
@@ -69,7 +70,15 @@ export function taskDeliveryForOutbound(
     key = /多久.*单程|单程.*多久/.test(text) ? 'max_travel_minutes' : 'custom:next_information';
     goalId = undefined;
   }
-  if (key && task.constraints.some((c) => c.key === key && (!c.goalId || c.goalId === goalId)))
+  if (
+    key &&
+    !canAskTaskQuestion(task, {
+      constraintKey: key,
+      answerType: answerType(key, text),
+      text,
+      ...(goalId ? { goalId } : {}),
+    })
+  )
     throw new TaskTransitionError(
       'This question is already answered in the task; use the known condition rather than asking it again.',
     );

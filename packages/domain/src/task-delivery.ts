@@ -28,6 +28,19 @@ const queuedSchema = base.extend({
   question: taskDeliveryQuestionSchema.optional(),
 });
 const receiptSchema = base.extend({ status: z.enum(['sent', 'unknown', 'failed']) });
+export function canAskTaskQuestion(
+  task: UserTask,
+  question: z.infer<typeof taskDeliveryQuestionSchema>,
+): boolean {
+  const known = task.constraints.filter(
+    (c) => c.key === question.constraintKey && (!c.goalId || c.goalId === question.goalId),
+  );
+  return (
+    !known.length ||
+    (question.answerType === 'date' &&
+      known.every((c) => c.value.kind === 'date_range' && c.value.from < c.value.to))
+  );
+}
 function requireCurrent(task: UserTask, version: number) {
   if (task.requirementsVersion !== version)
     throw new TaskTransitionError('stale task requirements');
@@ -58,10 +71,7 @@ export function queueTaskDelivery(raw: z.input<typeof queuedSchema>): UserTask {
   requireCurrent(task, p.requirementsVersion);
   if (q?.goalId && !task.goals.some((g) => g.id === q.goalId && !g.userConfirmation))
     throw new TaskTransitionError('question requires an unresolved known goal');
-  if (
-    q &&
-    task.constraints.some((c) => c.key === q.constraintKey && (!c.goalId || c.goalId === q.goalId))
-  )
+  if (q && !canAskTaskQuestion(task, q))
     throw new TaskTransitionError('question condition is already known');
   task.delivery = {
     status: 'queued',

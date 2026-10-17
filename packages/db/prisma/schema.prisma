@@ -172,6 +172,8 @@ model Message {
 model Demand {
   id               String         @id @default(cuid())
   userId           String         @map("user_id")
+  taskId           String?        @unique @map("task_id")
+  task             Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
   category         DemandCategory
   status           DemandStatus   @default(open)
   need             String?        // 在找什么（简短英文）；库外需求 web search 的查询来源
@@ -217,6 +219,7 @@ model Task {
   events TaskEvent[]
   messages Message[]
   outbounds OutboundMessage[]
+  demand Demand?
 
   @@unique([userId, channel, chatId, sourceMessageId, intentKey])
   @@index([userId, channel, chatId, status])

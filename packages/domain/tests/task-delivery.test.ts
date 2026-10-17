@@ -53,6 +53,31 @@ const question = {
   goalId: 'partner',
 };
 describe('task delivery and question receipts', () => {
+  it('can refine an unresolved date window without re-asking an already exact date', () => {
+    const t = task();
+    t.constraints = [
+      {
+        key: 'move_in_date',
+        strength: 'hard',
+        value: { kind: 'date_range', from: '2026-11-01', to: '2026-11-30' },
+        origin: { kind: 'user', sourceMessageId: 'input' },
+      },
+    ];
+    const input = {
+      task: t,
+      requirementsVersion: 0,
+      outboundMessageId: 'out',
+      level: 'partial' as const,
+      question: {
+        constraintKey: 'move_in_date',
+        answerType: 'date' as const,
+        text: '十一月具体哪天入住？',
+      },
+    };
+    expect(queueTaskDelivery(input).pendingQuestion?.deliveryStatus).toBe('proposed');
+    t.constraints[0]!.value = { kind: 'date_range', from: '2026-11-05', to: '2026-11-05' };
+    expect(() => queueTaskDelivery({ ...input, task: t })).toThrow('known');
+  });
   it('supersedes the previous reply on a new user turn without changing constraints, evidence or a terminal outcome', () => {
     const queued = queueTaskDelivery({
       task: task(),

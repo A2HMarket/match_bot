@@ -12,6 +12,8 @@ import {
   beginTaskUserTurn,
   rememberTaskSearchTerms,
   taskSearchHintsSchema,
+  DEMAND_STATUSES,
+  canTransition,
   taskProgressSchema,
   taskRequirementPatchSchema,
   taskPayloadSchema,
@@ -198,6 +200,15 @@ async function persistMutation(input: {
         },
       },
     });
+    if (task.status === 'completed' || task.status === 'cancelled')
+      await prisma.demand.updateMany({
+        where: {
+          taskId: task.id,
+          userId: p.access.userId,
+          status: { in: DEMAND_STATUSES.filter((status) => canTransition(status, 'closed')) },
+        },
+        data: { status: 'closed' },
+      });
     return { kind: 'applied', task: readTask(updated) };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')
@@ -206,7 +217,7 @@ async function persistMutation(input: {
   }
 }
 
-async function commitMutation(prisma: PrismaClient, p: Mutation): Promise<TaskMutationResult> {
+async function applyMutation(prisma: PrismaClient, p: Mutation): Promise<TaskMutationResult> {
   const row = await prisma.task.findFirst({ where: { id: p.id, ...scopeWhere(p.access) } });
   if (!row) return { kind: 'not_found' };
   const current = readTask(row);
@@ -223,6 +234,15 @@ async function commitMutation(prisma: PrismaClient, p: Mutation): Promise<TaskMu
     : null;
   const updated = p.compute(current, source);
   return persistMutation({ prisma, mutation: p, row, task: updated, source });
+}
+async function commitMutation(prisma: PrismaClient, p: Mutation): Promise<TaskMutationResult> {
+  // Prisma 7 exposes nested $transaction on transaction clients; only a root client owns $connect.
+  // Reuse an enclosing transaction so overlapping CAS calls never start concurrent savepoints.
+  if (typeof prisma.$connect !== 'function') return applyMutation(prisma, p);
+  return inTransaction(prisma, async (tx) => {
+    await lockExecutionUser(tx, p.access.userId);
+    return applyMutation(tx as PrismaClient, p);
+  });
 }
 
 export function tasksRepo(prisma: PrismaClient) {

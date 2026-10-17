@@ -1,0 +1,28 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/domain/tests/task-delivery.test.ts (8 tests | 1 failed) 12ms
+   ❯ task delivery and question receipts (8)
+     × can refine an unresolved date window without re-asking an already exact date 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/domain/tests/task-delivery.test.ts > task delivery and question receipts > can refine an unresolved date window without re-asking an already exact date
+TaskTransitionError: question condition is already known
+ ❯ queueTaskDelivery packages/domain/src/task-delivery.ts:65:11
+     63|     task.constraints.some((c) => c.key === q.constraintKey && (!c.goal…
+     64|   )
+     65|     throw new TaskTransitionError('question condition is already known…
+       |           ^
+     66|   task.delivery = {
+     67|     status: 'queued',
+ ❯ packages/domain/tests/task-delivery.test.ts:59:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  08:49:06
+   Duration  146ms (import 46%, transform 37%, tests 14%, worker 2%)
+

@@ -60,15 +60,31 @@ export function taskCurrentRequest(ctx: MatchContext, input: string): CurrentReq
   const budgetPence = amounts.size === 1 ? [...amounts][0] : undefined;
   const scopes = new Set(budgets.map((c) => c?.budgetScope)),
     scope = scopes.size === 1 ? [...scopes][0] : undefined;
-  const area = constraints.find(
-    (c) =>
-      !c.goalId && (c.key === 'area' || c.key === 'travel_origin') && c.value.kind === 'location',
-  )?.value;
+  const area =
+    constraints.find((c) => !c.goalId && c.key === 'route_from' && c.value.kind === 'location')
+      ?.value ??
+    constraints.find(
+      (c) =>
+        !c.goalId && (c.key === 'area' || c.key === 'travel_origin') && c.value.kind === 'location',
+    )?.value;
   const outcode =
     area?.kind === 'location' && /^(?:SE|SW|NW|EC|WC|E|W|N)\d{1,2}[A-Z]?$/i.test(area.area)
       ? area.area.toUpperCase()
       : undefined;
   const need = goals.length ? goals.map((g) => g.title).join('；') : task.objective;
+  const whenText = constraints
+    .filter((c) => !c.goalId && ['date', 'day', 'time', 'move_in_date'].includes(c.key))
+    .map((c) => describeConstraint(c))
+    .join('; ');
+  const destination = constraints.find(
+    (c) => !c.goalId && c.key === 'route_to' && c.value.kind === 'location',
+  )?.value;
+  const toPostcode =
+    destination?.kind === 'location' &&
+    /^(?:SE|SW|NW|EC|WC|E|W|N)\d{1,2}[A-Z]?$/i.test(destination.area)
+      ? destination.area.toUpperCase()
+      : undefined;
+  const quantity = constraints.find((c) => !c.goalId && c.key === 'quantity')?.value;
   const demand: DemandDraft = {
     category: task.category,
     confidence: 1,
@@ -77,6 +93,9 @@ export function taskCurrentRequest(ctx: MatchContext, input: string): CurrentReq
     ...(budgetPence !== undefined ? { budgetPence } : {}),
     ...(scope ? { budgetScope: scope } : {}),
     ...(outcode ? { fromPostcode: outcode } : {}),
+    ...(toPostcode ? { toPostcode } : {}),
+    ...(whenText ? { whenText } : {}),
+    ...(quantity?.kind === 'text' ? { quantity: quantity.text } : {}),
   };
   const text = [
     input,
