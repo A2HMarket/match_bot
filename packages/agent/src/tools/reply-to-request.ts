@@ -8,6 +8,7 @@ import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
 import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
+import { claimsCompleteMarketFit, claimsUnverifiedTravelFit } from '../market-summary-claims.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -17,7 +18,7 @@ const parameters = z.object({
     .min(1)
     .max(1400)
     .describe(
-      'Useful answer in user language: reasoning, practical steps or ONE key question. When refs contain m offers, MAX 200 characters: priority plus ONE next step, code renders facts. Facts must be supported by supplied sources; mark interpretations/unknowns. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable only explain the local search outcome and next step.',
+      'Useful answer in user language. With m refs, MAX 200 characters about ONLY those selected offers: respond to the current change and give a judgement or next step. Do not describe excluded/unselected alternatives, even to explain why they lost. Code renders facts. Keep unknowns explicit. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable explain only this search and next step.',
     ),
   refs: z
     .array(z.string())
@@ -85,7 +86,12 @@ function renderMarketRefs(
   ctx: MatchContext,
   refs: string[],
   zh: boolean,
-): { text: string; evidence: string[] } | null {
+): {
+  text: string;
+  evidence: string[];
+  hasConfirmedChoice: boolean;
+  hasVerifiedTravel: boolean;
+} | null {
   if (!ctx.marketPlan) return null;
   const listings = (ctx.marketListings ?? []).filter((n) => refs.includes(n.ref));
   if (
@@ -146,12 +152,28 @@ function renderMarketRefs(
     plan: ctx.marketPlan,
     zh,
     assessWholeOffer: true,
+    format:
+      ctx.taskUpdate?.kind === 'continued' &&
+      ctx.task?.ownerUserId === ctx.userId &&
+      ctx.task.scope.chatId === ctx.chatId &&
+      ctx.task.scope.channel === (ctx.channel ?? 'telegram') &&
+      !/展开|详细|完整|重新列|show.{0,15}details|full.{0,12}(?:details|list)/i.test(
+        ctx.currentRequest?.text.split('\n')[0] ?? '',
+      )
+        ? 'brief'
+        : 'full',
     ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
       ? { task: ctx.task }
       : {}),
   });
   return {
     text: rendered.text,
+    hasConfirmedChoice: rendered.choices.primary.length > 0,
+    hasVerifiedTravel: [...rendered.choices.primary, ...rendered.choices.backup].some((row) =>
+      row.assessment.checks.some(
+        (check) => check.label === 'task:路程用时' && check.status === 'met',
+      ),
+    ),
     evidence: selections.map((selection, index) => {
       const listing = usable[index];
       if (!listing) return selection.evidence;
@@ -300,6 +322,20 @@ export function replyToRequestTool(deps: AgentDeps) {
             error:
               'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: ' +
               JSON.stringify(marketChoiceFeedback(ctx)),
+          };
+        if (!rendered.hasConfirmedChoice && claimsCompleteMarketFit(args.text))
+          return {
+            error:
+              'No selected lead has all essential conditions confirmed. Do not claim a complete fit; name the supported conditions and the remaining unknown instead.',
+          };
+        if (
+          ctx.task?.constraints.some((c) => c.key === 'max_travel_minutes') &&
+          !rendered.hasVerifiedTravel &&
+          claimsUnverifiedTravelFit(args.text)
+        )
+          return {
+            error:
+              'Journey duration has not been verified. Do not reassure that the trip should/probably fits the limit from a shared district. State the missing exact location and how to check it instead.',
           };
         const review = await checkMarketOfferConflicts(deps, ctx, market);
         if (review.kind === 'conflict')

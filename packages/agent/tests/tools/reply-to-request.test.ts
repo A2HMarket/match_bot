@@ -222,6 +222,46 @@ describe('reply_to_request', () => {
     d.evaluateOutbound.mockClear();
     await needsApproval({ context: c } as never, args, 'missing-original-date');
     expect(JSON.stringify(d.evaluateOutbound.mock.calls)).not.toContain('2026-10-16T00:00:00Z');
+    c.task = taskSchema.parse({
+      id: 'task',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '找书桌',
+      status: 'active',
+      revision: 1,
+      goals: [],
+      evidence: [],
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    c.taskUpdate = { kind: 'continued' };
+    c.task.constraints = [
+      {
+        key: 'max_travel_minutes',
+        strength: 'hard',
+        value: { kind: 'duration', minutes: 30 },
+        origin: { kind: 'user', sourceMessageId: 'prior' },
+      },
+    ];
+    const before = d.repos.outbound.create.mock.calls.length;
+    const reassurance = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ ...args, text: '都在E14，半小时内应该没问题。' }),
+    );
+    expect(reassurance).toContain('Journey duration has not been verified');
+    expect(d.repos.outbound.create.mock.calls).toHaveLength(before);
+
+    await t.invoke({ context: c } as never, JSON.stringify(args));
+    const brief = (d.repos.outbound.create.mock.calls.at(-1)?.[0] as { text: string }).text;
+    expect(brief).not.toContain('【优先看】');
+    expect(brief).toContain('https://a2hmarket.ai/listings/desk');
+    c.currentRequest!.text = '展开详细资料';
+    await t.invoke({ context: c } as never, JSON.stringify(args));
+    const expanded = (d.repos.outbound.create.mock.calls.at(-1)?.[0] as { text: string }).text;
+    expect(expanded).toContain('【优先看】');
+    expect(brief.length).toBeLessThan(expanded.length);
   });
   it('returns eligible refs after a mixed valid/conflicting selection without silently rewriting it', async () => {
     const { d, c, t } = setup(0);
@@ -324,6 +364,19 @@ describe('reply_to_request', () => {
     );
     expect(bad).toContain('total');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    c.marketPlan.budgetScope = 'all_in';
+    const blanket = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        refs: ['m1'],
+        text: '这套符合你的硬条件，但账单还需要确认。',
+      }),
+    );
+    expect(blanket).toContain('No selected lead has all essential conditions confirmed');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    c.marketPlan.budgetScope = 'rent_only';
+
     await t.invoke(
       { context: c } as never,
       JSON.stringify({

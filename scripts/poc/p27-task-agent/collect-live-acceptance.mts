@@ -20,6 +20,8 @@ const selected = corpus.cases.filter((row) =>
 );
 const inputs = [...new Set(selected.flatMap((row) => row.turns.map((turn) => turn.input)))];
 inputs.push(
+  '展开详细资料',
+  '桌子和椅子都买到了，这个需求解决了',
   'E14想收二手A3彩色无线激光打印机，20镑以内，今天自提。',
   '打印机这条先不用找了，取消这个需求',
 );
