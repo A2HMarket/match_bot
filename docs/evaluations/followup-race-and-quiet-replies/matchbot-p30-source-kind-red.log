@@ -1,0 +1,37 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (43 tests | 1 failed) 61ms
+   ❯ reply_to_request (43)
+     × uses the source-rendering outbound kind for a factual answer that also asks a question 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > uses the source-rendering outbound kind for a factual answer that also asks a question
+AssertionError: expected { Object (channel, phase, ...) } to match object { kind: 'recommendation' }
+(4 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "kind": "recommendation",
++   "kind": "clarification",
+  }
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:62:56
+     60|     const {c,d,t}=setup(0);
+     61|     await t.invoke({context:c} as never,JSON.stringify({...args,kind:'…
+     62|     expect(d.repos.outbound.create.mock.calls[0]?.[0]).toMatchObject({…
+       |                                                        ^
+     63|   });
+     64|   it('suppresses the actual recorded repeat draft for an already answe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 42 passed (43)
+   Start at  22:57:08
+   Duration  658ms (import 52%, transform 37%, tests 10%)
+

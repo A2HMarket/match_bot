@@ -1,0 +1,36 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/supplement-replies.test.ts (12 tests | 2 failed) 7ms
+   ❯ quiet context additions (12)
+     × does not grant quiet for a new question or danger signal: 头痛手脚麻木 2ms
+     × does not grant quiet for a new question or danger signal: Headache with numbness 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/supplement-replies.test.ts > quiet context additions > does not grant quiet for a new question or danger signal: 头痛手脚麻木
+ FAIL  packages/agent/tests/supplement-replies.test.ts > quiet context additions > does not grant quiet for a new question or danger signal: Headache with numbness
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ packages/agent/tests/supplement-replies.test.ts:12:49
+     10|   it.each(['头痛怎么办？', '帮我查能送药的', '突然剧烈头痛', 'I need medical help', '严重不舒…
+     11|     'does not grant quiet for a new question or danger signal: %s',
+     12|     (text) => expect(isContextSupplement(text)).toBe(false),
+       |                                                 ^
+     13|   );
+     14|   it('requires server-bound same owner, conversation and continued tas…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 10 passed (12)
+   Start at  22:50:07
+   Duration  174ms (transform 56%, import 35%, tests 7%, worker 2%)
+

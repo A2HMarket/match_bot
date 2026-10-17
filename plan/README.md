@@ -47,7 +47,7 @@
 | P28 | SOUL与自然接话 | [P28-soul-and-conversation-style.md](./P28-soul-and-conversation-style.md) | P27 | 7 | codex | 完成 | 0.17.3：994测试、固定源各3/3、原群五轮；补充变体2/3，失败留证；正常PR合并main生效 | 2026-10-17 |
 | P29 | 主动理解与本地购买渠道 | [P29-proactive-local-access.md](./P29-proactive-local-access.md) | P28 | 8 | codex | 完成 | 0.18.2：1014测试、12契约、小批回放；人工质量限制留证，正常PR合并main生效 | 2026-10-17 |
 
-| P30 | 续接竞争与无增量静默 | [P30-followup-race-and-quiet-replies.md](./P30-followup-race-and-quiet-replies.md) | P29 | 9 | codex | 进行中 | 回执revision竞争、短句背景续接、无增量不强制回复；不改门 | 2026-10-17 |
+| P30 | 续接竞争与无增量静默 | [P30-followup-race-and-quiet-replies.md](./P30-followup-race-and-quiet-replies.md) | P29 | 9 | codex | 完成 | 0.18.3：1035测试/12契约、PG竞争复现、重复草稿压制；模型失败留证，PR合并main生效 | 2026-10-17 |
 
 ## 波次与并行
 
