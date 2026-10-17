@@ -229,7 +229,16 @@ export function gradeTaskTurn(expected: Record<string, unknown>, raw: TaskObserv
       text(task, 'day') + ' ' + text(task, 'time'),
     ), 'allowed_day');
   if (expected.excludedDay === 'saturday')
-    require(/周六|星期六|Saturday/i.test(text(task, 'exclude')), 'excluded_day');
+    require(['周六', '星期六', 'Saturday'].some((term) => excludesTerm(task, term)) ||
+      task.constraints.some(
+        (c) =>
+          c.strength === 'hard' &&
+          ['day', 'time'].includes(c.key) &&
+          c.value.kind === 'text' &&
+          /^(?:周日|星期日|sunday)(?:下午|上午|晚上|全天|午后|morning|afternoon|evening)?$/i.test(
+            c.value.text.replace(/\s/g, ''),
+          ),
+      ), 'excluded_day');
   if (expected.indoorHard === true)
     require(task.constraints.some(
       (c) => c.strength === 'hard' && /室内|indoor/i.test(JSON.stringify(c.value)),

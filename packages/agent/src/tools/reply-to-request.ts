@@ -5,6 +5,7 @@ import { groupReplyAddressing } from './addressing.js';
 import { buildMarketChoices } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { marketChoiceFeedback } from '../market-choice-feedback.js';
+import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
 
 const parameters = z.object({
   kind: z.enum(['answer', 'partial', 'no_match', 'clarification', 'unavailable']),
@@ -250,6 +251,24 @@ export function replyToRequestTool(deps: AgentDeps) {
           .trim(),
       };
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
+      if (
+        args.kind === 'no_match' &&
+        deps.answerRequests &&
+        (deps.marketSearch || deps.webSearch || deps.xhsSearch) &&
+        !ctx.marketQueries?.length &&
+        !ctx.informationQueries?.length &&
+        !ctx.xhsQueries?.length &&
+        ctx.xhsNotes === undefined &&
+        ctx.searchResults === undefined &&
+        !ctx.sourceFailures?.length &&
+        !ctx.supplierSearchEmpty &&
+        !(ctx.answerInputExhausted && ctx.isAnswerFinalization)
+      )
+        return {
+          error:
+            'No search has been attempted for this request. Call the appropriate search tool before describing empty results or a search outage; ask a necessary clarification instead if the objective itself is undefined.',
+          kind: 'research_required',
+        };
       const market = args.refs.filter((r) => /^m\d+$/.test(r));
       let text = args.text;
       let evidence: string[] = [];
@@ -262,6 +281,21 @@ export function replyToRequestTool(deps: AgentDeps) {
             error:
               'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: ' +
               JSON.stringify(marketChoiceFeedback(ctx)),
+          };
+        const review = await checkMarketOfferConflicts(deps, ctx, market);
+        if (review.kind === 'conflict')
+          return {
+            error:
+              'Selected source explicitly conflicts with a hard condition: ' +
+              JSON.stringify(review.conflicts) +
+              '. Remove these offer refs AND their facts; choose another source or explain no_match. Unknown conditions are not positive fits.',
+          };
+        if (review.kind === 'incomplete')
+          return {
+            error:
+              'Selected source conflict review is incomplete (' +
+              review.reason +
+              '); do not call it a match. Use an honest unavailable explanation with refs=[] or fewer already-checkable offers.',
           };
         if (
           ctx.currentRequest?.demand.category === 'housing' &&
@@ -343,6 +377,15 @@ export function replyToRequestTool(deps: AgentDeps) {
           !/免费|free/i.test(evidence.join('\n'))
         )
           return { error: 'invalid answer: free admission requires source evidence' };
+        if (
+          args.kind === 'no_match' &&
+          !ctx.sourceFailures?.length &&
+          /接口.{0,8}(?:报错|失败|不可用)|(?:搜索|查询).{0,5}(?:报错|失败|无法连接)/.test(args.text)
+        )
+          return {
+            error:
+              'No recorded source failure; do not invent a search outage. Explain only the actual search outcome.',
+          };
         if (args.kind === 'no_match')
           text =
             (zh

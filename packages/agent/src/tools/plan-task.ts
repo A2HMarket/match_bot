@@ -21,10 +21,14 @@ import {
 } from '../task-proposal.js';
 
 function newTask(ctx: MatchContext, args: Proposal): UserTask {
+  const category =
+    args.category === 'other'
+      ? (ctx.currentRequest?.demand.category ?? args.category)
+      : args.category;
   if (
     !args.objective ||
-    !args.category ||
-    args.category === 'job' ||
+    !category ||
+    category === 'job' ||
     !args.patch?.goals.length ||
     args.taskRef
   )
@@ -40,7 +44,8 @@ function newTask(ctx: MatchContext, args: Proposal): UserTask {
     ownerUserId: ctx.userId,
     scope: { channel: ctx.channel ?? 'telegram', chatId: ctx.chatId },
     objective: args.objective,
-    category: args.category,
+    // A catch-all proposal must not erase the specific route already bound from this message.
+    category,
     status: 'active',
     revision: 0,
     goals: [],
@@ -215,8 +220,29 @@ async function runProposal(p: {
   text: string;
   args: Proposal;
   ctx: MatchContext;
+  clarificationReason?: 'ambiguous_reference' | 'missing_goal';
 }) {
   const { deps, ctx, text, args } = p;
+  const scoped = (ctx.taskCandidates ?? []).filter(
+    (task) =>
+      task.ownerUserId === ctx.userId &&
+      task.scope.channel === (ctx.channel ?? 'telegram') &&
+      task.scope.chatId === ctx.chatId &&
+      !['completed', 'cancelled', 'expired'].includes(task.status),
+  );
+  if (
+    args.route === 'clarify' &&
+    p.clarificationReason === 'ambiguous_reference' &&
+    scoped.length === 1
+  ) {
+    ctx.taskPlanFailures = (ctx.taskPlanFailures ?? 0) + 1;
+    await record(deps, ctx, 'single_task_reference_rejected');
+    return (
+      'There is only one scoped task: ' +
+      scoped[0]!.id +
+      '. Use update_task for a compatible short followup, or start_task for a clearly independent objective. Use missing_goal only if the new objective itself is genuinely undefined; do not ask which existing task.'
+    );
+  }
   try {
     const result = await applyProposal({ deps, ctx, args, text });
     await record(deps, ctx, ctx.taskUpdate?.kind ?? 'unknown');
@@ -310,12 +336,13 @@ export function taskPlanningTools(deps: AgentDeps, text: string, taskRefs?: stri
     parameters: z.strictObject({ reason: z.enum(['ambiguous_reference', 'missing_goal']) }),
     needsApproval: false,
     errorFunction,
-    execute: (_args, rc) =>
+    execute: (args, rc) =>
       runProposal({
         deps,
         text,
         ctx: (rc as RunContext<MatchContext>).context,
         args: emptyProposal('clarify'),
+        clarificationReason: args.reason,
       }),
   });
   const acknowledge = tool({
@@ -353,6 +380,7 @@ async function record(deps: AgentDeps, ctx: MatchContext, decision: string) {
       taskId: ctx.task?.id ?? null,
       revision: ctx.task?.revision ?? null,
       attempt: ctx.taskPlanFailures ?? 0,
+      scopedCandidateCount: ctx.taskCandidates?.length ?? 0,
     },
   });
 }

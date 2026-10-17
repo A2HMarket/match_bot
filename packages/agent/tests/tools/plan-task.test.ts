@@ -2,7 +2,8 @@ import { taskSchema, reviseTaskRequirements, transitionTaskStatus } from '@match
 import { RunContext } from '@openai/agents';
 import { describe, expect, it, vi } from 'vitest';
 import type { AgentDeps, MatchContext } from '../../src/context.js';
-import { planTaskTool } from '../../src/tools/plan-task.js';
+import { planTaskTool, taskPlanningTools } from '../../src/tools/plan-task.js';
+import { bindCurrentRequest } from '../../src/current-request.js';
 
 function task(id = 'existing') {
   return taskSchema.parse({
@@ -113,6 +114,112 @@ const base = {
   outcome: null,
 };
 describe('plan_task', () => {
+  it('does not use a catch-all proposal to create a task for an unsupported job request', async () => {
+    const { tool, ctx, repos } = fixture('伦敦找工作', []);
+    bindCurrentRequest(ctx, '伦敦找工作');
+    await tool.invoke(
+      new RunContext(ctx),
+      JSON.stringify({
+        ...base,
+        route: 'new',
+        taskRef: null,
+        objective: '找工作',
+        category: 'other',
+        patch: {
+          goals: [
+            {
+              id: 'work',
+              title: '工作',
+              required: true,
+              sourceQuote: '找工作',
+              criteria: [{ id: 'subject', label: '工作', strength: 'hard' }],
+            },
+          ],
+          constraints: [],
+        },
+      }),
+    );
+    expect(ctx.task).toBeUndefined();
+    expect(repos.tasks.create).not.toHaveBeenCalled();
+  });
+  it('keeps the server-bound specific category when the planner proposes the catch-all category', async () => {
+    const { tool, ctx } = fixture('E14想收书桌，每件50镑以内', []);
+    bindCurrentRequest(ctx, 'E14想收书桌，每件50镑以内');
+    await tool.invoke(
+      new RunContext(ctx),
+      JSON.stringify({
+        ...base,
+        route: 'new',
+        taskRef: null,
+        objective: '求购书桌',
+        category: 'other',
+        patch: {
+          goals: [
+            {
+              id: 'desk',
+              title: '书桌',
+              required: true,
+              sourceQuote: '书桌',
+              criteria: [{ id: 'subject', label: '书桌', strength: 'hard' }],
+            },
+          ],
+          constraints: [],
+        },
+      }),
+    );
+    expect(ctx.task?.category).toBe('second_hand');
+    expect(ctx.task?.counterparty).toBe('supply');
+  });
+  it('does not accept ambiguity between tasks when there is only one scoped candidate', async () => {
+    const { ctx, repos } = fixture('室内的，收费也可以');
+    const tools = taskPlanningTools({ repos } as unknown as AgentDeps, '室内的，收费也可以', [
+      'existing',
+    ]);
+    const clarify = tools.find((t) => t.name === 'clarify_task')!;
+    const answer = await clarify.invoke(
+      new RunContext(ctx),
+      JSON.stringify({ reason: 'ambiguous_reference' }),
+    );
+    expect(answer).toContain('only one scoped task');
+    expect(ctx.taskUpdate).toBeUndefined();
+    expect(repos.tasks.applyUserTurn).not.toHaveBeenCalled();
+    const update = tools.find((t) => t.name === 'update_task')!;
+    await update.invoke(
+      new RunContext(ctx),
+      JSON.stringify({
+        taskRef: 'existing',
+        referenceQuote: null,
+        goals: [],
+        constraints: [
+          {
+            key: 'feature',
+            goalId: null,
+            strength: 'hard',
+            value: { kind: 'text', text: '室内' },
+            sourceQuote: '室内',
+          },
+        ],
+        outcome: null,
+      }),
+    );
+    expect(ctx.taskUpdate?.kind).toBe('continued');
+  });
+  it('still permits missing-goal questions and genuine multi-task ambiguity', async () => {
+    for (const [candidates, reason] of [
+      [[], 'missing_goal'],
+      [[task(), task('second')], 'ambiguous_reference'],
+    ] as const) {
+      const { ctx, repos } = fixture('可以加一点', [...candidates]);
+      const clarify = taskPlanningTools(
+        { repos } as unknown as AgentDeps,
+        '可以加一点',
+        candidates.map((t) => t.id),
+      ).find((t) => t.name === 'clarify_task')!;
+      await clarify.invoke(new RunContext(ctx), JSON.stringify({ reason }));
+      expect(ctx.taskUpdate?.kind).toBe('ambiguous');
+      expect(repos.tasks.applyUserTurn).not.toHaveBeenCalled();
+    }
+  });
   it('explains an invalid outcome interpretation so the planner can correct it without erasing completion', async () => {
     const { tool, ctx } = fixture('房子找好了，不用继续了');
     const reply = await tool.invoke(

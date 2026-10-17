@@ -234,6 +234,18 @@ export function normalizeTaskPatch(p: {
   now?: Date;
 }): TaskRequirementPatch | null {
   if (!p.input) return null;
+  if (
+    p.task.category === 'housing' &&
+    p.input.goals.some(
+      (goal) =>
+        !/房|居室|公寓|住宅|住处|住所|套间|合租|整租|单间|\b(?:home|flat|apartment|studio|room|house)s?\b/i.test(
+          goal.title,
+        ),
+    )
+  )
+    throw new TaskProposalError(
+      'A housing property goal must identify the requested home; pets, budget, dates and bills are constraints/criteria on that home, not independent goals.',
+    );
   let convertedOrigin = false;
   const constraints = p.input.constraints.map((c) => {
     checkMoney(c, p.task);
@@ -263,6 +275,42 @@ export function normalizeTaskPatch(p: {
       ...(goalId ? { goalId } : {}),
     };
   });
+  const active = p.task.goals.filter((g) => !g.userConfirmation);
+  const clause = p.text
+    .split(/[，,。；;\n]/)
+    .find((part) =>
+      /^(?:(?:我)?(?:要|想要|需要|希望|必须(?:是)?|最好(?:是)?|尽量(?:是)?|优先|prefer|ideally)\s*)?(?:室内|indoor)(?:的|场地|球场|活动)?[.!！]?$/i.test(
+        part.trim(),
+      ),
+    );
+  const environment = clause?.match(/室内|\bindoor\b/i);
+  if (p.task.counterparty === 'peer' && active.length === 1 && environment) {
+    const strength = /最好|尽量|优先|prefer|ideally/i.test(clause!)
+      ? ('preference' as const)
+      : ('hard' as const);
+    if (
+      !constraints.some(
+        (c) =>
+          (c.strength === 'hard' || c.strength === strength) &&
+          c.value.kind === 'text' &&
+          /室内|\bindoor\b/i.test(c.value.text),
+      )
+    ) {
+      const previous = p.task.constraints.find(
+        (c) =>
+          c.key === 'feature' &&
+          c.value.kind === 'text' &&
+          /^(?:室内|室外|室内场地|室外场地|indoor|outdoor)$/i.test(c.value.text),
+      );
+      constraints.push({
+        key: previous?.key ?? 'custom:venue_environment',
+        goalId: active[0]!.id,
+        strength,
+        value: { kind: 'text', text: environment[0] },
+        sourceQuote: environment[0],
+      });
+    }
+  }
   // A budget amount can stay unchanged while the owner changes what it must cover.
   const fixedTotal = p.text.match(
     /总(?:预算|费用|支出)(?:不能增加|不增加|不变|不能提高|不提高)/,

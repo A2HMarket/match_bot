@@ -151,6 +151,7 @@ export async function decideForOutbound(
       ? await deps.evaluateOutbound(deps.jev, {
           draft: d.text,
           demand,
+          ...(ctx.task && ctx.currentRequest ? { requestContext: ctx.currentRequest.text } : {}),
           supplierSummaries: d.supplierSummaries,
           recentReplies: ctx.recentReplies,
           inputRef: d.inputRef,

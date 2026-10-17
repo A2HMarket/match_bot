@@ -10,6 +10,7 @@ import {
 import { evaluateSourceSupport } from '@matchbot/jev';
 import { hashText } from '@matchbot/shared';
 import { marketChoiceFeedback } from '../market-choice-feedback.js';
+import { TASK_SOURCE_REVIEW_LIMITS } from '../task-source-budget.js';
 
 /** Source/plan ledger only; sending still uses the original outbound tool and gates. */
 export function recordTaskProgressTool(deps: AgentDeps) {
@@ -261,10 +262,13 @@ async function reviewSources(
       ctx.sourceReviewCache[item.key] = review.decisive[item.index]!;
   if (review.decisive.some((value) => value !== undefined))
     await trace(deps, ctx, 'explicit_calendar_fact_checked');
-  for (let offset = 0; offset < pending.length; offset += 24) {
-    const remaining = Math.max(0, 96 - (ctx.taskSourceReviewedClaims ?? 0));
+  for (let offset = 0; offset < pending.length; offset += TASK_SOURCE_REVIEW_LIMITS.batch) {
+    const remaining = Math.max(
+      0,
+      TASK_SOURCE_REVIEW_LIMITS.claims - (ctx.taskSourceReviewedClaims ?? 0),
+    );
     const batch = pending
-      .slice(offset, offset + 24)
+      .slice(offset, offset + TASK_SOURCE_REVIEW_LIMITS.batch)
       .filter((item) => ctx.sourceReviewCache![item.key] === undefined)
       .slice(0, remaining);
     if (batch.length) {

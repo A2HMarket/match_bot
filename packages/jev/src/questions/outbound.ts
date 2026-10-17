@@ -18,7 +18,7 @@ export function outboundQuestions(): Record<OutboundQuestionId, JevQuestion> {
     mentions_unverified: {
       type: 'noul',
       instructions:
-        'Does the draft assert a provider/entity, price, date, capability, availability or fit not supported by the supplied source_evidence (legacy suppliers field)? Public listings/pages are evidence of what their text says, not independently verified real-world availability. Explicitly describing a missing condition or an unverified lead as unknown is NOT an unsupported claim. Reject inferred guarantees, wrong roles/dates, stale prices stated as current, and treating new students as beginner players. Do not require supplier-catalogue membership for official procedures, exhibitions or peer listings. For request_status, assess the fixed acknowledgement/next step, not the rejected recommendation.',
+        'Does the draft assert a provider/entity, price, date, capability, availability or fit not supported by the supplied source_evidence (legacy suppliers field)? Restated USER limits/preferences must agree with demand and request_context for the SAME subgoal. User budget caps are not provider prices and do not need a listing to attest them. Swapping item budgets, silently loosening a cap, or inventing a user condition counts as unsupported even when each number occurs elsewhere. Public listings/pages are evidence of what their text says, not independently verified real-world availability. Explicitly describing a missing condition or an unverified lead as unknown is NOT an unsupported claim. Reject inferred guarantees, wrong roles/dates, stale prices stated as current, and treating new students as beginner players. Do not require supplier-catalogue membership for official procedures, exhibitions or peer listings. For request_status, assess the fixed acknowledgement/next step, not the rejected recommendation.',
     },
   };
 }
@@ -35,6 +35,7 @@ export async function evaluateOutbound(
   p: {
     draft: string;
     demand: DemandDraft;
+    requestContext?: string;
     supplierSummaries: string[];
     recentReplies: string[];
     inputRef: string;
@@ -46,6 +47,7 @@ export async function evaluateOutbound(
     state: {
       draft: p.draft,
       demand: p.demand,
+      ...(p.requestContext ? { request_context: p.requestContext } : {}),
       source_evidence: p.supplierSummaries,
       reply_purpose: p.replyPurpose ?? 'answer',
       recent_group_replies: p.recentReplies,

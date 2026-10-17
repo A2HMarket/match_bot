@@ -55,6 +55,19 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('requires an actual search before claiming a marketplace search failed or found nothing', async () => {
+    const { d, c } = setup(0);
+    bindCurrentRequest(c, 'E14收书桌，50镑以内');
+    Object.assign(d, { answerRequests: true, marketSearch: { find: vi.fn(), detail: vi.fn() } });
+    const tool = replyToRequestTool(d as never);
+    const result = await tool.invoke(
+      { context: c } as never,
+      JSON.stringify({ kind: 'no_match', refs: [], text: '搜索接口报错，没有找到结果。' }),
+    );
+    expect(result).toContain('search');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(c.outboundInputFailures).toBeUndefined();
+  });
   it('supplies the selected post timestamp and London check date to Jev without fabricating an original repost date', async () => {
     const { d, c, t } = setup(2);
     bindCurrentRequest(c, 'E14收书桌，50镑以内');

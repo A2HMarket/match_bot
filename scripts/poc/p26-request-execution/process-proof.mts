@@ -217,7 +217,21 @@ if (mode === 'first' || mode === 'recover') {
               model: 'synthetic',
               usage: { input_tokens: 0, cost: 0 },
               answers: Object.fromEntries(
-                Object.keys(p.questions).map((name) => [name, { type: 'noul', noul: 0.95 }]),
+                Object.keys(p.questions).map((name, index) => {
+                  const state = z
+                    .object({
+                      claims: z.array(z.object({ proposedStatus: z.string() })).optional(),
+                    })
+                    .passthrough()
+                    .parse(p.state);
+                  return [
+                    name,
+                    {
+                      type: 'noul',
+                      noul: state.claims?.[index]?.proposedStatus === 'conflict' ? 0.01 : 0.95,
+                    },
+                  ];
+                }),
               ),
             };
           },

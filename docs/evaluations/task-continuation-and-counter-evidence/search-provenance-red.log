@@ -1,0 +1,54 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/eval/tests/task-contract.test.ts (5 tests | 1 failed) 12ms
+   × accepts a hard day condition that explicitly excludes Saturday, without accepting an unqualified weekend 7ms
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (24 tests | 1 failed) 41ms
+   ❯ reply_to_request (24)
+     × requires an actual search before claiming a marketplace search failed or found nothing 12ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/eval/tests/task-contract.test.ts > accepts a hard day condition that explicitly excludes Saturday, without accepting an unqualified weekend
+AssertionError: expected [ 'excluded_day' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "excluded_day",
++ ]
+
+ ❯ packages/eval/tests/task-contract.test.ts:42:19
+     40|   expect(grade()).toEqual([]);
+     41|   task.constraints[0]!.value = { kind: 'text', text: '周日下午' };
+     42|   expect(grade()).toEqual([]);
+       |                   ^
+     43|   task.constraints[0]!.value = { kind: 'text', text: '周六、周日下午' };
+     44|   expect(grade()).toContain('excluded_day');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > requires an actual search before claiming a marketplace search failed or found nothing
+AssertionError: expected 'not sent: this request already has a …' to contain 'search'
+
+Expected: "search"
+Received: "not sent: this request already has a failed or unconfirmed delivery (o); do not automatically resend"
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:64:20
+     62|     const tool = replyToRequestTool(d as never);
+     63|     const result = await tool.invoke({ context: c } as never, JSON.str…
+     64|     expect(result).toContain('search');
+       |                    ^
+     65|     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+     66|     expect(c.outboundInputFailures).toBeUndefined();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 27 passed (29)
+   Start at  10:11:44
+   Duration  547ms (import 49%, transform 42%, tests 9%, worker 1%)
+

@@ -1,6 +1,48 @@
 import { expect, it } from 'vitest';
 import { taskSchema } from '@matchbot/domain';
 import { gradeTaskTurn } from '../src/task-contract.js';
+it('accepts a hard day condition that explicitly excludes Saturday, without accepting an unqualified weekend', () => {
+  const task = taskSchema.parse({
+    id: 't',
+    ownerUserId: 'u',
+    scope: { channel: 'telegram', chatId: 'c' },
+    objective: '羽毛球',
+    status: 'active',
+    revision: 0,
+    goals: [],
+    evidence: [],
+    pendingQuestion: null,
+    blockReason: null,
+    delivery: { status: 'none', level: 'none' },
+    userConfirmation: null,
+    constraints: [
+      {
+        key: 'day',
+        strength: 'hard',
+        value: { kind: 'text', text: '周日下午（周六不行）' },
+        origin: { kind: 'user', sourceMessageId: 'm' },
+      },
+    ],
+  });
+  const grade = () =>
+    gradeTaskTurn(
+      { excludedDay: 'saturday' },
+      {
+        task,
+        before: [],
+        after: [task],
+        replyText: '',
+        owner: 'owner',
+        scope: 'group',
+        searches: 0,
+      },
+    );
+  expect(grade()).toEqual([]);
+  task.constraints[0]!.value = { kind: 'text', text: '周日下午' };
+  expect(grade()).toEqual([]);
+  task.constraints[0]!.value = { kind: 'text', text: '周六、周日下午' };
+  expect(grade()).toContain('excluded_day');
+});
 it('rejects dropped goals and invented budgets, rather than counting any reply as success', () => {
   const task = taskSchema.parse({
     id: 't',

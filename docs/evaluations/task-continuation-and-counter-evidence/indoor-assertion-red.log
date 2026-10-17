@@ -1,0 +1,38 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/task-proposal.test.ts (12 tests | 3 failed) 21ms
+   ❯ task proposal normalization (12)
+     × does not manufacture a hard indoor requirement from 室内还是室外？ 4ms
+     × does not manufacture a hard indoor requirement from 不在室内 1ms
+     × does not manufacture a hard indoor requirement from 室内的也行 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > does not manufacture a hard indoor requirement from 室内还是室外？
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > does not manufacture a hard indoor requirement from 不在室内
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > does not manufacture a hard indoor requirement from 室内的也行
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ packages/agent/tests/task-proposal.test.ts:41:121
+     39|     const activity = taskSchema.parse({ ...task, category: 'other', co…
+     40|     const patch = normalizeTaskPatch({ input: taskPatchProposalSchema.…
+     41|     expect(patch?.constraints.some((c) => c.strength === 'hard' && c.v…
+       |                                                                                                                         ^
+     42|   });
+     43|   it('requires housing conditions to be checks on an actual home, not …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 9 passed (12)
+   Start at  10:02:57
+   Duration  209ms (transform 44%, import 40%, tests 15%, worker 1%)
+

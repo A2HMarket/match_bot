@@ -41,9 +41,9 @@
 | P22 | 本轮需求与回答Agent改造 | [P22-request-answer-agent.md](./P22-request-answer-agent.md) | P21 | 5 | codex | 完成 | 0.14.2；580测试；原24题两轮18sent；失败子集7/8；证据与剩余问题已记录 | 2026-10-12 |
 | P23 | Jev请求状态回复 | [P23-jev-request-status.md](./P23-jev-request-status.md) | P22 | 5 | codex | 完成 | 0.15.1；594测试；6/6真实sent；Jev正反例8/8；固定状态/审批/缓存回归 | 2026-10-12 |
 | P24 | 任务Agent总计划、验收与任务基础 | [P24-task-agent-plan-and-acceptance.md](./P24-task-agent-plan-and-acceptance.md) | P23 | 6 | codex | 进行中 | 先冻结A01–A18；领域/持久化与任务关联 | 2026-10-17 |
-| P25 | 任务规划与朋友式帮助 | [P25-task-planning-and-companion.md](./P25-task-planning-and-companion.md) | P24 | 6 | codex | 进行中 | 0.16.16修复确认/预算口径/候选反馈；三核心连续运行仍失败，朋友感未验收 | 2026-10-17 |
-| P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 进行中 | 卡片/快照及进程证明通过；863测试，待整体验收合并 | 2026-10-17 |
-| P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 进行中 | 12组契约通过；两批真实三核心仍未过pass³，A/B/Telegram及发布未完成 | 2026-10-17 |
+| P25 | 任务规划与朋友式帮助 | [P25-task-planning-and-companion.md](./P25-task-planning-and-companion.md) | P24 | 6 | codex | 进行中 | 0.16.20修复承接/反证/条件投影；当前三核心2/3、2/3、3/3，未整体通过 | 2026-10-17 |
+| P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 进行中 | 卡片/快照及进程证明通过；883测试，待整体验收合并 | 2026-10-17 |
+| P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 进行中 | 12组契约通过；最终真实三核心仍未过pass³，A/B/Telegram及发布未完成 | 2026-10-17 |
 
 
 ## 波次与并行

@@ -35,6 +35,83 @@ const task = taskSchema.parse({
   userConfirmation: null,
 });
 describe('task proposal normalization', () => {
+  it.each(['室内还是室外？', '不在室内', '室内的也行'])(
+    'does not manufacture a hard indoor requirement from %s',
+    (text) => {
+      const activity = taskSchema.parse({
+        ...task,
+        category: 'other',
+        counterparty: 'peer',
+        constraints: [],
+        goals: [{ ...task.goals[0]!, title: '羽毛球搭子' }],
+      });
+      const patch = normalizeTaskPatch({
+        input: taskPatchProposalSchema.parse({ goals: [], constraints: [] }),
+        task: activity,
+        text,
+      });
+      expect(
+        patch?.constraints.some(
+          (c) => c.strength === 'hard' && c.value.kind === 'text' && /室内/.test(c.value.text),
+        ),
+      ).toBe(false);
+    },
+  );
+  it('requires housing conditions to be checks on an actual home, not independent property goals', () => {
+    const housing = taskSchema.parse({ ...task, category: 'housing' });
+    const input = taskPatchProposalSchema.parse({
+      goals: [
+        {
+          id: 'cat',
+          title: '允许养猫',
+          required: true,
+          sourceQuote: '允许养猫',
+          criteria: [{ id: 'pets', label: '允许养猫', strength: 'hard', constraintKey: null }],
+        },
+      ],
+      constraints: [],
+    });
+    expect(() => normalizeTaskPatch({ input, task: housing, text: '找允许养猫的一居室' })).toThrow(
+      'property goal',
+    );
+  });
+  it('retains an explicit indoor requirement separately from a willingness to pay on a single activity', () => {
+    const activity = taskSchema.parse({
+      ...task,
+      category: 'other',
+      counterparty: 'peer',
+      constraints: [],
+      goals: [{ ...task.goals[0]!, title: '羽毛球搭子' }],
+    });
+    const input = taskPatchProposalSchema.parse({
+      goals: [],
+      constraints: [
+        {
+          key: 'feature',
+          goalId: null,
+          strength: 'preference',
+          value: { kind: 'text', text: '可接受收费活动' },
+          sourceQuote: '收费也可以',
+        },
+      ],
+    });
+    const patch = normalizeTaskPatch({ input, task: activity, text: '室内的，收费也可以' });
+    expect(patch?.constraints).toContainEqual(
+      expect.objectContaining({
+        key: 'custom:venue_environment',
+        strength: 'hard',
+        value: { kind: 'text', text: '室内' },
+        sourceQuote: '室内',
+      }),
+    );
+    expect(
+      normalizeTaskPatch({
+        input: taskPatchProposalSchema.parse({ goals: [], constraints: [] }),
+        task: activity,
+        text: '不一定室内',
+      })?.constraints,
+    ).toEqual([]);
+  });
   it('retains the amount but updates explicit all-in scope even if the proposal only mentions bills', () => {
     const housing = taskSchema.parse({
       ...task,
