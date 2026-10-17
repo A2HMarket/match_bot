@@ -35,9 +35,23 @@ export function createWorker<T>(
         throw new DelayedError();
       }
     },
-    { connection, concurrency: opts.concurrency ?? 4 },
+    { connection, concurrency: opts.concurrency ?? 4, autorun: false },
   );
   // BullMQ treats a supplied Redis instance as shared; this factory created it and must release it.
   worker.once('closed', () => connection.disconnect());
+  // Starting BullMQ's stalled checker while its connections initialise can leave a retry
+  // timer alive after an immediate close. A closed worker must never start that loop.
+  void worker
+    .waitUntilReady()
+    .then(() => {
+      if (!worker.closing) return worker.run();
+    })
+    .catch((error: unknown) => {
+      if (!worker.closing)
+        worker.emit(
+          'error',
+          error instanceof Error ? error : new Error('Worker startup failed', { cause: error }),
+        );
+    });
   return worker;
 }
