@@ -35,6 +35,13 @@ const deps: AgentDeps = {
 };
 const cases = [
   {
+    id: 'a3_printer',
+    inputs: [
+      'E14想收二手A3彩色无线激光打印机，20镑以内，今天自提。',
+      '打印机这条先不用找了，取消这个需求',
+    ],
+  },
+  {
     id: 'desk_chair',
     inputs: ['E14想收书桌和办公椅，每件50镑以内，能自提。', '桌子可以到70镑，椅子还是50'],
   },

@@ -35,6 +35,47 @@ const task = taskSchema.parse({
   userConfirmation: null,
 });
 describe('task proposal normalization', () => {
+  it.each(['A3彩色无线激光打印机', 'PS5游戏机', 'iPhone14手机', '1b1b公寓'])(
+    'retains source-attested subject codes in acceptance labels: %s',
+    (title) => {
+      const input = taskPatchProposalSchema.parse({
+        goals: [
+          {
+            id: 'item',
+            title,
+            required: true,
+            sourceQuote: title,
+            criteria: [
+              { id: 'subject', label: '确为' + title, strength: 'hard', constraintKey: null },
+            ],
+          },
+        ],
+        constraints: [],
+      });
+      const patch = normalizeTaskPatch({ input, task, text: '想找' + title });
+      expect(patch?.goals[0]?.criteria[0]?.label).toContain(title);
+    },
+  );
+  it.each(['A3打印机价格20镑以内', 'A3打印机30分钟内自提', 'A3打印机2026年11月可取', 'A4打印机'])(
+    'still rejects changing or unattested numeric facts in an unbound label: %s',
+    (label) => {
+      const input = taskPatchProposalSchema.parse({
+        goals: [
+          {
+            id: 'item',
+            title: 'A3打印机',
+            required: true,
+            sourceQuote: 'A3打印机',
+            criteria: [{ id: 'subject', label, strength: 'hard', constraintKey: null }],
+          },
+        ],
+        constraints: [],
+      });
+      expect(() =>
+        normalizeTaskPatch({ input, task, text: 'A3打印机，20镑以内，30分钟内自提' }),
+      ).toThrow('parameter-free');
+    },
+  );
   it.each(['室内还是室外？', '不在室内', '室内的也行'])(
     'does not manufacture a hard indoor requirement from %s',
     (text) => {

@@ -364,7 +364,16 @@ export function normalizeTaskPatch(p: {
         constraintKey = 'travel_origin';
       const optionalGap =
         !!constraintKey && !has(constraintKey) && criterion.strength === 'preference';
-      if (!constraintKey && /\d/.test(criterion.label))
+      // A3, PS5 and similar source-attested subject identifiers are not mutable budgets/dates.
+      const labelWithoutSubjectCodes = criterion.label.replace(
+        /\b(?:[a-z]+[a-z\d-]*\d[a-z\d-]*|\d+[a-z][a-z\d-]*)\b/gi,
+        (code) =>
+          [goal.title, p.text].every((text) => new RegExp(`\\b${code}\\b`, 'i').test(text)) &&
+          !/^\d+(?:gbp|pounds?|mins?|minutes?|hours?|days?|months?)$/i.test(code)
+            ? ''
+            : code,
+      );
+      if (!constraintKey && /\d/.test(labelWithoutSubjectCodes))
         throw new TaskProposalError(
           'Keep criterion labels parameter-free; bind monetary/date/numeric conditions with constraintKey rather than copying a value into the label.',
         );
