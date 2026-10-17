@@ -25,7 +25,7 @@ export function hasGuaranteedPurchaseClaim(text: string): boolean {
     /走过去就(?:能|可以)买(?:到)?|(?:肯定|保证|一定)(?:有货|买得到|能买到)|(?:you can|you'll|you will) (?:just )?(?:walk|go)[^.!?\n]{0,20}(?:and|to) (?:buy|collect|pick up)/gi;
   return [...text.matchAll(claims)].some((match) => {
     const prefix = text.slice(Math.max(0, match.index - 35), match.index);
-    return !/(?:不能保证|无法保证|不确定|不能说|别以为)[^，,。\n]{0,8}$|(?:cannot guarantee|can't promise|cannot say)\s*$/i.test(
+    return !/(?:不|未|不能保证|无法保证|不保证|不确定|不能说|别以为)[^，,。\n]{0,8}$|(?:cannot guarantee|can't promise|cannot say)\s*$/i.test(
       prefix,
     );
   });

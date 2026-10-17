@@ -221,6 +221,7 @@ try {
       input,
       result,
       task: ctx.task,
+      knowledge: ctx.knowledgeSources,
       checks,
       drafts,
       traces,

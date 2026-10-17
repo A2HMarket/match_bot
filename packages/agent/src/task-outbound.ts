@@ -47,7 +47,7 @@ export function taskDeliveryForOutbound(
     text = draft.taskQuestionText ?? draft.text;
   if (
     draft.replyPurpose !== 'request_status' &&
-    (draft.kind === 'clarification' || /[?？]$/.test(text.trim())) &&
+    (draft.kind === 'clarification' || /[?？]/.test(text)) &&
     (next?.action !== 'ask_user' || !next.constraintKey)
   )
     throw new TaskTransitionError(
@@ -57,7 +57,7 @@ export function taskDeliveryForOutbound(
   if (
     next?.action === 'ask_user' &&
     next.constraintKey &&
-    (draft.kind === 'clarification' || /[?？]$/.test(text.trim()))
+    (draft.kind === 'clarification' || /[?？]/.test(text))
   ) {
     key = next.constraintKey;
     goalId = next.goalId;

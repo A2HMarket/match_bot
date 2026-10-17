@@ -50,6 +50,25 @@ const draft = (): OutboundDraftInput => ({
   supplierSummaries: [],
 });
 describe('server task outbound metadata', () => {
+  it('does not lose a practical question just because an explanatory sentence follows it', () => {
+    const ctx = context();
+    ctx.task!.nextStep = { action: 'deliver', owner: 'agent', reason: 'partial sources' };
+    const d = {
+      ...draft(),
+      kind: 'recommendation' as const,
+      text: '你是现在急用，还是出门不方便？这会影响找哪种渠道。',
+    };
+    expect(() => taskDeliveryForOutbound(ctx, d)).toThrow('Record');
+    ctx.task!.nextStep = {
+      action: 'ask_user',
+      owner: 'agent',
+      constraintKey: 'custom:access_difficulty',
+      reason: 'feasible access',
+    };
+    expect(taskDeliveryForOutbound(ctx, d)?.question?.constraintKey).toBe(
+      'custom:access_difficulty',
+    );
+  });
   it('binds the question to the current task and original short text, without claiming it was delivered', () => {
     const ctx = context(),
       d = {
