@@ -41,7 +41,7 @@ export function createJevClient(p: {
   maxRetries?: number;
 }): JevClient {
   const fetchImpl = p.fetchImpl ?? fetch;
-  const timeoutMs = p.timeoutMs ?? 3000;
+  const timeoutMs = p.timeoutMs ?? 5000;
   const maxRetries = p.maxRetries ?? 3;
 
   async function once(
@@ -69,7 +69,7 @@ export function createJevClient(p: {
       try {
         return { kind: 'ok', json: await res.json() };
       } catch {
-        return { kind: 'fail', reason: 'invalid_response' };
+        return { kind: 'fail', reason: ac.signal.aborted ? 'timeout' : 'invalid_response' };
       }
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return { kind: 'fail', reason: 'timeout' };

@@ -31,6 +31,81 @@ const mk = (fetchImpl: typeof fetch) =>
   });
 
 describe('createJevClient', () => {
+  it('classifies a timed-out 200 response body as timeout, not malformed JSON', async () => {
+    const fetchImpl: typeof fetch = (_url, init) =>
+      Promise.resolve(
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              init?.signal?.addEventListener(
+                'abort',
+                () => controller.error(new DOMException('aborted', 'AbortError')),
+                { once: true },
+              );
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+    expect(
+      await mk(fetchImpl).evaluate({
+        state: 'synthetic',
+        questions,
+        inputRef: 'body-timeout',
+        phase: 0,
+      }),
+    ).toEqual({ ok: false, reason: 'timeout' });
+  });
+  it.each([
+    [3500, true],
+    [6000, false],
+  ] as const)('bounds a slow 200 body at five seconds: %i ms', async (delay, succeeds) => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl: typeof fetch = (_url, init) =>
+        Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                const pending = setTimeout(() => {
+                  controller.enqueue(new TextEncoder().encode(ok));
+                  controller.close();
+                }, delay);
+                init?.signal?.addEventListener(
+                  'abort',
+                  () => {
+                    clearTimeout(pending);
+                    controller.error(new DOMException('aborted', 'AbortError'));
+                  },
+                  { once: true },
+                );
+              },
+            }),
+            { status: 200 },
+          ),
+        );
+      const client = createJevClient({
+        baseUrl: 'https://jev.test',
+        apiKey: 'k',
+        model: 'jev-latest',
+        traces,
+        logger,
+        fetchImpl,
+      });
+      const result = client.evaluate({
+        state: 'synthetic',
+        questions,
+        inputRef: 'slow-body',
+        phase: 0,
+      });
+      await vi.advanceTimersByTimeAsync(5000);
+      const outcome = await result;
+      expect(outcome.ok).toBe(succeeds);
+      if (!succeeds) expect(outcome).toEqual({ ok: false, reason: 'timeout' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('does not call or retry beyond the caller deadline and still records the timeout', async () => {
     const fetchImpl = vi.fn(() =>
       Promise.resolve(new Response('', { status: 429 })),
