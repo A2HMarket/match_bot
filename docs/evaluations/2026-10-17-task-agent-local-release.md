@@ -41,6 +41,12 @@
 
 沿用原launchd单例，没有增设第二个长轮询Bot。最终审计：Bot PID57877、worker PID68826/0.16.29/taskRequests=true；运行中请求、pending/sending出站、pending快照均0，inbound/resume/outbound活动/等待/延迟均0。全局默认Phase0，原授权群Phase2，未扩大其他群发送权限。Bot的历史LastExitStatus=256来自先前重复轮询冲突，当前进程及21条新输入收发正常，不能把历史退出码称当前成功码。
 
-历史failed任务不清理、不重放：inbound/resume各1；cron65（63条10月10日历史校验失败、2条本次迁移前04:18缺schema失败），当前没有新失败，cron另有5条正常调度。不是“队列全部无失败”。详见 [final-runtime-audit.json](./task-local-release/final-runtime-audit.json)。审批旧快照为0，未批量恢复旧内容。
+历史failed任务不清理、不重放：inbound/resume各1；cron65（63条9月26日至10月10日历史校验失败、2条本次迁移前04:18缺schema失败），当前没有新失败，cron另有5条正常调度。不是“队列全部无失败”。详见 [final-runtime-audit.json](./task-local-release/final-runtime-audit.json)。审批旧快照为0，未批量恢复旧内容。
 
 合并/推送只走PR常规检查，不管理员绕过。最终主干SHA及CI由PR #2和Git记录核对；本报告不提前编造merge SHA。A01–A18逐项见[验收矩阵](./task-agent-acceptance-matrix.md)。
+
+## 主干CI后续核验
+
+PR #2的26fa374检查通过，实际合并为1b9fa96。本地main同步后正常SIGTERM退出/launchd重启：worker PID70358、0.16.29、LastExitStatus=0；与c71b959的packages/apps/锁文件无差异，队列空闲、待发/待审0。
+
+main的首次CI（run39010273968）实际失败：Jev不可用测试从未带ORDER BY的SQL结果推断写入顺序，返回failed/accepted/claimed，断言却要求accepted/claimed/failed。修复仅将三条决定排序后核对完整多重集；不删重复、不断言包含即通过，仍要求准确三条决定、最终执行failed、未调用Agent、没有pending出站。生产逻辑、模型指令、Jev降级和969测试数量不变。红灯留证，后续修复走独立PR，不直接main提交。
