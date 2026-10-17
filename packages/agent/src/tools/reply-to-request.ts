@@ -11,6 +11,7 @@ import {
   hasUnrecordedSourceFailureClaim,
 } from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
+import { taskDeliveryForOutbound } from '../task-outbound.js';
 import { claimsCompleteMarketFit, claimsUnverifiedTravelFit } from '../market-summary-claims.js';
 
 const parameters = z.object({
@@ -277,6 +278,14 @@ export function replyToRequestTool(deps: AgentDeps) {
           )
           .trim(),
       };
+      // Discover a missing question plan before factual repairs consume the bounded input attempts.
+      taskDeliveryForOutbound(ctx, {
+        kind: args.kind === 'clarification' ? 'clarification' : 'recommendation',
+        target: ctx.chatId,
+        text: args.text,
+        inputRef: ctx.sourceMessageId,
+        supplierSummaries: [],
+      });
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
       if (hasGuaranteedPurchaseClaim(args.text))
         return {
