@@ -37,6 +37,12 @@ function categoryFor(
   return requested ?? previous?.category ?? 'other';
 }
 
+export function isActionableRequestText(text: string): boolean {
+  return /[?？]|吗|呢|想|找|推荐|怎么|哪里|有没有|有什么|有哪些|可以|预算|帮|求|需要|收|买|找人|need|find|buy|where|how|help|looking|recommend/i.test(
+    text,
+  );
+}
+
 /** P22：新请求只从本条原文建评估快照；指代旧回复时才保留同一需求背景。 */
 export function bindCurrentRequest(ctx: MatchContext, input: string): void {
   const selected = taskCurrentRequest(ctx, input);
@@ -70,10 +76,7 @@ export function bindCurrentRequest(ctx: MatchContext, input: string): void {
   ctx.currentRequest = currentRequestSchema.parse({
     text: input,
     demand,
-    isActionable:
-      /[?？]|吗|呢|想|找|推荐|怎么|哪里|有没有|有什么|有哪些|可以|预算|帮|求|需要|收|买|找人|need|find|buy|where|how|help|looking|recommend/i.test(
-        input,
-      ),
+    isActionable: isActionableRequestText(input),
   });
   ctx.demand = demand;
   delete ctx.demandId;

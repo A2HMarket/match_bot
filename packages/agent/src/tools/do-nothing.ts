@@ -1,12 +1,13 @@
 import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
+import { canSkipSupplementReply } from '../supplement-replies.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 
 export function doNothingTool(deps: AgentDeps) {
   return tool({
     name: 'do_nothing',
     description:
-      'Explicitly take no action for irrelevant chatter, acknowledgement, job recruitment or a declined gate. London daily-life, GP registration and airport advice ARE supported. No match or unavailable source needs reply_to_request.',
+      'Explicitly take no action for irrelevant chatter, acknowledgement, job recruitment or a declined gate. London daily-life, GP registration and airport advice ARE supported. A server-authorized same-task context addition may end quietly when nothing new would help; otherwise no match or unavailable source needs reply_to_request.',
     parameters: z.object({
       reason: z.string().max(300),
     }),
@@ -20,6 +21,10 @@ export function doNothingTool(deps: AgentDeps) {
         latencyMs: 0,
         costMicro: 0,
       });
+      if (canSkipSupplementReply(ctx)) {
+        ctx.replySuppressed = true;
+        return 'ok: no new helpful answer for this same-task context addition; stop without another reply or status';
+      }
       return ctx.currentRequest?.isActionable &&
         !ctx.outboundBlocked &&
         ctx.currentRequest.demand.category !== 'job'

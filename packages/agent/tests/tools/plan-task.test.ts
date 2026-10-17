@@ -113,6 +113,40 @@ const base = {
   patch: null,
   outcome: null,
 };
+describe('delivery receipt task revision race', () => {
+  it.each([false, true])(
+    'refreshes once only when the requirements are unchanged (changed=%s)',
+    async (changed) => {
+      const initial = task();
+      initial.revision = 12;
+      initial.requirementsVersion = 1;
+      initial.delivery = { status: 'queued', level: 'partial', outboundMessageId: 'previous' };
+      const latest = {
+        ...initial,
+        revision: 13,
+        requirementsVersion: changed ? 2 : 1,
+        delivery: { ...initial.delivery, status: 'sent' as const },
+      };
+      const { ctx, repos, tool } = fixture('头痛', [initial]);
+      const findById = vi.fn().mockResolvedValue(latest);
+      const planTurn = vi
+        .fn()
+        .mockResolvedValueOnce({ kind: 'conflict' })
+        .mockResolvedValueOnce({ kind: 'applied', task: { ...latest, revision: 14 } });
+      Object.assign(repos.tasks, { findById, planTurn });
+      await tool.invoke(new RunContext(ctx), JSON.stringify(base));
+      expect(planTurn).toHaveBeenCalledTimes(changed ? 1 : 2);
+      if (!changed) {
+        expect(planTurn.mock.calls[1]?.[0]).toMatchObject({
+          taskId: 'existing',
+          expectedRevision: 13,
+        });
+        expect(ctx.task?.id).toBe('existing');
+      } else expect(ctx.task).toBeUndefined();
+    },
+  );
+});
+
 describe('plan_task', () => {
   it('does not use a catch-all proposal to create a task for an unsupported job request', async () => {
     const { tool, ctx, repos } = fixture('伦敦找工作', []);

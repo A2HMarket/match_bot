@@ -6,6 +6,7 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
     !ctx.isRequestStatusRun ||
     !ctx.currentRequest?.isActionable ||
     ctx.answerRecorded ||
+    ctx.replySuppressed ||
     ctx.currentRequest.demand.category === 'job'
   )
     return null;
