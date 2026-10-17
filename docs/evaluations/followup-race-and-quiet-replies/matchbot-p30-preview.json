@@ -1,0 +1,2152 @@
+{
+  "runId": "005f10a8-bd04-49b3-a864-e0fe974370ac",
+  "sample": "context",
+  "agentVersion": "0.18.3",
+  "sourceFingerprint": "696849a9a8520f0ec5f1d5ce5c73f52b69b87e3fca8369a7337e4b9970bd7b6b",
+  "status": "completed",
+  "elapsedMs": 47874,
+  "boundary": "synthetic user and bounded sources, NOT live facts; real DeepSeek/Jev; isolated DB; outbox pending, explicit simulated task receipts; NO sender",
+  "queries": [
+    {
+      "query": "pharmacy Isle of Dogs Canary Wharf opening hours",
+      "domains": []
+    },
+    {
+      "query": "NHS pharmacy finder Isle of Dogs",
+      "domains": [
+        "nhs.uk"
+      ]
+    },
+    {
+      "query": "Isle of Dogs E14 pharmacy delivery service",
+      "domains": []
+    },
+    {
+      "query": "NHS pharmacy finder E14 Isle of Dogs",
+      "domains": [
+        "nhs.uk"
+      ]
+    },
+    {
+      "query": "Isle of Dogs E14 pharmacy delivery service",
+      "domains": []
+    },
+    {
+      "query": "NHS pharmacy finder Isle of Dogs E14 opening hours",
+      "domains": []
+    }
+  ],
+  "results": [
+    {
+      "index": 0,
+      "input": "狗岛找止疼药",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "record_task_progress",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvcil9mv000505bg02xgx5an",
+        "ownerUserId": "cmvcil7a1000005bgepnpw3th",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p30-005f10a8-bd04-49b3-a864-e0fe974370ac"
+        },
+        "objective": "在狗岛寻找可购买止疼药的渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 2,
+        "requirementsVersion": 1,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcil7ap000205bguzp917g2"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "painkiller",
+            "title": "止疼药",
+            "required": true,
+            "searchTerms": [
+              "狗岛 药店",
+              "Isle of Dogs pharmacy",
+              "Canary Wharf pharmacy painkillers"
+            ],
+            "criteria": [
+              {
+                "id": "painkiller-subject",
+                "label": "来源描述的对象或邀约：止疼药",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1622840672b625eb9fe2bb49b903857db99453e6",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:46c9029a5a0359d8e4ce8ca995bc13e6",
+            "summary": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual.",
+            "observedAt": "2026-10-17T14:51:26.206Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.nhs.uk/tests-and-treatments/medicines-information"
+          },
+          {
+            "id": "e:7f567dc69f5287e38740c204a8c7e47e378e4b59",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:f9d505d8b7a8c44713d55f1c9ed6ce3a",
+            "summary": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service.",
+            "observedAt": "2026-10-17T14:51:26.206Z",
+            "entityKey": "information:painkiller",
+            "url": "https://docklandspharmacy.co.uk"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "Whether it is needed now or getting out is difficult decides between walking to a local pharmacy/supermarket and checking the pharmacy's delivery arrangement.",
+          "goalId": "painkiller",
+          "constraintKey": "custom:access_difficulty"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "NHS medicines information",
+          "url": "https://www.nhs.uk/tests-and-treatments/medicines-information",
+          "text": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual.",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:51:23.595Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual."
+            }
+          ]
+        },
+        {
+          "title": "Docklands Pharmacy",
+          "url": "https://docklandspharmacy.co.uk",
+          "text": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service.",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:51:23.595Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "sameTask": true,
+        "oneSubstantiveAnswer": true
+      },
+      "simulatedReceipt": true,
+      "drafts": [
+        {
+          "text": "狗岛这边最直接的是普通止痛药：NHS 说明这类药可以直接在超市和其他商店买到，不必非去药房。E14 的 Docklands Pharmacy 是 NHS 社区药房，公开写着 E14 等邮编可免费配送处方药，但非处方止痛药是否配送、有没有货、能不能当天送都没确认，建议你先打电话问清。\n\n你是现在就要用，还是出门不方便？这决定是就近去超市/药房，还是先问配送。\n\n来源：[1. NHS medicines information](https://www.nhs.uk/tests-and-treatments/medicines-information) · [2. Docklands Pharmacy](https://docklandspharmacy.co.uk)",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvcil7at000305bgavkv074k",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:18.965Z"
+        },
+        {
+          "id": "cmvcil7bv000405bguoaykbpo",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:19.003Z"
+        },
+        {
+          "id": "cmvcil9og000805bgaoys5yda",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 0,
+            "decision": "new",
+            "revision": 1,
+            "scopedCandidateCount": 0
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:22.048Z"
+        },
+        {
+          "id": "cmvcil9p7000905bgxekro2tc",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:22.075Z"
+        },
+        {
+          "id": "cmvcil9pd000a05bgx41dubtt",
+          "kind": "agent_run",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 3305,
+            "sdkTraceRef": "trace_9d8ede8079af4e5999d8dbd317c11960/span_e2ac035e66834844909c61ec",
+            "outputTokens": 239
+          },
+          "phase": 2,
+          "latencyMs": 3038,
+          "costMicro": 530,
+          "createdAt": "2026-10-17T14:51:22.081Z"
+        },
+        {
+          "id": "cmvcil9pg000b05bgzgchrlfk",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "category": "other",
+            "taskRevision": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:22.084Z"
+        },
+        {
+          "id": "cmvcil9qc000c05bgsm5k3y2l",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:22.116Z"
+        },
+        {
+          "id": "cmvcilavg000d05bgvi3wskwt",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:23.596Z"
+        },
+        {
+          "id": "cmvcilavk000e05bgvfyrced1",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": [
+              "nhs.uk"
+            ]
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:23.600Z"
+        },
+        {
+          "id": "cmvcilaw5000f05bgsmdt8afo",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:23.621Z"
+        },
+        {
+          "id": "cmvcilaw9000g05bgeoskhnub",
+          "kind": "agent_run",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 8978,
+            "sdkTraceRef": "trace_a63598dc4abe4db98eb0f4ec5878c722/span_1569102c5c474299b6aa69ed",
+            "outputTokens": 84
+          },
+          "phase": 2,
+          "latencyMs": 1469,
+          "costMicro": 1280,
+          "createdAt": "2026-10-17T14:51:23.625Z"
+        },
+        {
+          "id": "cmvcildie000h05bgu24tm75k",
+          "kind": "jev",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "id": "gen-dec-1792248686-FgFVs9Ck6FqAc2E7CVca",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000090426,
+              "input_tokens": 2153
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.69,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.26,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.23,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 802,
+          "costMicro": 90,
+          "createdAt": "2026-10-17T14:51:27.014Z"
+        },
+        {
+          "id": "cmvcildj4000j05bgl5a2r6q4",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 1,
+            "requirementsVersion": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:27.040Z"
+        },
+        {
+          "id": "cmvcildje000k05bgs20oft79",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:27.050Z"
+        },
+        {
+          "id": "cmvcildjg000l05bgi8d68o9c",
+          "kind": "agent_run",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 9452,
+            "sdkTraceRef": "trace_a63598dc4abe4db98eb0f4ec5878c722/span_27125fc1c7d04256878f489e",
+            "outputTokens": 247
+          },
+          "phase": 2,
+          "latencyMs": 3428,
+          "costMicro": 1392,
+          "createdAt": "2026-10-17T14:51:27.052Z"
+        },
+        {
+          "id": "cmvcilfei000m05bg0dt30pva",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1:p1",
+              "k2:p1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.466Z"
+        },
+        {
+          "id": "cmvcilfox000n05bglo9jypx9",
+          "kind": "jev",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "id": "gen-dec-1792248689-CQQLwZJLtVipAHne1ldh",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000051828,
+              "input_tokens": 1234
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.86,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.86,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.14,
+                  "3": 0.86
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.15,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 369,
+          "costMicro": 52,
+          "createdAt": "2026-10-17T14:51:29.841Z"
+        },
+        {
+          "id": "cmvcilfp2000o05bgpz8vcbux",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.86,
+              "mentionsUnverified": 0.15
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.846Z"
+        },
+        {
+          "id": "cmvcilfp9000p05bghfly3zu6",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_answer",
+            "kind": "clarification",
+            "refs": [
+              "k1:p1",
+              "k2:p1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.853Z"
+        },
+        {
+          "id": "cmvcilfqu000s05bgrnie0ar4",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.910Z"
+        },
+        {
+          "id": "cmvcilfqy000t05bgcg8ptvlf",
+          "kind": "agent_run",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 10176,
+            "sdkTraceRef": "trace_a63598dc4abe4db98eb0f4ec5878c722/span_053071628deb4ca792f13000",
+            "outputTokens": 185
+          },
+          "phase": 2,
+          "latencyMs": 2861,
+          "costMicro": 1476,
+          "createdAt": "2026-10-17T14:51:29.914Z"
+        },
+        {
+          "id": "cmvcilfrm001105bglmnv5tyq",
+          "kind": "gate",
+          "inputRef": "cmvcil7ap000205bguzp917g2",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.938Z"
+        }
+      ],
+      "usage": {
+        "input": 31911,
+        "output": 755
+      }
+    },
+    {
+      "index": 1,
+      "input": "现在急用，但我出不了门",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "reply_request_status"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvcil9mv000505bg02xgx5an",
+        "ownerUserId": "cmvcil7a1000005bgepnpw3th",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p30-005f10a8-bd04-49b3-a864-e0fe974370ac"
+        },
+        "objective": "在狗岛寻找可购买止疼药的渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 7,
+        "requirementsVersion": 2,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcil7ap000205bguzp917g2"
+            }
+          },
+          {
+            "key": "custom:access_difficulty",
+            "goalId": "painkiller",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "出不了门，需要配送或送货上门"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcilfs2001305bgozlyojrf"
+            }
+          },
+          {
+            "key": "custom:urgency",
+            "goalId": "painkiller",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "急用"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcilfs2001305bgozlyojrf"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "painkiller",
+            "title": "止疼药",
+            "required": true,
+            "searchTerms": [
+              "狗岛 药店",
+              "Isle of Dogs pharmacy",
+              "Canary Wharf pharmacy painkillers"
+            ],
+            "criteria": [
+              {
+                "id": "painkiller-subject",
+                "label": "来源描述的对象或邀约：止疼药",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:custom:access_difficulty",
+                "label": "核对当前条件：custom:access_difficulty",
+                "strength": "hard",
+                "constraintKey": "custom:access_difficulty",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:custom:urgency",
+                "label": "核对当前条件：custom:urgency",
+                "strength": "hard",
+                "constraintKey": "custom:urgency",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1622840672b625eb9fe2bb49b903857db99453e6",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:46c9029a5a0359d8e4ce8ca995bc13e6",
+            "summary": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual.",
+            "observedAt": "2026-10-17T14:51:37.216Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.nhs.uk/tests-and-treatments/medicines-information"
+          },
+          {
+            "id": "e:7f567dc69f5287e38740c204a8c7e47e378e4b59",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:f9d505d8b7a8c44713d55f1c9ed6ce3a",
+            "summary": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service.",
+            "observedAt": "2026-10-17T14:51:43.225Z",
+            "entityKey": "information:painkiller",
+            "url": "https://docklandspharmacy.co.uk"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "Pharmacy delivery is only advertised for prescriptions; whether anyone can collect and bring it up decides the next step.",
+          "goalId": "painkiller",
+          "constraintKey": "custom:access_difficulty"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "NHS medicines information",
+          "url": "https://www.nhs.uk/tests-and-treatments/medicines-information",
+          "text": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual.",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:51:34.762Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual."
+            }
+          ]
+        },
+        {
+          "title": "Docklands Pharmacy",
+          "url": "https://docklandspharmacy.co.uk",
+          "text": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service.",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:51:34.762Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "sameTask": true,
+        "oneSubstantiveAnswer": false
+      },
+      "simulatedReceipt": true,
+      "drafts": [
+        {
+          "text": "还没核实到能推荐的合适线索，有些关键条件还不清楚。\n\n你已经说过的困难不用再补。接下来要按这些限制核对可行渠道和实际可用情况，不能把未知说成确定。",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvcilfs3001405bgi9drgbsr",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.955Z"
+        },
+        {
+          "id": "cmvcilfsb001505bg8us30si5",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:29.963Z"
+        },
+        {
+          "id": "cmvcilh4f001605bgycfdq4oo",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:31.695Z"
+        },
+        {
+          "id": "cmvcilh4i001705bg8b7tstoj",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4794,
+            "sdkTraceRef": "trace_c69a1ce153f34b8e8919f2c65d8b911b/span_338f5ae8548c4dff89a820c5",
+            "outputTokens": 226
+          },
+          "phase": 2,
+          "latencyMs": 1713,
+          "costMicro": 734,
+          "createdAt": "2026-10-17T14:51:31.698Z"
+        },
+        {
+          "id": "cmvcilieg001905bg6zfejwqb",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 0,
+            "decision": "continued",
+            "revision": 5,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:33.352Z"
+        },
+        {
+          "id": "cmvcilien001a05bgesml6hpa",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:33.359Z"
+        },
+        {
+          "id": "cmvcilieo001b05bgymi4bfv5",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 2,
+            "agentName": "matchAgent",
+            "inputTokens": 5009,
+            "sdkTraceRef": "trace_c69a1ce153f34b8e8919f2c65d8b911b/span_3b8545aaf6284b30aa0b062b",
+            "outputTokens": 235
+          },
+          "phase": 2,
+          "latencyMs": 1662,
+          "costMicro": 767,
+          "createdAt": "2026-10-17T14:51:33.361Z"
+        },
+        {
+          "id": "cmvciliep001c05bgxn49a8ez",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "category": "other",
+            "taskRevision": 5,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:33.361Z"
+        },
+        {
+          "id": "cmvcilier001d05bg9yf5jz7r",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:33.363Z"
+        },
+        {
+          "id": "cmvciljhn001e05bg43lv1h1d",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 1,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:34.763Z"
+        },
+        {
+          "id": "cmvciljhs001f05bgq3772sz7",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": [
+              "nhs.uk"
+            ]
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:34.768Z"
+        },
+        {
+          "id": "cmvcilji6001g05bgtl1tvd2y",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:34.782Z"
+        },
+        {
+          "id": "cmvcilji8001h05bgdzkung2g",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 9510,
+            "sdkTraceRef": "trace_ca1101af85f34a23ab28f022c538b107/span_d6ee8681e2be43b5a784a1a1",
+            "outputTokens": 84
+          },
+          "phase": 2,
+          "latencyMs": 1412,
+          "costMicro": 1355,
+          "createdAt": "2026-10-17T14:51:34.784Z"
+        },
+        {
+          "id": "cmvcilmja001i05bgpknzts5r",
+          "kind": "jev",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "id": "gen-dec-1792248698-we5w6JAJgzlazzaSFjHS",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000186816,
+              "input_tokens": 4448
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.68,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.46,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.26,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.56,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.28,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.28,
+                "type": "noul"
+              },
+              "is_supported_6": {
+                "noul": 0.25,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 1487,
+          "costMicro": 187,
+          "createdAt": "2026-10-17T14:51:38.710Z"
+        },
+        {
+          "id": "cmvcilmk5001k05bglamopl12",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 1,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:38.741Z"
+        },
+        {
+          "id": "cmvcilmkq001l05bg1zwnacrx",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:38.762Z"
+        },
+        {
+          "id": "cmvcilmkv001m05bgqowze5pf",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 9984,
+            "sdkTraceRef": "trace_ca1101af85f34a23ab28f022c538b107/span_9bff2df91dac495a8b493093",
+            "outputTokens": 369
+          },
+          "phase": 2,
+          "latencyMs": 3982,
+          "costMicro": 1501,
+          "createdAt": "2026-10-17T14:51:38.767Z"
+        },
+        {
+          "id": "cmvciloim001n05bgza9l8d6x",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "Record the one missing condition with record_task_progress next action=ask_user and its constraintKey before asking the user."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 1,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:41.278Z"
+        },
+        {
+          "id": "cmvciloiy001o05bg7yr273ex",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:41.290Z"
+        },
+        {
+          "id": "cmvciloj0001p05bgh0nsbb9p",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 10742,
+            "sdkTraceRef": "trace_ca1101af85f34a23ab28f022c538b107/span_6460a0fb89624f0cb1adca10",
+            "outputTokens": 213
+          },
+          "phase": 2,
+          "latencyMs": 2525,
+          "costMicro": 1564,
+          "createdAt": "2026-10-17T14:51:41.292Z"
+        },
+        {
+          "id": "cmvcilq1d001r05bg6b13j765",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 2,
+            "requirementsVersion": 2
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:43.249Z"
+        },
+        {
+          "id": "cmvcilq1t001s05bgu2f8rt9w",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:43.265Z"
+        },
+        {
+          "id": "cmvcilq1y001t05bgqky4qup3",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 10990,
+            "sdkTraceRef": "trace_ca1101af85f34a23ab28f022c538b107/span_67d9fcc9e63344219d4f0949",
+            "outputTokens": 176
+          },
+          "phase": 2,
+          "latencyMs": 1977,
+          "costMicro": 1588,
+          "createdAt": "2026-10-17T14:51:43.270Z"
+        },
+        {
+          "id": "cmvcilrx9001u05bgw7l94mp9",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "This question is already answered in the task; use the known condition rather than asking it again."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 2,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:45.693Z"
+        },
+        {
+          "id": "cmvcilrxx001v05bgqhq1m6lh",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:45.717Z"
+        },
+        {
+          "id": "cmvcilry2001w05bgd8y4z0qr",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 5,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 11406,
+            "sdkTraceRef": "trace_ca1101af85f34a23ab28f022c538b107/span_25cbbf95354f461ca2ca7495",
+            "outputTokens": 207
+          },
+          "phase": 2,
+          "latencyMs": 2450,
+          "costMicro": 1655,
+          "createdAt": "2026-10-17T14:51:45.722Z"
+        },
+        {
+          "id": "cmvcilth9001x05bgl4pewik9",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "This question is already answered in the task; use the known condition rather than asking it again."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 3,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:47.709Z"
+        },
+        {
+          "id": "cmvcilthd001y05bgztv022hj",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "outbound_retry",
+            "tool": "reply_to_request",
+            "reason": "input_retry_limit",
+            "attempts": 3,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:47.713Z"
+        },
+        {
+          "id": "cmvcilths001z05bgo32remwe",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:47.728Z"
+        },
+        {
+          "id": "cmvcilthu002005bgu7cxijvf",
+          "kind": "agent_run",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "turn": 6,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 11643,
+            "sdkTraceRef": "trace_ca1101af85f34a23ab28f022c538b107/span_d048f15af3994ca0a24cfd88",
+            "outputTokens": 206
+          },
+          "phase": 2,
+          "latencyMs": 2009,
+          "costMicro": 1688,
+          "createdAt": "2026-10-17T14:51:47.730Z"
+        },
+        {
+          "id": "cmvciltid002e05bgg1ul7338",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_status",
+            "reason": "invalid_evidence"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:47.749Z"
+        },
+        {
+          "id": "cmvcilu0v002f05bgt8evthrj",
+          "kind": "jev",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "id": "gen-dec-1792248708-5wGi7kuTEA1W0faMPFKe",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000046872,
+              "input_tokens": 1116
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 1.34,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.46,
+                "probabilities": {
+                  "0": 0.1,
+                  "1": 0.5,
+                  "2": 0.36,
+                  "3": 0.04
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.06,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 665,
+          "costMicro": 47,
+          "createdAt": "2026-10-17T14:51:48.415Z"
+        },
+        {
+          "id": "cmvcilu0z002g05bg444owqn2",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 1.34,
+              "mentionsUnverified": 0.06
+            },
+            "decision": "auto",
+            "replyPurpose": "request_status",
+            "isVerifiedRequestStatus": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:48.419Z"
+        },
+        {
+          "id": "cmvcilu2k002j05bgr34zkktd",
+          "kind": "gate",
+          "inputRef": "cmvcilfs2001305bgozlyojrf",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:48.476Z"
+        }
+      ],
+      "usage": {
+        "input": 74078,
+        "output": 1716
+      }
+    },
+    {
+      "index": 2,
+      "input": "头痛",
+      "result": {
+        "kind": "completed",
+        "toolsCalled": [
+          "search_information",
+          "record_task_progress",
+          "reply_to_request",
+          "record_task_progress",
+          "reply_to_request",
+          "reply_to_request"
+        ]
+      },
+      "task": {
+        "schemaVersion": 1,
+        "id": "cmvcil9mv000505bg02xgx5an",
+        "ownerUserId": "cmvcil7a1000005bgepnpw3th",
+        "scope": {
+          "channel": "telegram",
+          "chatId": "-p30-005f10a8-bd04-49b3-a864-e0fe974370ac"
+        },
+        "objective": "在狗岛寻找可购买止疼药的渠道",
+        "category": "other",
+        "counterparty": null,
+        "status": "active",
+        "revision": 12,
+        "requirementsVersion": 3,
+        "constraints": [
+          {
+            "key": "area",
+            "strength": "hard",
+            "value": {
+              "kind": "location",
+              "area": "狗岛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcil7ap000205bguzp917g2"
+            }
+          },
+          {
+            "key": "custom:access_difficulty",
+            "goalId": "painkiller",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "出不了门，需要配送或送货上门"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcilfs2001305bgozlyojrf"
+            }
+          },
+          {
+            "key": "custom:urgency",
+            "goalId": "painkiller",
+            "strength": "hard",
+            "value": {
+              "kind": "text",
+              "text": "急用"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcilfs2001305bgozlyojrf"
+            }
+          },
+          {
+            "key": "custom:purpose",
+            "goalId": "painkiller",
+            "strength": "preference",
+            "value": {
+              "kind": "text",
+              "text": "头痛"
+            },
+            "origin": {
+              "kind": "user",
+              "sourceMessageId": "cmvcilu2z002l05bgs7agmupm"
+            }
+          }
+        ],
+        "goals": [
+          {
+            "id": "painkiller",
+            "title": "止疼药",
+            "required": true,
+            "searchTerms": [
+              "狗岛 药店",
+              "Isle of Dogs pharmacy",
+              "Canary Wharf pharmacy painkillers"
+            ],
+            "criteria": [
+              {
+                "id": "painkiller-subject",
+                "label": "来源描述的对象或邀约：止疼药",
+                "strength": "hard",
+                "constraintKey": null,
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:area",
+                "label": "核对当前条件：area",
+                "strength": "hard",
+                "constraintKey": "area",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:custom:access_difficulty",
+                "label": "核对当前条件：custom:access_difficulty",
+                "strength": "hard",
+                "constraintKey": "custom:access_difficulty",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:custom:urgency",
+                "label": "核对当前条件：custom:urgency",
+                "strength": "hard",
+                "constraintKey": "custom:urgency",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              },
+              {
+                "id": "condition:custom:purpose",
+                "label": "核对当前条件：custom:purpose",
+                "strength": "preference",
+                "constraintKey": "custom:purpose",
+                "status": "unknown",
+                "evidenceRefs": [],
+                "conflictingEvidenceRefs": []
+              }
+            ],
+            "userConfirmation": null,
+            "sourceCoherence": "unknown"
+          }
+        ],
+        "evidence": [
+          {
+            "id": "e:1622840672b625eb9fe2bb49b903857db99453e6",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:46c9029a5a0359d8e4ce8ca995bc13e6",
+            "summary": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual.",
+            "observedAt": "2026-10-17T14:51:54.507Z",
+            "entityKey": "information:painkiller",
+            "url": "https://www.nhs.uk/tests-and-treatments/medicines-information"
+          },
+          {
+            "id": "e:7f567dc69f5287e38740c204a8c7e47e378e4b59",
+            "goalId": "painkiller",
+            "kind": "source_excerpt",
+            "sourceRef": "web:f9d505d8b7a8c44713d55f1c9ed6ce3a",
+            "summary": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service.",
+            "observedAt": "2026-10-17T14:52:01.979Z",
+            "entityKey": "information:painkiller",
+            "url": "https://docklandspharmacy.co.uk"
+          }
+        ],
+        "pendingQuestion": null,
+        "nextStep": {
+          "action": "ask_user",
+          "owner": "agent",
+          "reason": "药房是否配送非处方止疼药未确认，需知道用户能否安排他人代取，才能决定下一步走配送还是代买。",
+          "goalId": "painkiller",
+          "constraintKey": "custom:access_difficulty"
+        },
+        "blockReason": null,
+        "delivery": {
+          "status": "none",
+          "level": "none"
+        },
+        "userConfirmation": null
+      },
+      "knowledge": [
+        {
+          "title": "NHS medicines information",
+          "url": "https://www.nhs.uk/tests-and-treatments/medicines-information",
+          "text": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual.",
+          "ref": "k1",
+          "fetchedAt": "2026-10-17T14:51:51.856Z",
+          "passages": [
+            {
+              "id": "k1:p1",
+              "text": "Simple painkillers can be bought directly from supermarkets and other stores. This fixture provides general purchasing information, not advice on which medicine is suitable for an individual."
+            }
+          ]
+        },
+        {
+          "title": "Docklands Pharmacy",
+          "url": "https://docklandspharmacy.co.uk",
+          "text": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service.",
+          "ref": "k2",
+          "fetchedAt": "2026-10-17T14:51:51.856Z",
+          "passages": [
+            {
+              "id": "k2:p1",
+              "text": "Docklands Pharmacy is an NHS community pharmacy. It advertises free prescription delivery to local postcodes E14 and some others. Contact the pharmacy for details. This fixture does not confirm non-prescription painkiller delivery, stock or same-day service."
+            }
+          ]
+        }
+      ],
+      "checks": {
+        "sameTask": true,
+        "quiet": false,
+        "explicitNoop": false,
+        "notNewTask": true
+      },
+      "simulatedReceipt": true,
+      "drafts": [
+        {
+          "text": "狗岛这边能核实的渠道：Docklands Pharmacy 是 NHS 社区药房，公开写明对 E14 等邮编提供免费处方配送，但非处方止疼药是否配送、有没有货、能不能当天送都没写，建议你先打电话问清这三点。普通止疼药在超市和商店也能直接买到，不过你出不了门，这条暂时用不上。\n\n配送若走不通，可以让能出门的邻居朋友代买，或问药房能否安排送药上门。\n\n来源：[1. NHS medicines information](https://www.nhs.uk/tests-and-treatments/medicines-information) · [2. Docklands Pharmacy](https://docklandspharmacy.co.uk)",
+          "status": "pending"
+        }
+      ],
+      "traces": [
+        {
+          "id": "cmvcilu30002m05bg2c1hpemp",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "accepted"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:48.492Z"
+        },
+        {
+          "id": "cmvcilu39002n05bg93b3nzfy",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "claimed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:48.501Z"
+        },
+        {
+          "id": "cmvcilvb6002p05bgybv06eyt",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "task_preparation",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 0,
+            "decision": "continued",
+            "revision": 10,
+            "scopedCandidateCount": 1
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:50.082Z"
+        },
+        {
+          "id": "cmvcilvbf002q05bgo4avm39y",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:50.091Z"
+        },
+        {
+          "id": "cmvcilvbh002r05bgqjspknrv",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 1,
+            "agentName": "matchAgent",
+            "inputTokens": 4678,
+            "sdkTraceRef": "trace_dbdae4cf115240aa96d4a3d823677ef4/span_8b7a93378abd4569bc54ea3f",
+            "outputTokens": 161
+          },
+          "phase": 2,
+          "latencyMs": 1575,
+          "costMicro": 700,
+          "createdAt": "2026-10-17T14:51:50.093Z"
+        },
+        {
+          "id": "cmvcilvbh002s05bgzccox01q",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "current_request",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "category": "other",
+            "taskRevision": 10,
+            "requirementsVersion": 3
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:50.093Z"
+        },
+        {
+          "id": "cmvcilvbj002t05bgevurcg9i",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "market_trade_direction",
+            "target": "SELL"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:50.095Z"
+        },
+        {
+          "id": "cmvcilwog002u05bg64e13j1h",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:51.856Z"
+        },
+        {
+          "id": "cmvcilwok002v05bgk66pbmku",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "information_search",
+            "count": 2,
+            "reason": null,
+            "status": "ok",
+            "domains": []
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:51.860Z"
+        },
+        {
+          "id": "cmvcilwox002w05bg0nudmyf0",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:51.873Z"
+        },
+        {
+          "id": "cmvcilwoz002x05bgiwvwo1r8",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 1,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 9590,
+            "sdkTraceRef": "trace_95fe246ebc904eca82e1be99dad8f4a6/span_5c5d3f35aa20494a93c00de4",
+            "outputTokens": 82
+          },
+          "phase": 2,
+          "latencyMs": 1769,
+          "costMicro": 1366,
+          "createdAt": "2026-10-17T14:51:51.875Z"
+        },
+        {
+          "id": "cmvcim0m7002y05bgv2sc7hth",
+          "kind": "jev",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "id": "gen-dec-1792248716-swXNuDf6FOix5Mwf6qH1",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000187698,
+              "input_tokens": 4469
+            },
+            "answers": {
+              "is_supported_0": {
+                "noul": 0.74,
+                "type": "noul"
+              },
+              "is_supported_1": {
+                "noul": 0.41,
+                "type": "noul"
+              },
+              "is_supported_2": {
+                "noul": 0.42,
+                "type": "noul"
+              },
+              "is_supported_3": {
+                "noul": 0.23,
+                "type": "noul"
+              },
+              "is_supported_4": {
+                "noul": 0.23,
+                "type": "noul"
+              },
+              "is_supported_5": {
+                "noul": 0.25,
+                "type": "noul"
+              },
+              "is_supported_6": {
+                "noul": 0.43,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 2449,
+          "costMicro": 188,
+          "createdAt": "2026-10-17T14:51:56.959Z"
+        },
+        {
+          "id": "cmvcim0n4003005bgyrhm71ls",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 1,
+            "requirementsVersion": 3
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:56.992Z"
+        },
+        {
+          "id": "cmvcim0nn003105bg5lwe0oe5",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:57.011Z"
+        },
+        {
+          "id": "cmvcim0ns003205bgszmyrmnv",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 2,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 10064,
+            "sdkTraceRef": "trace_95fe246ebc904eca82e1be99dad8f4a6/span_3a12c758c36442618f0f4b3b",
+            "outputTokens": 440
+          },
+          "phase": 2,
+          "latencyMs": 5141,
+          "costMicro": 1532,
+          "createdAt": "2026-10-17T14:51:57.016Z"
+        },
+        {
+          "id": "cmvcim2wm003305bgvn22gxgh",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "Record the one missing condition with record_task_progress next action=ask_user and its constraintKey before asking the user."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 1,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:59.926Z"
+        },
+        {
+          "id": "cmvcim2x6003405bglat56kky",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:51:59.946Z"
+        },
+        {
+          "id": "cmvcim2x8003505bg52ye2efa",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 3,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 10897,
+            "sdkTraceRef": "trace_95fe246ebc904eca82e1be99dad8f4a6/span_b56c657d77c944aaa432d48b",
+            "outputTokens": 197
+          },
+          "phase": 2,
+          "latencyMs": 2932,
+          "costMicro": 1581,
+          "createdAt": "2026-10-17T14:51:59.948Z"
+        },
+        {
+          "id": "cmvcim4i7003705bgfk3nfse5",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "task_source_progress",
+            "result": "recorded",
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "attempt": 2,
+            "requirementsVersion": 3
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:01.999Z"
+        },
+        {
+          "id": "cmvcim4id003805bgvarpobi4",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:02.005Z"
+        },
+        {
+          "id": "cmvcim4ie003905bgqwh2y679",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 4,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 11129,
+            "sdkTraceRef": "trace_95fe246ebc904eca82e1be99dad8f4a6/span_ef28ce1a42d74f27bba92c0d",
+            "outputTokens": 186
+          },
+          "phase": 2,
+          "latencyMs": 2058,
+          "costMicro": 1610,
+          "createdAt": "2026-10-17T14:52:02.006Z"
+        },
+        {
+          "id": "cmvcim5z0003a05bgtjucexem",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "outbound_input",
+            "tool": "reply_to_request",
+            "detail": [
+              "This question is already answered in the task; use the known condition rather than asking it again."
+            ],
+            "reason": "invalid_evidence",
+            "attempt": 2,
+            "decision": "deny"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:03.900Z"
+        },
+        {
+          "id": "cmvcim5zk003b05bgd2uudtxd",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:03.920Z"
+        },
+        {
+          "id": "cmvcim5zo003c05bgo4tolpmx",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 5,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 11583,
+            "sdkTraceRef": "trace_95fe246ebc904eca82e1be99dad8f4a6/span_100638a800b144049071489a",
+            "outputTokens": 180
+          },
+          "phase": 2,
+          "latencyMs": 1917,
+          "costMicro": 1672,
+          "createdAt": "2026-10-17T14:52:03.924Z"
+        },
+        {
+          "id": "cmvcim7gd003d05bgb9zyj3q0",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_answer",
+            "kind": "answer",
+            "refs": [
+              "k1:p1",
+              "k2:p1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:05.821Z"
+        },
+        {
+          "id": "cmvcim815003e05bgh3sjx7g4",
+          "kind": "jev",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "id": "gen-dec-1792248726-XG2xomDwW9lzQRd5OnkZ",
+            "ok": true,
+            "model": "typesafe/jev-1.13-20260917",
+            "usage": {
+              "cost": 0.000058002,
+              "input_tokens": 1381
+            },
+            "answers": {
+              "language_ok": {
+                "noul": 0.98,
+                "type": "noul"
+              },
+              "worth_replying": {
+                "type": "score",
+                "score": 2.85,
+                "legend": {
+                  "0": "Not useful or off-topic",
+                  "1": "Marginal",
+                  "2": "Useful",
+                  "3": "Clearly useful and specific"
+                },
+                "confidence": 0.86,
+                "probabilities": {
+                  "0": 0,
+                  "1": 0,
+                  "2": 0.14,
+                  "3": 0.86
+                }
+              },
+              "mentions_unverified": {
+                "noul": 0.18,
+                "type": "noul"
+              }
+            },
+            "provider": "TypeSafe"
+          },
+          "phase": 2,
+          "latencyMs": 743,
+          "costMicro": 58,
+          "createdAt": "2026-10-17T14:52:06.569Z"
+        },
+        {
+          "id": "cmvcim819003f05bglnc12d7d",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "outbound",
+            "rateOk": true,
+            "verdict": {
+              "ok": true,
+              "languageOk": 0.98,
+              "worthReplying": 2.85,
+              "mentionsUnverified": 0.18
+            },
+            "decision": "auto",
+            "isVerifiedRequestStatus": false
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:06.573Z"
+        },
+        {
+          "id": "cmvcim81e003g05bgyrcfz90v",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_answer",
+            "kind": "answer",
+            "refs": [
+              "k1:p1",
+              "k2:p1"
+            ],
+            "sourceBound": true
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:06.578Z"
+        },
+        {
+          "id": "cmvcim83h003j05bgl2stbsqv",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "checkpointed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:06.653Z"
+        },
+        {
+          "id": "cmvcim83l003k05bg3wfcgyfj",
+          "kind": "agent_run",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "turn": 6,
+            "taskId": "cmvcil9mv000505bg02xgx5an",
+            "agentName": "matchAgent",
+            "inputTokens": 11793,
+            "sdkTraceRef": "trace_95fe246ebc904eca82e1be99dad8f4a6/span_6c825ea24232481896fb16e0",
+            "outputTokens": 186
+          },
+          "phase": 2,
+          "latencyMs": 2732,
+          "costMicro": 1703,
+          "createdAt": "2026-10-17T14:52:06.657Z"
+        },
+        {
+          "id": "cmvcim84m003y05bg06lfh25w",
+          "kind": "gate",
+          "inputRef": "cmvcilu2z002l05bgs7agmupm",
+          "output": {
+            "gate": "request_execution",
+            "decision": "completed"
+          },
+          "phase": 2,
+          "latencyMs": 0,
+          "costMicro": 0,
+          "createdAt": "2026-10-17T14:52:06.694Z"
+        }
+      ],
+      "usage": {
+        "input": 69734,
+        "output": 1432
+      }
+    }
+  ]
+}

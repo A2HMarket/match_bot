@@ -11,7 +11,8 @@ import {
   type OutboundDraftInput,
 } from './outbound-gate.js';
 
-export type DraftResult = OutboundDraftInput | { error: string; kind?: 'research_required' };
+export type DraftResult =
+  OutboundDraftInput | { error: string; kind?: 'research_required' | 'no_new_help' };
 
 /**
  * 四个出站工具共用的骨架：needsApproval 与 execute 都只经 outbound-gate 决定（AGENTS.md §3.3
@@ -28,6 +29,22 @@ export function makeOutboundTool<A>(
     toDraft: (ctx: MatchContext, args: A) => Promise<DraftResult>;
   },
 ) {
+  const recordQuietEnd = async (ctx: MatchContext): Promise<boolean> => {
+    if (!ctx.replySuppressed) return false;
+    await deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: ctx.sourceMessageId,
+      phase: ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+      output: {
+        gate: 'outbound',
+        decision: 'suppressed',
+        reason: 'context_supplement_already_finished',
+      },
+    });
+    return true;
+  };
   const toArgs = (raw: unknown): A => cfg.parameters.parse(raw) as A;
   const toDraft = async (ctx: MatchContext, args: A): Promise<DraftResult> => {
     if (hasUnsupportedModelAction(args))
@@ -66,6 +83,7 @@ export function makeOutboundTool<A>(
     },
     needsApproval: async (rc, args, callId) => {
       const ctx = rc.context as MatchContext;
+      if (await recordQuietEnd(ctx)) return false;
       if (
         (!cfg.isRequestStatus && ctx.outboundBlocked) ||
         (!cfg.isRequestStatus && ctx.answerInputExhausted && !ctx.isAnswerFinalization)
@@ -87,6 +105,7 @@ export function makeOutboundTool<A>(
       }
       const d = await toDraft(ctx, toArgs(args));
       if ('error' in d) {
+        if (d.kind === 'no_new_help') return false;
         await recordDraftFeedback(ctx, d);
         if (callId) {
           const calls = rejectedCalls.get(ctx) ?? new Map<string, string>();
@@ -110,6 +129,8 @@ export function makeOutboundTool<A>(
     execute: async (args, rc, details) => {
       if (!rc) return 'internal error: missing run context';
       const ctx = (rc as RunContext<MatchContext>).context;
+      if (await recordQuietEnd(ctx))
+        return 'not sent: this supplement intentionally ended without a new reply';
       if (!cfg.isRequestStatus && ctx.answerInputExhausted && !ctx.isAnswerFinalization)
         return retryLimitMessage;
       if (!cfg.isRequestStatus && ctx.outboundBlocked) {
@@ -122,6 +143,7 @@ export function makeOutboundTool<A>(
       if (rejection) return rejection;
       const d = await toDraft(ctx, toArgs(args));
       if ('error' in d) {
+        if (d.kind === 'no_new_help') return d.error;
         await recordDraftFeedback(ctx, d);
         return ctx.outboundBlocked ? retryLimitMessage : d.error;
       }
@@ -145,7 +167,7 @@ export function makeOutboundTool<A>(
 
   async function recordDraftFeedback(
     ctx: MatchContext,
-    draft: { error: string; kind?: 'research_required' },
+    draft: { error: string; kind?: 'research_required' | 'no_new_help' },
   ) {
     if (draft.kind !== 'research_required') {
       await recordInvalidDraft(ctx, 'invalid_evidence', [draft.error]);

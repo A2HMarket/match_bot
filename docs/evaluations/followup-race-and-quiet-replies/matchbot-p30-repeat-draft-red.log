@@ -1,0 +1,50 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts (42 tests | 1 failed) 59ms
+   ❯ reply_to_request (42)
+     × suppresses the actual recorded repeat draft for an already answered context supplement 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/tools/reply-to-request.test.ts > reply_to_request > suppresses the actual recorded repeat draft for an already answered context supplement
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 1 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array [
+      Object {
+        "channel": "telegram",
+        "kind": "recommendation",
+        "phase": 2,
+        "target": "-1",
+        "text": "狗岛这边能核实的渠道：Docklands Pharmacy 是 NHS 社区药房，公开写明对 E14 等邮编提供免费处方配送，但非处方止疼药是否配送、有没有货、能不能当天送都没写，建议你先打电话问清这三点。普通止疼药在超市和商店也能直接买到，不过你出不了门，这条暂时用不上。
+    
+    配送若走不通，可以让能出门的邻居朋友代买，或问药房能否安排送药上门。
+    
+    来源：[1. NHS medicines information](https://www.nhs.uk/tests-and-treatments/medicines-information) · [2. Docklands Pharmacy](https://docklandspharmacy.co.uk)",
+      },
+      "pending",
+    ]
+
+
+Number of calls: 1
+
+ ❯ packages/agent/tests/tools/reply-to-request.test.ts:67:41
+     65|     c.knowledgeSources=fixture.sources.map((source,i)=>createKnowledge…
+     66|     await t.invoke({context:c} as never,JSON.stringify({kind:'partial'…
+     67|     expect(d.repos.outbound.create).not.toHaveBeenCalled();expect(d.ev…
+       |                                         ^
+     68|   });
+     69|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 41 passed (42)
+   Start at  22:55:59
+   Duration  639ms (import 52%, transform 37%, tests 10%)
+

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { DEFAULT_THRESHOLDS } from '@matchbot/gating';
 import { describe, expect, it, vi } from 'vitest';
 import type { MatchContext } from '../../src/context.js';
@@ -55,6 +56,62 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('uses the source-rendering outbound kind for a factual answer that also asks a question', async () => {
+    const { c, d, t } = setup(0);
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        ...args,
+        kind: 'clarification',
+        text: '没有NHS number也能注册GP。你希望先看办理入口吗？',
+      }),
+    );
+    expect(d.repos.outbound.create.mock.calls[0]?.[0]).toMatchObject({ kind: 'recommendation' });
+  });
+  it('suppresses the actual recorded repeat draft for an already answered context supplement', async () => {
+    const fixture = JSON.parse(
+      readFileSync(new URL('../fixtures/headache-repeat-draft.json', import.meta.url), 'utf8'),
+    ) as {
+      text: string;
+      sources: Array<{ title: string; url: string; text: string }>;
+      evidence: unknown[];
+    };
+    const { d, c, t } = setup(2);
+    bindCurrentRequest(c, '头痛');
+    c.task = taskSchema.parse({
+      id: 'task',
+      ownerUserId: 'u',
+      scope: { channel: 'telegram', chatId: '-1' },
+      objective: '取药渠道',
+      status: 'active',
+      revision: 1,
+      requirementsVersion: 1,
+      goals: [],
+      constraints: [],
+      evidence: fixture.evidence,
+      pendingQuestion: null,
+      blockReason: null,
+      delivery: { status: 'none', level: 'none' },
+      userConfirmation: null,
+    });
+    c.taskProgressVersion = 1;
+    c.taskUpdate = { kind: 'continued' };
+    c.quietSupplementTaskId = 'task';
+    Object.assign(c, { quietSupplementEvidenceIds: c.task.evidence.map((e) => e.id) });
+    c.knowledgeSources = fixture.sources.map((source, i) => createKnowledgeSource(source, i + 1));
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        text: fixture.text,
+        refs: c.knowledgeSources.map((s) => s.ref),
+      }),
+    );
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+    expect(c.replySuppressed).toBe(true);
+  });
+
   it('reports an unplanned question before source-number repair, so later validation does not consume the last retry', async () => {
     const { c, t } = setup(0);
     c.execution = {

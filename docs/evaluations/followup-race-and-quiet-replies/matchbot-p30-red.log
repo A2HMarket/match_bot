@@ -1,0 +1,49 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/tools/plan-task.test.ts (14 tests | 1 failed) 60ms
+   ❯ delivery receipt task revision race (2)
+     × refreshes once only when the requirements are unchanged (changed=false) 14ms
+ ❯ packages/agent/tests/run.test.ts (26 tests | 1 failed) 260ms
+   ❯ runInbound (24)
+     × does not emit an unbound generic status when preparation fails for a short supplement 45ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/run.test.ts > runInbound > does not emit an unbound generic status when preparation fails for a short supplement
+AssertionError: expected { kind: 'completed', …(1) } to deeply equal { kind: 'completed', toolsCalled: [] }
+
+- Expected
++ Received
+
+  {
+    "kind": "completed",
+-   "toolsCalled": [],
++   "toolsCalled": [
++     "reply_request_status",
++   ],
+  }
+
+ ❯ packages/agent/tests/run.test.ts:95:20
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  packages/agent/tests/tools/plan-task.test.ts > delivery receipt task revision race > refreshes once only when the requirements are unchanged (changed=false)
+AssertionError: expected "vi.fn()" to be called 2 times, but got 1 times
+ ❯ packages/agent/tests/tools/plan-task.test.ts:125:22
+    123|     Object.assign(repos.tasks,{findById,planTurn});
+    124|     await tool.invoke(new RunContext(ctx),JSON.stringify(base));
+    125|     expect(planTurn).toHaveBeenCalledTimes(changed?1:2);
+       |                      ^
+    126|     if(!changed){expect(planTurn.mock.calls[1]?.[0]).toMatchObject({ta…
+    127|     else expect(ctx.task).toBeUndefined();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 38 passed (40)
+   Start at  22:40:40
+   Duration  1.01s (import 43%, transform 35%, tests 22%)
+

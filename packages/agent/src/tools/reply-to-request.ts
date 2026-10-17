@@ -11,6 +11,7 @@ import {
   hasUnrecordedSourceFailureClaim,
 } from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
+import { canSkipSupplementReply, hasNewSupplementEvidence } from '../supplement-replies.js';
 import { taskDeliveryForOutbound } from '../task-outbound.js';
 import { claimsCompleteMarketFit, claimsUnverifiedTravelFit } from '../market-summary-claims.js';
 
@@ -280,7 +281,8 @@ export function replyToRequestTool(deps: AgentDeps) {
       };
       // Discover a missing question plan before factual repairs consume the bounded input attempts.
       taskDeliveryForOutbound(ctx, {
-        kind: args.kind === 'clarification' ? 'clarification' : 'recommendation',
+        kind:
+          args.kind === 'clarification' && !args.refs.length ? 'clarification' : 'recommendation',
         target: ctx.chatId,
         text: args.text,
         inputRef: ctx.sourceMessageId,
@@ -480,6 +482,30 @@ export function replyToRequestTool(deps: AgentDeps) {
               )
               .join(' · ');
       }
+      if (
+        !market.length &&
+        canSkipSupplementReply(ctx) &&
+        !hasNewSupplementEvidence(ctx, args.refs)
+      ) {
+        ctx.replySuppressed = true;
+        await deps.repos.traces.create({
+          kind: 'gate',
+          inputRef: ctx.sourceMessageId,
+          phase: ctx.phase,
+          latencyMs: 0,
+          costMicro: 0,
+          output: {
+            gate: 'request_answer',
+            decision: 'suppressed',
+            reason: 'no_new_source_evidence_for_context_supplement',
+          },
+        });
+        return {
+          error:
+            'No new source evidence for this context addition; end quietly without repeating prior recommendations or questions.',
+          kind: 'no_new_help',
+        };
+      }
       if (text.length > 3700) return { error: 'answer too long: choose fewer sources or offers' };
       await deps.repos.traces.create({
         kind: 'gate',
@@ -495,7 +521,8 @@ export function replyToRequestTool(deps: AgentDeps) {
         costMicro: 0,
       });
       return {
-        kind: args.kind === 'clarification' ? 'clarification' : 'recommendation',
+        kind:
+          args.kind === 'clarification' && !args.refs.length ? 'clarification' : 'recommendation',
         target: ctx.chatId,
         text,
         taskQuestionText: args.text,

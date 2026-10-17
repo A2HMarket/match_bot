@@ -11,6 +11,7 @@ import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
 import { selectMarketTradeType } from '@matchbot/gating';
 import type { AgentDeps, MatchContext } from '../context.js';
+import { isContextSupplement, hasSameActionConditions } from '../supplement-replies.js';
 import { groundTaskConfirmation } from '../task-confirmation.js';
 import {
   normalizeTaskPatch,
@@ -94,6 +95,23 @@ function validateProposal(p: {
     },
   });
 }
+function canRefreshRevision(previous: UserTask, current: UserTask): boolean {
+  return (
+    current.id === previous.id &&
+    current.ownerUserId === previous.ownerUserId &&
+    current.scope.chatId === previous.scope.chatId &&
+    current.scope.channel === previous.scope.channel &&
+    current.requirementsVersion === previous.requirementsVersion &&
+    current.category === previous.category &&
+    current.objective === previous.objective &&
+    current.counterparty === previous.counterparty &&
+    !['completed', 'cancelled', 'expired'].includes(current.status) &&
+    JSON.stringify(current.userConfirmation) === JSON.stringify(previous.userConfirmation) &&
+    JSON.stringify(current.goals.map((g) => [g.id, g.userConfirmation])) ===
+      JSON.stringify(previous.goals.map((g) => [g.id, g.userConfirmation]))
+  );
+}
+
 async function applyProposal(p: {
   deps: AgentDeps;
   ctx: MatchContext;
@@ -144,7 +162,7 @@ async function applyProposal(p: {
     ctx.taskUpdate = { kind: 'ambiguous' };
     return 'task prepared: ambiguous';
   }
-  const selected =
+  let selected =
     selection.kind === 'selected'
       ? candidates.find((t) => t.id === selection.taskId)
       : selection.kind === 'new'
@@ -165,7 +183,7 @@ async function applyProposal(p: {
     userId: ctx.userId,
     scope: { channel: ctx.channel ?? 'telegram', chatId: ctx.chatId },
   };
-  const result = await deps.repos.tasks.planTurn({
+  const turnInput: Parameters<AgentDeps['repos']['tasks']['planTurn']>[0] = {
     access,
     taskId: selection.kind === 'new' ? null : selected.id,
     creation:
@@ -181,9 +199,30 @@ async function applyProposal(p: {
     sourceMessageId: ctx.sourceMessageId,
     patch,
     outcome: args.outcome ? { intent: args.outcome.intent, goalIds: args.outcome.goalIds } : null,
-  });
+  };
+  let result = await deps.repos.tasks.planTurn(turnInput);
+  if (result.kind === 'conflict' && selection.kind === 'selected') {
+    const latest = await deps.repos.tasks.findById({ access, id: selected.id });
+    if (latest && canRefreshRevision(selected, latest)) {
+      validateProposal({ task: latest, args, patch, ctx, text: p.text });
+      await record(deps, { ...ctx, task: latest }, 'operational_revision_refreshed');
+      selected = latest;
+      result = await deps.repos.tasks.planTurn({ ...turnInput, expectedRevision: latest.revision });
+    }
+  }
   if (result.kind !== 'applied' && result.kind !== 'replayed')
     throw new Error('task changed; do not overwrite another turn');
+  if (
+    selection.kind === 'selected' &&
+    selected.delivery.status === 'sent' &&
+    isContextSupplement(p.text) &&
+    hasSameActionConditions(selected, result.task)
+  ) {
+    ctx.quietSupplementTaskId = selected.id;
+    ctx.quietSupplementEvidenceIds = selected.evidence
+      .filter((e) => e.kind === 'source_excerpt')
+      .map((e) => e.id);
+  }
   ctx.task = result.task;
   ctx.taskUpdate = {
     kind:
