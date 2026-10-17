@@ -62,6 +62,7 @@ export interface MatchContext {
   answerRecorded?: boolean;
   /** Server-bound same-task context addition after a delivered answer; not a general silent-mode permission. */
   quietSupplementTaskId?: string;
+  quietSupplementEvidenceIds?: string[];
   replySuppressed?: boolean;
   isRequestStatusRun?: boolean;
   outboundDeclineReason?: 'unverified_claims' | 'low_value' | 'jev_unavailable' | 'rate_limited';

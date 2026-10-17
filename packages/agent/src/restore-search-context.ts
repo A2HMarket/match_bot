@@ -36,6 +36,7 @@ export const researchContextSchema = z.object({
   isRequestStatusRun: z.boolean().optional(),
   outboundBlocked: z.boolean().optional(),
   quietSupplementTaskId: z.string().optional(),
+  quietSupplementEvidenceIds: z.array(z.string()).max(128).optional(),
   replySuppressed: z.boolean().optional(),
   knowledgeSources: z.array(knowledgeSourceSchema).max(16).optional(),
   informationQueries: z.array(z.string()).max(4).optional(),
@@ -117,6 +118,9 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
     ...(saved.sourceReviewCache ? { sourceReviewCache: saved.sourceReviewCache } : {}),
     ...(saved.outboundDeclineReason ? { outboundDeclineReason: saved.outboundDeclineReason } : {}),
     ...(saved.quietSupplementTaskId ? { quietSupplementTaskId: saved.quietSupplementTaskId } : {}),
+    ...(saved.quietSupplementEvidenceIds
+      ? { quietSupplementEvidenceIds: saved.quietSupplementEvidenceIds }
+      : {}),
     ...(saved.replySuppressed !== undefined ? { replySuppressed: saved.replySuppressed } : {}),
     ...(saved.outboundBlocked !== undefined ? { outboundBlocked: saved.outboundBlocked } : {}),
     ...(saved.isRequestStatusRun !== undefined

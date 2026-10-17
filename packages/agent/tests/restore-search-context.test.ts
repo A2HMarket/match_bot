@@ -43,10 +43,15 @@ describe('restoreSearchContext', () => {
   it('preserves the server quiet decision through the encrypted-checkpoint payload shape', () => {
     const restored = restoreSearchContext(
       ctx,
-      snapshot({ quietSupplementTaskId: 'task', replySuppressed: true }),
+      snapshot({
+        quietSupplementTaskId: 'task',
+        quietSupplementEvidenceIds: ['e:known'],
+        replySuppressed: true,
+      }),
     );
     expect(restored.quietSupplementTaskId).toBe('task');
     expect(restored.replySuppressed).toBe(true);
+    expect(restored.quietSupplementEvidenceIds).toEqual(['e:known']);
   });
   it('retains server-bound budget units at plan and goal level across approval restoration', () => {
     const rules = { preferences: [], budget: 1600, budgetUnit: 'month' };

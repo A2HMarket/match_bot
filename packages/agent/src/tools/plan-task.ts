@@ -11,7 +11,7 @@ import { tool, type RunContext } from '@openai/agents';
 import { z } from 'zod';
 import { selectMarketTradeType } from '@matchbot/gating';
 import type { AgentDeps, MatchContext } from '../context.js';
-import { isContextSupplement } from '../supplement-replies.js';
+import { isContextSupplement, hasSameActionConditions } from '../supplement-replies.js';
 import { groundTaskConfirmation } from '../task-confirmation.js';
 import {
   normalizeTaskPatch,
@@ -215,9 +215,14 @@ async function applyProposal(p: {
   if (
     selection.kind === 'selected' &&
     selected.delivery.status === 'sent' &&
-    isContextSupplement(p.text)
-  )
+    isContextSupplement(p.text) &&
+    hasSameActionConditions(selected, result.task)
+  ) {
     ctx.quietSupplementTaskId = selected.id;
+    ctx.quietSupplementEvidenceIds = selected.evidence
+      .filter((e) => e.kind === 'source_excerpt')
+      .map((e) => e.id);
+  }
   ctx.task = result.task;
   ctx.taskUpdate = {
     kind:

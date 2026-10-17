@@ -11,7 +11,8 @@ import {
   type OutboundDraftInput,
 } from './outbound-gate.js';
 
-export type DraftResult = OutboundDraftInput | { error: string; kind?: 'research_required' };
+export type DraftResult =
+  OutboundDraftInput | { error: string; kind?: 'research_required' | 'no_new_help' };
 
 /**
  * 四个出站工具共用的骨架：needsApproval 与 execute 都只经 outbound-gate 决定（AGENTS.md §3.3
@@ -104,6 +105,7 @@ export function makeOutboundTool<A>(
       }
       const d = await toDraft(ctx, toArgs(args));
       if ('error' in d) {
+        if (d.kind === 'no_new_help') return false;
         await recordDraftFeedback(ctx, d);
         if (callId) {
           const calls = rejectedCalls.get(ctx) ?? new Map<string, string>();
@@ -141,6 +143,7 @@ export function makeOutboundTool<A>(
       if (rejection) return rejection;
       const d = await toDraft(ctx, toArgs(args));
       if ('error' in d) {
+        if (d.kind === 'no_new_help') return d.error;
         await recordDraftFeedback(ctx, d);
         return ctx.outboundBlocked ? retryLimitMessage : d.error;
       }
@@ -164,7 +167,7 @@ export function makeOutboundTool<A>(
 
   async function recordDraftFeedback(
     ctx: MatchContext,
-    draft: { error: string; kind?: 'research_required' },
+    draft: { error: string; kind?: 'research_required' | 'no_new_help' },
   ) {
     if (draft.kind !== 'research_required') {
       await recordInvalidDraft(ctx, 'invalid_evidence', [draft.error]);

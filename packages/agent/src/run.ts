@@ -1,5 +1,5 @@
 import { replyRequestStatusTool } from './tools/reply-request-status.js';
-import { isContextSupplement } from './supplement-replies.js';
+import { isContextSupplement, canSkipSupplementReply } from './supplement-replies.js';
 import { bindCurrentRequest } from './current-request.js';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -221,7 +221,7 @@ export async function runInbound(p: {
     p.ctx.currentRequest?.isActionable &&
     p.ctx.currentRequest.demand.category !== 'job'
   )
-    return p.ctx.outboundBlocked || p.ctx.answerInputExhausted
+    return canSkipSupplementReply(p.ctx) || p.ctx.outboundBlocked || p.ctx.answerInputExhausted
       ? respondRequestStatus(p, session)
       : finalizeRequest(p, session);
   return settle(p.deps, p.ctx, result);
@@ -281,6 +281,22 @@ async function respondRequestStatus(
     p.ctx.replySuppressed
   )
     return { kind: 'completed', toolsCalled: [] };
+  if (canSkipSupplementReply(p.ctx)) {
+    p.ctx.replySuppressed = true;
+    await p.deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: p.ctx.sourceMessageId,
+      phase: p.ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+      output: {
+        gate: 'request_status',
+        decision: 'suppressed',
+        reason: 'no_new_help_for_context_supplement',
+      },
+    });
+    return { kind: 'completed', toolsCalled: [] };
+  }
   p.ctx.isRequestStatusRun = true;
   await p.deps.repos.traces.create({
     kind: 'gate',

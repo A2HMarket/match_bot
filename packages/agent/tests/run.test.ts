@@ -86,7 +86,65 @@ const replyCall = (callId = 'c1') =>
     { callId },
   );
 
+function medicineTask() {
+  return taskSchema.parse({
+    id: 'old',
+    ownerUserId: 'u1',
+    scope: { channel: 'telegram', chatId: '-1' },
+    objective: '找药',
+    category: 'other',
+    status: 'active',
+    revision: 1,
+    goals: [],
+    constraints: [],
+    evidence: [],
+    pendingQuestion: null,
+    blockReason: null,
+    delivery: { status: 'sent', level: 'partial', outboundMessageId: 'previous' },
+    userConfirmation: null,
+  });
+}
+
 describe('runInbound', () => {
+  it('does not force a generic status for a declined context supplement', async () => {
+    const model = new ScriptedModel([
+      [
+        functionCall(
+          'update_task',
+          { taskRef: 'old', referenceQuote: null, goals: [], constraints: [], outcome: null },
+          { callId: 'continue' },
+        ),
+      ],
+      [assistantMessage('no new helpful result')],
+    ]);
+    const { deps, repos } = makeDeps(model),
+      existing = medicineTask(),
+      context = { ...ctx(2), outboundBlocked: true };
+    const result = await runInbound({
+      deps: {
+        ...deps,
+        answerRequests: true,
+        taskRequests: true,
+        repos: {
+          ...repos,
+          tasks: {
+            findOpenByScope: () => Promise.resolve([existing]),
+            planTurn: () =>
+              Promise.resolve({
+                kind: 'applied',
+                task: { ...existing, revision: 2, delivery: { status: 'none', level: 'none' } },
+              }),
+          },
+        },
+      } as never,
+      ctx: context,
+      input: '头痛',
+    });
+    expect(result).toEqual({ kind: 'completed', toolsCalled: [] });
+    expect(context.outboundBlocked).toBe(true);
+    expect(repos.outbound.create).not.toHaveBeenCalled();
+    expect(deps.evaluateOutbound).not.toHaveBeenCalled();
+  });
   it('honors an explicit no-new-help decision without finalizing it into another status', async () => {
     const model = new ScriptedModel([
       [
@@ -106,22 +164,7 @@ describe('runInbound', () => {
       [assistantMessage('done')],
     ]);
     const { deps, repos } = makeDeps(model);
-    const existing = taskSchema.parse({
-      id: 'old',
-      ownerUserId: 'u1',
-      scope: { channel: 'telegram', chatId: '-1' },
-      objective: '找药',
-      category: 'other',
-      status: 'active',
-      revision: 1,
-      goals: [],
-      constraints: [],
-      evidence: [],
-      pendingQuestion: null,
-      blockReason: null,
-      delivery: { status: 'sent', level: 'partial', outboundMessageId: 'previous' },
-      userConfirmation: null,
-    });
+    const existing = medicineTask();
     const result = await runInbound({
       deps: {
         ...deps,
@@ -161,22 +204,7 @@ describe('runInbound', () => {
       [functionCall('clarify_task', { reason: 'ambiguous_reference' }, { callId: 'clarify' })],
     ]);
     const { deps, repos } = makeDeps(model);
-    const existing = taskSchema.parse({
-      id: 'old',
-      ownerUserId: 'u1',
-      scope: { channel: 'telegram', chatId: '-1' },
-      objective: '找药',
-      category: 'other',
-      status: 'active',
-      revision: 1,
-      goals: [],
-      constraints: [],
-      evidence: [],
-      pendingQuestion: null,
-      blockReason: null,
-      delivery: { status: 'sent', level: 'partial', outboundMessageId: 'previous' },
-      userConfirmation: null,
-    });
+    const existing = medicineTask();
     const result = await runInbound({
       deps: {
         ...deps,

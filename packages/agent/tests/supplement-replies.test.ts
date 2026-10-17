@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { canSkipSupplementReply, isContextSupplement } from '../src/supplement-replies.js';
+import {
+  canSkipSupplementReply,
+  isContextSupplement,
+  hasSameActionConditions,
+  hasNewSupplementEvidence,
+} from '../src/supplement-replies.js';
 import { taskSchema } from '@matchbot/domain';
 import type { MatchContext } from '../src/context.js';
 describe('quiet context additions', () => {
@@ -45,6 +50,64 @@ describe('quiet context additions', () => {
       }),
     } as MatchContext;
     expect(canSkipSupplementReply(ctx)).toBe(true);
+    expect(
+      hasSameActionConditions(ctx.task!, {
+        ...ctx.task!,
+        constraints: [
+          {
+            key: 'custom:context',
+            strength: 'preference',
+            value: { kind: 'text', text: '头痛' },
+            origin: { kind: 'user', sourceMessageId: 'm' },
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      hasSameActionConditions(ctx.task!, {
+        ...ctx.task!,
+        constraints: [
+          {
+            key: 'self_collect',
+            strength: 'hard',
+            value: { kind: 'boolean', value: false },
+            origin: { kind: 'user', sourceMessageId: 'm' },
+          },
+        ],
+      }),
+    ).toBe(false);
+    ctx.task!.evidence = [
+      {
+        id: 'old',
+        goalId: 'g',
+        kind: 'source_excerpt',
+        sourceRef: 'web:old',
+        summary: 'Known pharmacy directory',
+        url: 'https://www.nhs.uk/finder',
+        observedAt: '2026-10-17T00:00:00Z',
+      },
+    ];
+    ctx.quietSupplementEvidenceIds = ['old'];
+    ctx.knowledgeSources = [
+      {
+        ref: 'k1',
+        title: 'NHS',
+        url: 'https://www.nhs.uk/finder',
+        text: 'Known pharmacy directory',
+        fetchedAt: '2026-10-17T00:00:00Z',
+        passages: [{ id: 'k1:p1', text: 'Known pharmacy directory' }],
+      },
+    ];
+    expect(hasNewSupplementEvidence(ctx, ['k1'])).toBe(false);
+    ctx.task!.evidence.push({
+      ...ctx.task!.evidence[0]!,
+      id: 'new',
+      summary: 'New relevant delivery term',
+    });
+    expect(hasNewSupplementEvidence(ctx, ['k1'])).toBe(true);
+    ctx.knowledgeSources[0]!.url = 'https://www.nhs.uk/new-pharmacy';
+    expect(hasNewSupplementEvidence(ctx, ['k1'])).toBe(true);
+
     expect(canSkipSupplementReply({ ...ctx, userId: 'other' })).toBe(false);
     expect(canSkipSupplementReply({ ...ctx, chatId: 'other' })).toBe(false);
     expect(canSkipSupplementReply({ ...ctx, taskUpdate: { kind: 'new' } })).toBe(false);
