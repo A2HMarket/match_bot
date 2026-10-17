@@ -88,8 +88,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
         actor = cfg.actors[i]!;
       if (String(me.id) !== actor.id || me.username.toLowerCase() !== actor.username.toLowerCase())
         throw new Error('wrong_actor_identity');
-      if (!me.can_read_all_group_messages)
-        throw new Error('actor_requires_group_message_visibility');
+      // Actors only consume direct replies to their own run messages; group-wide access is unnecessary.
       const member = z
         .object({ status: z.enum(['member', 'administrator', 'creator']) })
         .parse(await bot.api.getChatMember(Number(cfg.groupId), Number(actor.id)));
