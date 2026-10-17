@@ -15,6 +15,7 @@ import { createJevClient, evaluateOutbound } from '../../../packages/jev/src/ind
 import { DEFAULT_THRESHOLDS } from '../../../packages/gating/src/index.js';
 import { loadEnv, createLogger } from '../../../packages/shared/src/index.js';
 import { drainOutbound } from '../../../apps/bot/src/outbound-loop.js';
+import { waitForPreviewOutbounds } from './preview-delivery.mjs';
 const fixtureBytes = readFileSync(
   'packages/eval/fixtures/task-agent/xhs-conversation.json',
   'utf8',
@@ -178,9 +179,9 @@ try {
         },
       },
     });
-    const outbounds = await prisma.outboundMessage.findMany({
-      where: { sourceMessageId: accepted.message.id },
-      orderBy: { createdAt: 'asc' },
+    const outbounds = await waitForPreviewOutbounds({
+      prisma,
+      sourceMessageId: accepted.message.id,
     });
     const sent = outbounds.filter((row) => row.status === 'sent'),
       text = sent.map((row) => row.text).join('\n');

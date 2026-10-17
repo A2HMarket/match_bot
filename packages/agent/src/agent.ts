@@ -35,7 +35,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.16.25';
+export const AGENT_VERSION = '0.16.26';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:
@@ -156,7 +156,8 @@ export function createMatchAgent(
       ...(deps.env.DEEPSEEK_MODEL === 'deepseek-flash'
         ? { providerData: { thinking: { type: 'disabled' } } }
         : {}),
-      ...(deps.env.DEEPSEEK_MODEL === 'deepseek-flash' && run?.taskPlanningOnly
+      ...(deps.env.DEEPSEEK_MODEL === 'deepseek-flash' &&
+      (run?.taskPlanningOnly || deps.taskRequests)
         ? { temperature: 0 }
         : {}),
       ...(run?.taskPlanningOnly || deps.taskRequests ? { parallelToolCalls: false } : {}),

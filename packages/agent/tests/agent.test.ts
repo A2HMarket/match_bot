@@ -15,6 +15,18 @@ describe('londonToday', () => {
 });
 
 describe('generation settings', () => {
+  it('uses factual task generation with explicit low sampling while leaving other model providers unchanged', () => {
+    const deps = {
+      env: { DEEPSEEK_MODEL: 'deepseek-flash' },
+      taskRequests: true,
+      answerRequests: true,
+    };
+    expect(createMatchAgent(deps as never, { phase: 0 }).agent.modelSettings.temperature).toBe(0);
+    expect(
+      createMatchAgent({ ...deps, env: { DEEPSEEK_MODEL: 'custom-model' } } as never, { phase: 0 })
+        .agent.modelSettings.temperature,
+    ).toBeUndefined();
+  });
   it('serializes dependent task steps and requires the final outbound tool even without XHS', () => {
     const deps = {
       env: { DEEPSEEK_MODEL: 'deepseek-flash' },

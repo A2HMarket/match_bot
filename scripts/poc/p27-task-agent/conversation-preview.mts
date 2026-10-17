@@ -22,6 +22,7 @@ import {
   taskConversationsSchema,
 } from '../../../packages/eval/src/task-contract.js';
 import { drainOutbound } from '../../../apps/bot/src/outbound-loop.js';
+import { waitForPreviewOutbounds } from './preview-delivery.mjs';
 
 const sampleId = z.enum(['desk_chair', 'cat_housing', 'beginner_bad']).parse(process.argv[2]);
 const output = process.argv[3] ?? '/tmp/matchbot-task-conversation-' + sampleId + '.json';
@@ -77,6 +78,13 @@ const logger = createLogger('p27-conversation-preview', 'warn');
 const prisma = getPrisma(env.DATABASE_URL),
   repos = createRepositories(prisma);
 const processor = createTraceProcessor({ traces: repos.traces, logger });
+const sdkFailures: Array<{ type: string; message: string }> = [];
+const recordSpan = processor.onSpanEnd.bind(processor);
+processor.onSpanEnd = (span) => {
+  if (span.error)
+    sdkFailures.push({ type: span.spanData.type, message: span.error.message.slice(0, 1600) });
+  return recordSpan(span);
+};
 configureModelProvider(env, [processor]);
 const queries: unknown[] = [],
   details: string[] = [],
@@ -136,6 +144,7 @@ const save = (status: string) =>
         sampleId,
         sourceFingerprint,
         agentVersion: AGENT_VERSION,
+        harnessVersion: 'receipt-wait-v2',
         model: env.DEEPSEEK_MODEL,
         jevModel: env.JEV_MODEL,
         status,
@@ -145,6 +154,7 @@ const save = (status: string) =>
         corpusHash: createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
         results,
         draftChecks,
+        sdkFailures,
         queries,
         details,
       },
@@ -240,9 +250,9 @@ try {
           },
         },
       });
-      const outbounds = await prisma.outboundMessage.findMany({
-        where: { sourceMessageId: accepted.message.id, approvalRunStateId: null },
-        orderBy: { createdAt: 'asc' },
+      const outbounds = await waitForPreviewOutbounds({
+        prisma,
+        sourceMessageId: accepted.message.id,
       });
       const sent = outbounds.filter((row) => row.status === 'sent');
       const message = sent.find((row) => row.externalMessageId);
