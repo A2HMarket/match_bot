@@ -2,12 +2,12 @@
 
 依赖P24；与P25接口串行衔接。验收以[P24总计划](./P24-task-agent-plan-and-acceptance.md)A13–A16为准。
 
-- [ ] TaskTurn/TaskEvent的版本和幂等、租约/fencing，跨入站/恢复按用户协调。
-- [ ] 消息已存在但未执行完成可恢复，不能用无条件duplicate_delivery丢弃。
-- [ ] 审批决定与可补投resume意图同事务，Redis失败可补发且消费幂等。
-- [ ] 出站原子认领、发送回执、已明确失败重试、delivery_unknown保留待核对。
-- [ ] queued/sent/用户完成分开，问题送达才等待用户，重启可重建。
-- [ ] 隔离真实DB/并发进程故障注入逐点验收，清理与PII回归。
+- [x] TaskTurn/TaskEvent的版本和幂等、租约/fencing，跨入站/恢复按用户协调。
+- [x] 消息已存在但未执行完成可恢复，不能用无条件duplicate_delivery丢弃。
+- [x] 审批决定与可补投resume意图同事务，Redis失败可补发且消费幂等。
+- [x] 出站原子认领、发送回执、已明确失败重试、delivery_unknown保留待核对。
+- [x] queued/sent/用户完成分开，问题送达才等待用户，重启可重建。
+- [x] 隔离真实DB/并发进程故障注入逐点验收，清理与PII回归。
 
 不承诺外部Telegram exactly-once，不盲重发不确定结果，不增加未经委托的后台触达/商家联系。
 
@@ -24,3 +24,7 @@
 任务回执阶段进展：复用Task与出站，排队/拟发问题及sent/unknown/failed同事务关联；Phase0不假送达，只有已发问题才waiting_user。外部消息编号按owner/会话解析回复anchor；新轮次（含同条件）取代旧拟发与审批，发送前复核。全检95文件/803测试，任务域分支280/280；SDK两任务接话和PG回执测试通过；入站/审批真实进程证明复跑通过。真实DeepSeek/Jev房源v13两轮8/8，仅这一场景回归，不计三核心或Telegram。详见docs/evaluations/2026-10-17-task-delivery-receipts.md。剩余：审批卡持久投递、快照清理、日期/布尔语义负例、完整质量门与最终验收发布。
 
 本轮实现卡片持久投递/版本化发现/固定Ops收件人与来源阶段复核，worker不再直接发卡；统一sender/fence/回执及unknown保守方向。快照三种状态内容与卡片副本7天清理，新fence及新快照受保护。真实SDK+独立发布/恢复进程+SIGKILL+本地HTTP证明通过；截断问题误等待漏洞也已复现并修复。并行修复真实模型v14–v16暴露的历史检索词丢失、预算口径、禁宠和明确日期问题；v17两轮8/8，但不是三核心验收。详见docs/evaluations/2026-10-17-durable-approval-cards-and-search-context.md。P26保持进行中，最终整体验收与发布仍待P27。
+
+## 最终交付记录（PR合并生效）
+
+最终0.16.29/c71b959，117文件969测试与build/eval通过，固定源三核心各3/3；原两人群完成三核心多轮、无精准匹配与取消，保留Jev故障/原A3规划失败。14条迁移、备份restore、launchd单例及当前SIGKILL/审批恢复通过。朋友感采用0.16.27六对版本隐藏作者代理，不冒充真人满意率。后续周租、Jev响应体超时、worker关闭竞态与A3规格误拦均有红绿证据。主干交付只在PR #2常规CI成功并合并后生效，合并前不算总目标完成。详见docs/evaluations/2026-10-17-task-agent-local-release.md与验收矩阵。

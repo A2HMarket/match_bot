@@ -1,0 +1,36 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/task-proposal.test.ts (20 tests | 4 failed) 21ms
+   ❯ task proposal normalization (20)
+     × retains source-attested subject codes in acceptance labels: A3彩色无线激光打印机 3ms
+     × retains source-attested subject codes in acceptance labels: PS5游戏机 0ms
+     × retains source-attested subject codes in acceptance labels: iPhone14手机 0ms
+     × retains source-attested subject codes in acceptance labels: 1b1b公寓 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > retains source-attested subject codes in acceptance labels: A3彩色无线激光打印机
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > retains source-attested subject codes in acceptance labels: PS5游戏机
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > retains source-attested subject codes in acceptance labels: iPhone14手机
+ FAIL  packages/agent/tests/task-proposal.test.ts > task proposal normalization > retains source-attested subject codes in acceptance labels: 1b1b公寓
+TaskProposalError: Keep criterion labels parameter-free; bind monetary/date/numeric conditions with constraintKey rather than copying a value into the label.
+ ❯ packages/agent/src/task-proposal.ts:368:15
+    366|         !!constraintKey && !has(constraintKey) && criterion.strength =…
+    367|       if (!constraintKey && /\d/.test(criterion.label))
+    368|         throw new TaskProposalError(
+       |               ^
+    369|           'Keep criterion labels parameter-free; bind monetary/date/nu…
+    370|         );
+ ❯ packages/agent/src/task-proposal.ts:359:36
+ ❯ normalizeTaskPatch packages/agent/src/task-proposal.ts:357:31
+ ❯ packages/agent/tests/task-proposal.test.ts:55:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 16 passed (20)
+   Start at  14:10:13
+   Duration  189ms (transform 50%, import 32%, tests 17%, worker 2%)
+

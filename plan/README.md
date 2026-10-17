@@ -40,10 +40,10 @@
 
 | P22 | 本轮需求与回答Agent改造 | [P22-request-answer-agent.md](./P22-request-answer-agent.md) | P21 | 5 | codex | 完成 | 0.14.2；580测试；原24题两轮18sent；失败子集7/8；证据与剩余问题已记录 | 2026-10-12 |
 | P23 | Jev请求状态回复 | [P23-jev-request-status.md](./P23-jev-request-status.md) | P22 | 5 | codex | 完成 | 0.15.1；594测试；6/6真实sent；Jev正反例8/8；固定状态/审批/缓存回归 | 2026-10-12 |
-| P24 | 任务Agent总计划、验收与任务基础 | [P24-task-agent-plan-and-acceptance.md](./P24-task-agent-plan-and-acceptance.md) | P23 | 6 | codex | 进行中 | 先冻结A01–A18；领域/持久化与任务关联 | 2026-10-17 |
-| P25 | 任务规划与朋友式帮助 | [P25-task-planning-and-companion.md](./P25-task-planning-and-companion.md) | P24 | 6 | codex | 进行中 | 0.16.26三核心各3/3、代理审阅6/6；待真实渠道验收 | 2026-10-17 |
-| P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 进行中 | 卡片/快照/进程证明通过；946测试，待实际切换合并 | 2026-10-17 |
-| P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 进行中 | 最终固定源pass³、代理6/6、双任务/XHS通过；待CI/Telegram/发布 | 2026-10-17 |
+| P24 | 任务Agent总计划、验收与任务基础 | [P24-task-agent-plan-and-acceptance.md](./P24-task-agent-plan-and-acceptance.md) | P23 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
+| P25 | 任务规划与朋友式帮助 | [P25-task-planning-and-companion.md](./P25-task-planning-and-companion.md) | P24 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
+| P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
+| P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
 
 
 ## 波次与并行
@@ -74,3 +74,5 @@
 | M2 Shadow 上线 | P8–P11 完成，8 个群只听不说，看板有 Demand 数据 | Day 8 |
 | M3 首次审批发送 | P9 审批链路跑通，运营群批准后群里出现第一条回复 | Day 11 |
 | M4 Go / Pivot | P12 指标出来，P13 清单全勾 | Day 14 |
+
+P24–P27最终状态以PR #2合并main为生效点，功能分支上的完成标记不代表已合并。最新实际验收与失败边界见docs/evaluations/2026-10-17-task-agent-local-release.md。

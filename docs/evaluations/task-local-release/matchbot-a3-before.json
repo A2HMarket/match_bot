@@ -1,0 +1,57 @@
+{
+  "runId": "23a20188-ff37-49e1-9878-9ed471c36dc6",
+  "sourceFingerprint": "586bd4a4ae2076ae6ff2af004568bb2b7f7fbb5b95a52ee4d1f6a5bd1bf0d39a",
+  "agentVersion": "0.16.28",
+  "model": "deepseek-flash",
+  "status": "completed",
+  "elapsedMs": 5691,
+  "boundary": "synthetic user inputs; real model and isolated DB; no search, Jev or Telegram",
+  "results": [
+    {
+      "scenario": "a3_printer",
+      "turn": 0,
+      "input": "E14想收二手A3彩色无线激光打印机，20镑以内，今天自提。",
+      "elapsedMs": 4646,
+      "error": "MaxTurnsExceededError",
+      "failures": 2,
+      "calls": [
+        {
+          "name": "start_task",
+          "arguments": "{\"objective\": \"用户想收一台二手A3彩色无线激光打印机\", \"category\": \"second_hand\", \"goals\": [{\"id\": \"printer\", \"title\": \"A3彩色无线激光打印机\", \"required\": true, \"searchTerms\": [\"A3 colour laser printer\", \"A3 wireless laser printer second hand\", \"A3 colour laser printer E14\"], \"criteria\": [{\"id\": \"printer_subject\", \"label\": \"确为A3彩色无线激光打印机\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"printer_budget\", \"label\": \"核对当前单品预算\", \"strength\": \"hard\", \"constraintKey\": \"budget\"}, {\"id\": \"printer_area\", \"label\": \"核对取货区域\", \"strength\": \"hard\", \"constraintKey\": \"area\"}, {\"id\": \"printer_self_collect\", \"label\": \"核对是否支持今天自提\", \"strength\": \"hard\", \"constraintKey\": \"self_collect\"}], \"sourceQuote\": \"E14想收二手A3彩色无线激光打印机，20镑以内，今天自提\"}], \"constraints\": [{\"key\": \"budget\", \"goalId\": \"printer\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 2000, \"unit\": \"item\"}, \"sourceQuote\": \"20镑以内\"}, {\"key\": \"area\", \"goalId\": \"printer\", \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"E14\"}, \"sourceQuote\": \"E14\"}, {\"key\": \"self_collect\", \"goalId\": \"printer\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"今天自提\"}, \"sourceQuote\": \"今天自提\"}]}"
+        },
+        {
+          "name": "start_task",
+          "arguments": "{\"objective\": \"用户想收一台二手A3彩色无线激光打印机\", \"category\": \"second_hand\", \"goals\": [{\"id\": \"printer\", \"title\": \"A3彩色无线激光打印机\", \"required\": true, \"searchTerms\": [\"A3 colour laser printer\", \"A3 wireless laser printer second hand\", \"A3 colour laser printer E14\"], \"criteria\": [{\"id\": \"printer_subject\", \"label\": \"确为A3彩色无线激光打印机\", \"strength\": \"hard\", \"constraintKey\": null}, {\"id\": \"printer_budget\", \"label\": \"核对当前单品预算\", \"strength\": \"hard\", \"constraintKey\": \"budget\"}, {\"id\": \"printer_area\", \"label\": \"核对取货区域\", \"strength\": \"hard\", \"constraintKey\": \"area\"}, {\"id\": \"printer_self_collect\", \"label\": \"核对自提安排\", \"strength\": \"hard\", \"constraintKey\": \"self_collect\"}], \"sourceQuote\": \"E14想收二手A3彩色无线激光打印机，20镑以内，今天自提\"}], \"constraints\": [{\"key\": \"budget\", \"goalId\": \"printer\", \"strength\": \"hard\", \"value\": {\"kind\": \"money\", \"amountPence\": 2000, \"unit\": \"item\"}, \"sourceQuote\": \"20镑以内\"}, {\"key\": \"area\", \"goalId\": \"printer\", \"strength\": \"hard\", \"value\": {\"kind\": \"location\", \"area\": \"E14\"}, \"sourceQuote\": \"E14\"}, {\"key\": \"self_collect\", \"goalId\": \"printer\", \"strength\": \"hard\", \"value\": {\"kind\": \"text\", \"text\": \"今天自提\"}, \"sourceQuote\": \"今天自提\"}]}"
+        }
+      ]
+    },
+    {
+      "scenario": "a3_printer",
+      "turn": 1,
+      "input": "打印机这条先不用找了，取消这个需求",
+      "elapsedMs": 933,
+      "update": {
+        "kind": "ambiguous"
+      },
+      "failures": 0,
+      "calls": [
+        {
+          "id": "0d8fbcc9-9565-4465-8baf-4bee32507046",
+          "type": "function_call",
+          "arguments": "{\"reason\": \"ambiguous_reference\"}",
+          "name": "clarify_task",
+          "callId": "call_00_yG4nUYZ0EJbSFsJx62Tz3237",
+          "status": "completed",
+          "providerData": {
+            "index": 0,
+            "type": "function",
+            "function": {
+              "name": "clarify_task",
+              "arguments": "{\"reason\": \"ambiguous_reference\"}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

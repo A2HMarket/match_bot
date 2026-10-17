@@ -1,0 +1,79 @@
+
+ RUN  v5.0.1 /Users/huanghaibin/Workspace/match_bot
+
+ ❯ packages/agent/tests/market-strategy.test.ts (47 tests | 3 failed) 29ms
+   ❯ source-grounded market strategy (47)
+     × compares weekly housing quotes conservatively: 租金：£465pw (month) 5ms
+     × compares weekly housing quotes conservatively: 租金：周租£465 (month) 1ms
+     × compares weekly housing quotes conservatively: 租金：465pw (month) 0ms
+ ❯ packages/agent/tests/restore-search-context.test.ts (9 tests | 1 failed) 11ms
+   ❯ restoreSearchContext (9)
+     × retains server-bound budget units at plan and goal level across approval restoration 6ms
+ ❯ packages/agent/tests/task-market-plan.test.ts (8 tests | 1 failed) 12ms
+   ❯ task-bound marketplace plan (8)
+     × does not treat a rent-only quote as a verified all-in total 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > compares weekly housing quotes conservatively: 租金：£465pw (month)
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > compares weekly housing quotes conservatively: 租金：周租£465 (month)
+ FAIL  packages/agent/tests/market-strategy.test.ts > source-grounded market strategy > compares weekly housing quotes conservatively: 租金：465pw (month)
+AssertionError: expected 'unknown' to be 'mismatch' // Object.is equality
+
+Expected: "mismatch"
+Received: "unknown"
+
+ ❯ packages/agent/tests/market-strategy.test.ts:49:69
+     47|       },
+     48|     );
+     49|     expect(result.checks.find((c) => c.label === 'budget')?.status).to…
+       |                                                                     ^
+     50|     // A four-week lower bound excludes an over-cap quote; it is not a…
+     51|     expect(result.itemPriceGBP).toBeUndefined();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  packages/agent/tests/restore-search-context.test.ts > restoreSearchContext > retains server-bound budget units at plan and goal level across approval restoration
+AssertionError: expected undefined to be 'month' // Object.is equality
+
+- Expected:
+"month"
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/restore-search-context.test.ts:48:45
+     46|       marketPlan: { ...rules, intent: 'housing', needs: [{ id: 'home',…
+     47|     }));
+     48|     expect(restored.marketPlan?.budgetUnit).toBe('month');
+       |                                             ^
+     49|     expect(restored.marketPlan?.needs[0]?.rules?.budgetUnit).toBe('mon…
+     50|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  packages/agent/tests/task-market-plan.test.ts > task-bound marketplace plan > does not treat a rent-only quote as a verified all-in total
+AssertionError: expected undefined to be 'month' // Object.is equality
+
+- Expected:
+"month"
+
++ Received:
+undefined
+
+ ❯ packages/agent/tests/task-market-plan.test.ts:88:29
+     86|       };
+     87|     expect(plan.budgetScope).toBe('all_in');
+     88|     expect(plan.budgetUnit).toBe('month');
+       |                             ^
+     89|     expect(plan.needs[0]?.rules?.budgetUnit).toBe('month');
+     90|     expect(assessMarketListing(source, plan).checks.find((c) => c.labe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  5 failed | 59 passed (64)
+   Start at  13:42:54
+   Duration  257ms (transform 58%, import 31%, tests 10%, worker 1%)
+
