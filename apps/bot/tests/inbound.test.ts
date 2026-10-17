@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { TelegramActorAllowlist } from '@matchbot/shared';
 import { createInboundHandler } from '../src/inbound.js';
 
 const update = {
@@ -12,9 +13,10 @@ const update = {
   },
 } as never;
 
-function deps(group: unknown) {
+function deps(group: unknown, actorAllowlist: TelegramActorAllowlist = []) {
   return {
     botId: 1,
+    actorAllowlist,
     repos: {
       groups: {
         findByExternal: vi.fn(() => Promise.resolve(group)),
@@ -74,4 +76,31 @@ describe('createInboundHandler', () => {
     await createInboundHandler(d)(priv);
     expect((d as { enqueueInbound: ReturnType<typeof vi.fn> }).enqueueInbound).toHaveBeenCalled();
   });
+});
+
+it('passes exact actor admission through the real inbound handler before enqueue', async () => {
+  const botUpdate = {
+    update_id: 3,
+    message: {
+      message_id: 7,
+      date: 1758800000,
+      chat: { id: -100, type: 'supergroup', title: 'Lab' },
+      from: { id: 42, is_bot: true, first_name: 'Synthetic' },
+      text: 'E14想收书桌',
+    },
+  } as never;
+  for (const [allowlist, count] of [
+    [[], 0],
+    [[{ chatId: '-100', botIds: ['42'] }], 1],
+    [[{ chatId: '-999', botIds: ['42'] }], 0],
+  ] as const) {
+    const d = deps(
+      { id: 'g', isActive: true },
+      allowlist.map((rule) => ({ chatId: rule.chatId, botIds: [...rule.botIds] })),
+    );
+    await createInboundHandler(d)(botUpdate);
+    expect(
+      (d as { enqueueInbound: ReturnType<typeof vi.fn> }).enqueueInbound,
+    ).toHaveBeenCalledTimes(count);
+  }
 });

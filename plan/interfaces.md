@@ -375,3 +375,12 @@ P27真实多轮修复契约（0.16.16，分支未发布）：`confirmTaskOutcome
 P25/P27 0.16.20契约：evaluateOutbound增加可选requestContext（仅当前已选Task的CurrentRequest.text，和来源证据分开），保留分项目标预算及用户条件，不改变Jev/阶段/频控或默认失败方向。候选硬反证复用sourceSupport、sourceReviewCache和共享96假设/24批预算；clear仅代表未核实到明确冲突，不写supported。no_match须有真实查询/失败记录，不能自称搜索失败；其他类型的过程陈述尚需补齐。旧进程证明stub按proposedStatus区分正向与反证，断言不变。
 
 P25/P27 0.16.26候选：DeepSeek任务规划及正文显式temperature=0，其他模型配置不改；市场建议最多200字、超限反馈而不从中截断，同一来源卡内去重原文。共享出站输入检查不允许Agent伪称后台监控/外部联系；匿名市场offer没有验证过的卖家身份，正文不得从帖子编号推断人数/同异身份。小红书故障前缀xiaohongshu与解释守卫一致，原文读取失败记录回执。日期范围表示可接受窗口，不代表必须取首日，路程用时不假设往返。worker装配taskRequests=true并留启动版本，实际启用以迁移/进程验收为准。没有新增用户出站工具、数据库个人字段或保留期。
+
+
+## P31 测试演员契约
+
+跨包变更仅服务独立测试群：Env新增`TELEGRAM_ACTOR_ALLOWLIST`（JSON数组`{chatId,botIds}`，默认[]）与可选`ACTOR_LAB_CONFIG_PATH`；channel `toInboundMessage`及apps/bot入站构造参数透传该白名单。只接受匹配群的指定非自身Bot，私聊/其他群与默认行为不变。
+
+DB导出`createPrisma(connectionString)`供隔离控制库及Match Bot只读观察连接，`getPrisma`继续原单例语义；traces新增`summarizeUsage({since,inputRefs})`只返回限定调用的DeepSeek token计数及缺失usage数，eval内存仓储保持同形。users.findByExternal只读定位合成actor；groups.setPolicy只更新指定channel/externalId的群策略，controller仅在API和白名单验证后对新群显式激活。outbound.findByToolCallId读取当前演员回执，countUnfinished防止遗留pending/sending跨run发送。
+
+agent新增模拟用户生成与门控出站工具供apps/bot有限actor-lab控制器调用，不注册到正常matchAgent工具集。演员消息的`toolCallId=actor:<id>:<runId>:<turn>`是测试出站路由标识，controller只发当前run/已配置actor/固定测试群；出站表独立数据库，原sender不会误领。所有真实发送仍经channel createTelegramSender。新工具须完整phase/Jev门测试。配置文件含token，仅本地.env.*、600权限、不提交；无新业务表或模型供应商。

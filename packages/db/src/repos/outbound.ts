@@ -64,6 +64,15 @@ export function outboundRepo(prisma: PrismaClient) {
   const atomic = <T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> =>
     typeof prisma.$transaction === 'function' ? prisma.$transaction(fn) : fn(prisma);
   return {
+    countUnfinished(): Promise<number> {
+      return prisma.outboundMessage.count({ where: { status: { in: ['pending', 'sending'] } } });
+    },
+    findByToolCallId(toolCallId: string): Promise<OutboundMessage | null> {
+      return prisma.outboundMessage.findFirst({
+        where: { toolCallId: z.string().min(1).max(200).parse(toolCallId) },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
     /** Existing HITL control notification: fixed ops recipient, server snapshot, never model-selected text/target. */
     async enqueueApprovalCard(raw: z.input<typeof cardParams>): Promise<OutboundMessage | null> {
       const p = cardParams.parse(raw);

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { DecisionTrace, Repositories } from '@matchbot/db';
 import { decisionTraceInputSchema, type TraceKind } from '@matchbot/domain';
 
@@ -27,6 +28,25 @@ export function createMemoryTraces(): MemoryTraces {
       };
       rows.push(row);
       return Promise.resolve(row);
+    },
+    summarizeUsage({ since, inputRefs }) {
+      const usage = z.object({
+        inputTokens: z.number().int().nonnegative(),
+        outputTokens: z.number().int().nonnegative(),
+      });
+      const totals = { calls: 0, inputTokens: 0, outputTokens: 0, missingUsageCalls: 0 };
+      for (const row of rows.filter(
+        (r) => r.kind === 'agent_run' && r.createdAt >= since && inputRefs.includes(r.inputRef),
+      )) {
+        totals.calls++;
+        const parsed = usage.safeParse(row.output);
+        if (!parsed.success) totals.missingUsageCalls++;
+        else {
+          totals.inputTokens += parsed.data.inputTokens;
+          totals.outputTokens += parsed.data.outputTokens;
+        }
+      }
+      return Promise.resolve(totals);
     },
     listByKind(kind: TraceKind, since: Date, limit = 1000) {
       return Promise.resolve(

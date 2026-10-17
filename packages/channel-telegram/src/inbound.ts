@@ -1,3 +1,4 @@
+import type { TelegramActorAllowlist } from '@matchbot/shared';
 import { inboundMessageSchema, type InboundMessage } from '@matchbot/domain';
 import type { Update } from 'grammy/types';
 
@@ -23,11 +24,18 @@ function isAddressedToBot(
 /** 接受文本及媒体说明文字；无文字的媒体、服务消息、Bot 自己的消息返回 null。渠道差异到此为止。 */
 export function toInboundMessage(
   update: Update,
-  p: { botId: number; botUsername?: string | undefined },
+  p: { botId: number; botUsername?: string | undefined; actorAllowlist?: TelegramActorAllowlist },
 ): InboundMessage | null {
   const m = update.message;
   const text = m?.text ?? m?.caption;
-  if (!m || typeof text !== 'string' || !m.from || m.from.is_bot || m.from.id === p.botId)
+  if (!m || typeof text !== 'string' || !m.from || m.from.id === p.botId) return null;
+  if (
+    m.from.is_bot &&
+    (m.chat.type === 'private' ||
+      !p.actorAllowlist?.some(
+        (rule) => rule.chatId === String(m.chat.id) && rule.botIds.includes(String(m.from.id)),
+      ))
+  )
     return null;
   if (m.chat.type !== 'private' && m.chat.type !== 'group' && m.chat.type !== 'supergroup')
     return null;

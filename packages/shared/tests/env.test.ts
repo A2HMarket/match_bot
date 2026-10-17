@@ -11,6 +11,23 @@ const base = {
 };
 
 describe('loadEnv', () => {
+  it('keeps actor admission empty unless a strict group/id allowlist is configured', () => {
+    expect(loadEnv(base).TELEGRAM_ACTOR_ALLOWLIST).toEqual([]);
+    const actorAllowlist = [{ chatId: '-123', botIds: ['456'] }];
+    expect(
+      loadEnv({ ...base, TELEGRAM_ACTOR_ALLOWLIST: JSON.stringify(actorAllowlist) })
+        .TELEGRAM_ACTOR_ALLOWLIST,
+    ).toEqual(actorAllowlist);
+    for (const value of [
+      '[{"chatId":"-123","botIds":["456","456"]}]',
+      '[{"chatId":"-123","botIds":["456"]},{"chatId":"-123","botIds":["789"]}]',
+      'not-json',
+      '{}',
+      '[{"chatId":"123","botIds":["456"]}]',
+      '[{"chatId":"-123","botIds":["@actor"]}]',
+    ])
+      expect(() => loadEnv({ ...base, TELEGRAM_ACTOR_ALLOWLIST: value })).toThrow();
+  });
   it('reads the optional Sandbase credential only through the environment boundary', () => {
     expect(loadEnv({ ...base, SANDBASE_API_KEY: 'sandbase-test-key' }).SANDBASE_API_KEY).toBe(
       'sandbase-test-key',

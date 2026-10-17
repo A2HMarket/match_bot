@@ -19,6 +19,7 @@ const me = await bot.api.getMe();
 const inbound = createInboundHandler({
   botId: me.id,
   botUsername: me.username,
+  actorAllowlist: env.TELEGRAM_ACTOR_ALLOWLIST,
   defaultPhase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
   repos,
   queues,

@@ -2,6 +2,9 @@ import type { Channel, PrismaClient, User } from '../generated/client.js';
 
 export function usersRepo(prisma: PrismaClient) {
   return {
+    findByExternal(channel: Channel, externalId: string): Promise<User | null> {
+      return prisma.user.findUnique({ where: { channel_externalId: { channel, externalId } } });
+    },
     async upsertByExternal(p: {
       channel: Channel;
       externalId: string;
