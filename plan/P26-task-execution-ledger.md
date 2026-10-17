@@ -28,3 +28,7 @@
 ## 最终交付记录（PR合并生效）
 
 最终0.16.29/c71b959，117文件969测试与build/eval通过，固定源三核心各3/3；原两人群完成三核心多轮、无精准匹配与取消，保留Jev故障/原A3规划失败。14条迁移、备份restore、launchd单例及当前SIGKILL/审批恢复通过。朋友感采用0.16.27六对版本隐藏作者代理，不冒充真人满意率。后续周租、Jev响应体超时、worker关闭竞态与A3规格误拦均有红绿证据。主干交付只在PR #2常规CI成功并合并后生效，合并前不算总目标完成。详见docs/evaluations/2026-10-17-task-agent-local-release.md与验收矩阵。
+
+### 主干CI跟进
+
+PR #2实际合并1b9fa96后，main CI发现Jev unavailable用例把未排序SQL结果当作执行顺序。独立分支codex/task-agent-ci-trace-check修正测试为准确多重集核对，仍检查failed/no Agent/no pending出站；不改运行逻辑或放宽Jev。历史cron日期范围更正为9月26日至10月10日。最终交付还须此修复PR常规CI及合并核验。

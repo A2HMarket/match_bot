@@ -76,3 +76,5 @@
 | M4 Go / Pivot | P12 指标出来，P13 清单全勾 | Day 14 |
 
 P24–P27最终状态以PR #2合并main为生效点，功能分支上的完成标记不代表已合并。最新实际验收与失败边界见docs/evaluations/2026-10-17-task-agent-local-release.md。
+
+主干CI跟进：1b9fa96首次main CI暴露Jev失败smoke test的无ORDER BY顺序假设，单独分支修复准确多重集断言，969项本地检查通过。跟进以该修复PR实际合并为生效点，不改变运行逻辑或出站门。

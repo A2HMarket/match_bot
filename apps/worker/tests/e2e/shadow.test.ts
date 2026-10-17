@@ -207,7 +207,9 @@ describe('shadow e2e (Phase 0)', () => {
       traces
         .map((t) => t.output as { gate?: string; decision?: string })
         .filter((t) => t.gate === 'request_execution')
-        .map((t) => t.decision),
+        // SQL without ORDER BY has no insertion order; assert the complete decision multiset.
+        .map((t) => t.decision)
+        .sort(),
     ).toEqual(['accepted', 'claimed', 'failed']);
     expect(msg?.executionStatus).toBe('failed');
     expect(await prisma.outboundMessage.count({ where: { target: CHAT, status: 'pending' } })).toBe(
