@@ -3,12 +3,13 @@ import type { Repositories } from '@matchbot/db';
 import type { Phase } from '@matchbot/domain';
 import { inboundRuleReason, resolvePhase } from '@matchbot/gating';
 import { enqueueInbound as defaultEnqueue, type Queues } from '@matchbot/queue';
-import type { Logger } from '@matchbot/shared';
+import type { TelegramActorAllowlist, Logger } from '@matchbot/shared';
 import type { Update } from 'grammy/types';
 
 /** Admit in polling order before Redis; unfinished accepted records are independently dispatchable. */
 export function createInboundHandler(p: {
   botId: number;
+  actorAllowlist?: TelegramActorAllowlist;
   botUsername?: string | undefined;
   repos: Repositories;
   queues: Queues;
@@ -18,7 +19,11 @@ export function createInboundHandler(p: {
 }) {
   const enqueue = p.enqueueInbound ?? defaultEnqueue;
   return async (update: Update): Promise<void> => {
-    const msg = toInboundMessage(update, { botId: p.botId, botUsername: p.botUsername });
+    const msg = toInboundMessage(update, {
+      botId: p.botId,
+      botUsername: p.botUsername,
+      ...(p.actorAllowlist ? { actorAllowlist: p.actorAllowlist } : {}),
+    });
     if (!msg) return;
     const isPrivate = update.message?.chat.type === 'private';
     const group = isPrivate ? null : await p.repos.groups.findByExternal('telegram', msg.chatId);

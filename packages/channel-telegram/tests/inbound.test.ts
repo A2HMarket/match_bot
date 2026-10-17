@@ -7,6 +7,28 @@ const load = (n: string): Update =>
   JSON.parse(readFileSync(new URL(`./fixtures/${n}.json`, import.meta.url), 'utf8')) as Update;
 
 describe('toInboundMessage', () => {
+  it('admits only an explicitly configured actor in its configured group', () => {
+    const update = load('update-group-text');
+    update.message!.from.is_bot = true;
+    const actorAllowlist = [{ chatId: '-1001234567890', botIds: ['987654321'] }];
+    expect(toInboundMessage(update, { botId: 111, actorAllowlist })?.userId).toBe('987654321');
+    expect(toInboundMessage(update, { botId: 111 })).toBeNull();
+    expect(
+      toInboundMessage(update, {
+        botId: 111,
+        actorAllowlist: [{ chatId: '-999', botIds: ['987654321'] }],
+      }),
+    ).toBeNull();
+    expect(
+      toInboundMessage(update, {
+        botId: 111,
+        actorAllowlist: [{ chatId: '-1001234567890', botIds: ['222'] }],
+      }),
+    ).toBeNull();
+    expect(toInboundMessage(update, { botId: 987654321, actorAllowlist })).toBeNull();
+    update.message!.chat.type = 'private';
+    expect(toInboundMessage(update, { botId: 111, actorAllowlist })).toBeNull();
+  });
   it('maps a group text message', () => {
     const m = toInboundMessage(load('update-group-text'), { botId: 111 });
     expect(m).toEqual({

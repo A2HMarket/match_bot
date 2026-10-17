@@ -8,6 +8,12 @@ export function createLogger(name: string, level: string = 'info'): Logger {
     name,
     level,
     redact: [
+      'token',
+      'botToken',
+      '*.token',
+      '*.botToken',
+      'actors',
+      '*.actors',
       'text',
       'phone',
       '*.text',

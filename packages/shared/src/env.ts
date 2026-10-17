@@ -1,5 +1,35 @@
 import { z } from 'zod';
 
+const telegramActorAllowlistSchema = z
+  .array(
+    z.strictObject({
+      chatId: z.string().regex(/^-\d+$/),
+      botIds: z
+        .array(z.string().regex(/^[1-9]\d*$/))
+        .min(1)
+        .max(10)
+        .refine((ids) => new Set(ids).size === ids.length),
+    }),
+  )
+  .max(3)
+  .refine((rules) => new Set(rules.map((r) => r.chatId)).size === rules.length);
+export type TelegramActorAllowlist = z.infer<typeof telegramActorAllowlistSchema>;
+const actorAllowlistEnv = z
+  .string()
+  .default('[]')
+  .transform((raw, ctx) => {
+    try {
+      return telegramActorAllowlistSchema.parse(JSON.parse(raw) as unknown);
+    } catch {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'Invalid Telegram actor group/id allowlist',
+        input: undefined,
+      });
+      return z.NEVER;
+    }
+  });
+
 /** 进程启动时一次性校验环境变量。任何模块不得直接读 process.env。 */
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -14,6 +44,8 @@ export const envSchema = z.object({
   // 见 plan/P0-poc.md「对后续工作包的跨项结论」第 2 条）。直连 api.typesafe.ai 需要另一把 key。
   JEV_BASE_URL: z.string().url().default('https://openrouter.ai/api/alpha'),
   JEV_MODEL: z.string().default('typesafe/jev-1.13'),
+  TELEGRAM_ACTOR_ALLOWLIST: actorAllowlistEnv,
+  ACTOR_LAB_CONFIG_PATH: z.string().min(1).optional(),
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_OPS_CHAT_ID: z.string().min(1),
   DEFAULT_PHASE: z.coerce.number().int().min(0).max(2).default(0),

@@ -10,3 +10,5 @@ export { createTraceProcessor } from './tracing.js';
 export { createPgSession } from './session.js';
 export { runInbound, resumeRun, SDK_VERSION, type RunOutcome } from './run.js';
 export type { AgentDeps, MatchContext } from './context.js';
+
+export { generateSimulatedUserTurn, queueSimulatedUserTurn } from './simulated-user.js';
