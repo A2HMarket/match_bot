@@ -188,7 +188,7 @@ function renderBriefChoice(
     ...details,
     row.warning ? `${zh ? '注意：' : 'Caution: '}${compact(row.warning, 100)}` : '',
     missing.length ? `${zh ? '还需确认：' : 'Still to check: '}${missing.join(' / ')}` : '',
-    `[${zh ? 'A2H详情' : 'A2H listing'}](${n.url})${n.sourceUrl ? ` · [${zh ? '原帖' : 'Original post'}](${n.sourceUrl})` : ''}`,
+    `${zh ? '来源：' : 'Source: '}[${zh ? 'A2H详情' : 'A2H listing'}](${n.url})${n.sourceUrl ? ` · [${zh ? '原帖' : 'Original post'}](${n.sourceUrl})` : ''}`,
   ]
     .filter(Boolean)
     .join('\n');

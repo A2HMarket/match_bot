@@ -149,6 +149,8 @@ describe('market choice practical details', () => {
     expect(brief).toContain('正常使用痕迹');
     expect(brief).toContain(listing.url);
     expect(brief).toContain(listing.sourceUrl);
+    // Telegram deliberately interprets links only on code-generated Source lines.
+    expect(brief).toMatch(/^来源：\[A2H详情\]/m);
     expect(brief).not.toContain('相关线索');
   });
   it('shows the room term and layout from its own source without converting that to confirmed move-in', () => {
