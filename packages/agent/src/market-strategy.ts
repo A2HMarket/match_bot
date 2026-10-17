@@ -8,6 +8,7 @@ export type MarketRules = {
   essentialPreferences?: string[];
   budget?: number;
   budgetScope?: (typeof BUDGET_SCOPES)[number];
+  budgetUnit?: 'item' | 'person' | 'month' | 'total';
   requiredTerms?: string[];
   excludeTerms?: string[];
   dateRange?: { from: string; to: string };
@@ -88,6 +89,7 @@ function priceEvidence(
   p: MarketPlan,
   focusName?: string,
 ): { text: string; min: number; max: number } | null {
+  if (p.intent === 'housing' && p.budgetUnit && p.budgetUnit !== 'month') return null;
   const textLines = lines(n.description),
     terms = p.needs.flatMap((need) => need.terms);
   const itemLines = textLines.filter((line) =>
@@ -133,6 +135,29 @@ function priceEvidence(
   return (
     priced.find((price) => p.budget !== undefined && price.max <= p.budget) ?? priced[0] ?? null
   );
+}
+function weeklyRentConflict(n: MarketListing, p: MarketPlan): string | null {
+  if (
+    p.intent !== 'housing' ||
+    p.budgetUnit !== 'month' ||
+    p.budget === undefined ||
+    n.tradeType !== 'SELL'
+  )
+    return null;
+  for (const line of lines(n.title + '\n' + n.description)) {
+    if (
+      /押金|deposit|参考|约|估计|估算|左右|approx|around|原价|购入价|€|\$|EUR|USD|\d\s*[-–—~至]\s*£?\d/i.test(
+        line,
+      )
+    )
+      continue;
+    const match = line.match(
+      /(?:£\s*|GBP\s*)?(\d+(?:\.\d+)?)\s*(?:pw\b|p\s*\/\s*w\b|per week\b|镑\s*\/周)|周租[：:\s]*(?:£\s*|GBP\s*)?(\d+(?:\.\d+)?)/i,
+    );
+    // Every calendar month contains at least four weeks. Do not invent a monthly quote.
+    if (match && Number(match[1] ?? match[2]) * 4 > p.budget) return line;
+  }
+  return null;
 }
 function routeCheck(n: MarketListing, route: NonNullable<MarketPlan['route']>): MarketCheck {
   const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -434,6 +459,7 @@ function assessSharedMarketListing(
     });
   }
   let price = priceEvidence(n, p, focusName);
+  const weeklyConflict = price ? null : weeklyRentConflict(n, p);
   if (!focusName && p.intent === 'second_hand' && needs.length > 1) {
     const parts = p.needs
       .filter((need) => needs.includes(need.id))
@@ -464,8 +490,10 @@ function assessSharedMarketListing(
               : price.min > p.budget
                 ? 'mismatch'
                 : 'unknown'
-        : 'unknown',
-      evidence: price?.text ?? null,
+        : weeklyConflict
+          ? 'mismatch'
+          : 'unknown',
+      evidence: price?.text ?? weeklyConflict,
     });
   if (p.route) checks.push(routeCheck(n, p.route));
   const budgetCheck = checks.find((check) => check.label === 'budget');
@@ -597,6 +625,7 @@ export const marketPlanInputSchema = z.object({
 });
 export const marketRulesSchema = marketPlanInputSchema.omit({ needs: true }).extend({
   budgetScope: z.enum(BUDGET_SCOPES).optional(),
+  budgetUnit: z.enum(['item', 'person', 'month', 'total']).optional(),
   budget: z.number().finite().nonnegative().max(100000).optional(),
   route: z.object({ from: terms.min(1), to: terms.min(1) }).optional(),
   dateRange: z.object({ from: z.iso.date(), to: z.iso.date() }).optional(),

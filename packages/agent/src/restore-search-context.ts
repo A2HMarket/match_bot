@@ -72,6 +72,7 @@ function restoreRules(rules: z.infer<typeof marketRulesSchema>): MarketRules {
     preferences: rules.preferences,
     ...(rules.budget !== undefined ? { budget: rules.budget } : {}),
     ...(rules.budgetScope ? { budgetScope: rules.budgetScope } : {}),
+    ...(rules.budgetUnit ? { budgetUnit: rules.budgetUnit } : {}),
     ...(rules.capacityKg !== undefined ? { capacityKg: rules.capacityKg } : {}),
     ...(rules.essentialPreferences ? { essentialPreferences: rules.essentialPreferences } : {}),
     ...(rules.requiredArea ? { requiredArea: rules.requiredArea } : {}),
@@ -159,6 +160,7 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
               : {}),
             ...(saved.marketPlan.budget !== undefined ? { budget: saved.marketPlan.budget } : {}),
             ...(saved.marketPlan.budgetScope ? { budgetScope: saved.marketPlan.budgetScope } : {}),
+            ...(saved.marketPlan.budgetUnit ? { budgetUnit: saved.marketPlan.budgetUnit } : {}),
             ...(saved.marketPlan.requiredArea
               ? { requiredArea: saved.marketPlan.requiredArea }
               : {}),

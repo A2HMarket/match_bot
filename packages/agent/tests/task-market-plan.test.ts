@@ -85,6 +85,8 @@ describe('task-bound marketplace plan', () => {
         createdAt: null,
       };
     expect(plan.budgetScope).toBe('all_in');
+    expect(plan.budgetUnit).toBe('month');
+    expect(plan.needs[0]?.rules?.budgetUnit).toBe('month');
     expect(assessMarketListing(source, plan).checks.find((c) => c.label === 'budget')?.status).toBe(
       'unknown',
     );

@@ -40,6 +40,21 @@ const snapshot = (over: Record<string, unknown>) =>
   });
 
 describe('restoreSearchContext', () => {
+  it('retains server-bound budget units at plan and goal level across approval restoration', () => {
+    const rules = { preferences: [], budget: 1600, budgetUnit: 'month' };
+    const restored = restoreSearchContext(
+      ctx,
+      snapshot({
+        marketPlan: {
+          ...rules,
+          intent: 'housing',
+          needs: [{ id: 'home', terms: ['一居室'], rules }],
+        },
+      }),
+    );
+    expect(restored.marketPlan?.budgetUnit).toBe('month');
+    expect(restored.marketPlan?.needs[0]?.rules?.budgetUnit).toBe('month');
+  });
   it('restores current request and canonical failure state for approval resumption', () => {
     const currentRequest = {
       text: 'E14找房',

@@ -32,6 +32,7 @@ function rulesForConstraints(
 ): MarketRules {
   const shared = constraints;
   const sharedBudget = budget(shared);
+  const budgetValue = shared.find((c) => c.key === 'budget' && c.strength === 'hard')?.value;
   const qualitative = constraints.filter((c) =>
     /^(?:level|day|time|room_type|pets|feature|condition|requirements|required_terms)$/.test(c.key),
   );
@@ -69,6 +70,7 @@ function rulesForConstraints(
       .filter((c) => /^(?:exclude|exclude_terms|not_allowed)$/.test(c.key))
       .flatMap((c) => (textValue(c) ? [textValue(c)!] : [])),
     ...(sharedBudget !== undefined ? { budget: sharedBudget } : {}),
+    ...(budgetValue?.kind === 'money' ? { budgetUnit: budgetValue.unit } : {}),
     ...(shared.find((c) => c.key === 'budget')?.budgetScope
       ? { budgetScope: shared.find((c) => c.key === 'budget')!.budgetScope! }
       : {}),

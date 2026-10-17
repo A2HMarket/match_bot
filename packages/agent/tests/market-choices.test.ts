@@ -30,6 +30,24 @@ const plan: MarketPlan = {
   budget: 60,
 };
 describe('market choices', () => {
+  it('excludes the live 465pw regression from backups under a monthly 1600 cap', () => {
+    const choices = buildMarketChoices({
+      candidates: [465, 335].map((amount) => ({
+        ...candidate(`m${amount}`, `出租：Stratford一居室整租，${amount}pw`),
+        title: `伦敦Stratford房东急出租一居室 ${amount}pw`,
+      })),
+      plan: {
+        intent: 'housing',
+        needs: [{ id: 'home', terms: ['一居室'] }],
+        preferences: [],
+        budget: 1600,
+        budgetUnit: 'month',
+        budgetScope: 'all_in',
+      },
+    });
+    expect(choices.primary).toHaveLength(0);
+    expect(choices.backup.map((c) => c.listing.ref)).toEqual(['m335']);
+  });
   it('separates confirmed budget offers from unknown prices and excludes conflicts', () => {
     const choices = buildMarketChoices({
       candidates: [

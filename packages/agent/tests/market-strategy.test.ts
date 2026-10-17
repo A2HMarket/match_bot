@@ -26,6 +26,34 @@ const plan: MarketPlan = {
   requiredArea: ['E14'],
 };
 describe('source-grounded market strategy', () => {
+  it.each([
+    ['租金：£465pw', 'month', 'mismatch'],
+    ['租金：周租£465', 'month', 'mismatch'],
+    ['租金：465pw', 'month', 'mismatch'],
+    ['租金：£335 per week', 'month', 'unknown'],
+    ['租金：约£465pw', 'month', 'unknown'],
+    ['押金：£465pw', 'month', 'unknown'],
+    ['租金：€465pw', 'month', 'unknown'],
+    ['租金：£335-465pw', 'month', 'unknown'],
+    ['租金：£465pw', 'total', 'unknown'],
+  ] as const)('compares weekly housing quotes conservatively: %s (%s)', (quote, unit, status) => {
+    const result = assessMarketListing(
+      { ...listing('出租：Stratford一居室整租\n' + quote), title: 'Stratford一居室' },
+      {
+        intent: 'housing',
+        needs: [{ id: 'home', terms: ['一居室'] }],
+        preferences: [],
+        budget: 1600,
+        budgetUnit: unit,
+        budgetScope: 'all_in',
+      },
+    );
+    expect(result.checks.find((c) => c.label === 'budget')?.status).toBe(status);
+    // A four-week lower bound excludes an over-cap quote; it is not a quoted monthly rent.
+    expect(result.itemPriceGBP).toBeUndefined();
+    if (status === 'mismatch')
+      expect(result.checks.find((c) => c.label === 'budget')?.evidence).toContain(quote);
+  });
   it.each(['不接受初学者和零基础', '不收初学者', '谢绝新手', '仅限中级及以上'])(
     'excludes an explicit beginner conflict: %s',
     (restriction) => {
