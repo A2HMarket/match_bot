@@ -55,6 +55,57 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('does not turn published opening hours into guaranteed medicine access', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, '狗岛找止疼药');
+    c.knowledgeSources = [
+      createKnowledgeSource(
+        {
+          title: 'Official store',
+          url: 'https://www.boots.com/store',
+          text: 'Pharmacy in Isle of Dogs. Saturday opening hours 09:00 to 19:00. Stock is not shown.',
+        },
+        1,
+      ),
+    ];
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'answer',
+        text: '这家周六营业，走过去就能买到止疼药。',
+        refs: ['k1'],
+      }),
+    );
+    expect(result).toContain('Stock');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+  });
+  it('can give a source-backed channel and one non-clinical question in the same answer', async () => {
+    const { d, c, t } = setup(0);
+    bindCurrentRequest(c, '狗岛找止疼药');
+    c.knowledgeSources = [
+      createKnowledgeSource(
+        {
+          title: 'NHS pharmacy finder',
+          url: 'https://www.nhs.uk/service-search/pharmacy/find-a-pharmacy',
+          text: 'Find a pharmacy by town, city or postcode in England.',
+        },
+        1,
+      ),
+    ];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        text: '先用NHS药房查询找购买渠道，具体库存还需问门店。你是现在急用，还是出门取药不方便？',
+        refs: ['k1'],
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+    expect(draft.text).toContain('来源：');
+    expect(draft.text).toContain('出门取药不方便');
+  });
   it('rejects inferred seller identities before a marketplace draft reaches the semantic gate', async () => {
     const { d, c, t } = setup(0);
     const result = await t.invoke(

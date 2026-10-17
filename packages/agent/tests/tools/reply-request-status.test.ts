@@ -45,6 +45,25 @@ function setup(phase: 0 | 1 | 2, available = true) {
   return { c, d, t: replyRequestStatusTool(d as unknown as AgentDeps) };
 }
 describe('reply_request_status', () => {
+  it.each(['找止疼药，现在急用，出不了门', 'Need painkillers urgently, I cannot leave home'])(
+    'does not ask an obstacle already supplied: %s',
+    async (input) => {
+      const { c, d, t } = setup(2);
+      bindCurrentRequest(c, input);
+      await t.invoke(new RunContext(c), '{}');
+      const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+      expect(draft.text).not.toMatch(/[?？]/);
+    },
+  );
+  it('asks about the practical obstacle instead of making the user choose an official fact to research', async () => {
+    const { c, d, t } = setup(2);
+    bindCurrentRequest(c, '狗岛找止疼药');
+    await t.invoke(new RunContext(c), '{}');
+    const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+    expect(draft.text).toContain('出行不方便');
+    expect(draft.text).not.toMatch(/时刻表|先补全哪|https?:|止疼药|狗岛|\d/);
+    expect(c.outboundBlocked).toBe(true);
+  });
   it('does not ask for a travel limit the selected task already knows', async () => {
     const { c, d, t } = setup(2);
     c.task = taskSchema.parse({

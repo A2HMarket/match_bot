@@ -45,7 +45,7 @@
 | P26 | 执行投递账本与恢复 | [P26-task-execution-ledger.md](./P26-task-execution-ledger.md) | P24 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
 | P27 | 任务闭环评测与发布 | [P27-task-agent-evaluation-release.md](./P27-task-agent-evaluation-release.md) | P24,P25,P26 | 6 | codex | 完成 | 0.16.29：A01–A18证据、969测试、固定源各3/3、原群/迁移/恢复；PR #2合并main生效 | 2026-10-17 |
 | P28 | SOUL与自然接话 | [P28-soul-and-conversation-style.md](./P28-soul-and-conversation-style.md) | P27 | 7 | codex | 完成 | 0.17.3：994测试、固定源各3/3、原群五轮；补充变体2/3，失败留证；正常PR合并main生效 | 2026-10-17 |
-
+| P29 | 主动理解与本地购买渠道 | [P29-proactive-local-access.md](./P29-proactive-local-access.md) | P28 | 8 | codex | 进行中 | 修复错误搜索重试、正规渠道与现实困难追问；门不变，小批定向回放 | 2026-10-17 |
 
 ## 波次与并行
 

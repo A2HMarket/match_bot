@@ -6,7 +6,10 @@ import { buildMarketChoices } from '../market-choices.js';
 import { renderMarketChoiceReply } from '../market-choice-presentation.js';
 import { marketChoiceFeedback } from '../market-choice-feedback.js';
 import { checkMarketOfferConflicts } from '../market-offer-conflicts.js';
-import { hasUnrecordedSourceFailureClaim } from '../source-operation-claims.js';
+import {
+  hasGuaranteedPurchaseClaim,
+  hasUnrecordedSourceFailureClaim,
+} from '../source-operation-claims.js';
 import { hasUnqualifiedSellerIdentity } from '../seller-identity-claims.js';
 import { claimsCompleteMarketFit, claimsUnverifiedTravelFit } from '../market-summary-claims.js';
 
@@ -275,6 +278,11 @@ export function replyToRequestTool(deps: AgentDeps) {
           .trim(),
       };
       const zh = ctx.currentRequest?.demand.lang === 'zh' || /\p{Script=Han}/u.test(args.text);
+      if (hasGuaranteedPurchaseClaim(args.text))
+        return {
+          error:
+            'Stock and successful purchase are not guaranteed by published opening hours. Describe the source-backed channel and say what still needs checking; do not promise the user can buy on arrival.',
+        };
       if (hasUnrecordedSourceFailureClaim(args.text, ctx.sourceFailures))
         return {
           error:

@@ -3,6 +3,22 @@ import { bindCurrentRequest } from '../src/current-request.js';
 import type { MatchContext } from '../src/context.js';
 import { taskSchema } from '@matchbot/domain';
 describe('current request binding', () => {
+  it.each(['狗岛找止疼药', 'E14想买止痛药', 'Isle of Dogs pharmacy for painkillers'])(
+    'routes medicine access to public information despite an item-category guess: %s',
+    (input) => {
+      const ctx = {
+        userId: 'u',
+        chatId: 'c',
+        groupId: null,
+        phase: 0,
+        sourceMessageId: 'm',
+        recentReplies: [],
+        requestCategory: 'second_hand',
+      } as MatchContext;
+      bindCurrentRequest(ctx, input);
+      expect(ctx.currentRequest?.demand.category).toBe('other');
+    },
+  );
   it('does not collapse different effective item budgets back to the shared default', () => {
     const task = taskSchema.parse({
       id: 't',
