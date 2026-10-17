@@ -110,7 +110,6 @@ const knownFailures = new Set([
   'match_bot_requires_group_message_visibility',
   'wrong_test_group',
   'wrong_actor_identity',
-  'actor_requires_group_message_visibility',
   'test_group_not_active_phase2',
   'actor_outbox_not_idle',
   'unknown_actor_lab_mode',

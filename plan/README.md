@@ -49,7 +49,7 @@
 
 | P30 | 续接竞争与无增量静默 | [P30-followup-race-and-quiet-replies.md](./P30-followup-race-and-quiet-replies.md) | P29 | 9 | codex | 完成 | 0.18.3：1035测试/12契约、PG竞争复现、重复草稿压制；模型失败留证，PR合并main生效 | 2026-10-17 |
 
-| P31 | Telegram多演员测试群 | [P31-telegram-actor-lab.md](./P31-telegram-actor-lab.md) | P30 | 10 | codex | 进行中 | 代码验证完成；默认关闭的白名单与有限演员控制器，待用户Web登录创建Bot/新群 | 2026-10-18 |
+| P31 | Telegram多演员测试群 | [P31-telegram-actor-lab.md](./P31-telegram-actor-lab.md) | P30 | 10 | codex | 进行中 | PR #7已合并；三个Bot及独立群已创建；待两枚凭证重置、安全保存及Match Bot互通授权 | 2026-10-18 |
 
 ## 波次与并行
 
