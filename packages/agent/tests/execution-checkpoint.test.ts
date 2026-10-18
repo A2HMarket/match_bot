@@ -67,6 +67,7 @@ function fixture() {
     marketDetailIds: ['desk'],
     sourceReviewCache: { proof: true },
     taskProgressVersion: 1,
+    deliverySourceRefs: ['m1'],
     runDeadlineAt: 1,
   };
   let snapshot = '';
@@ -107,6 +108,7 @@ describe('execution research checkpoints', () => {
     expect(restored.marketListings?.[0]?.id).toBe('desk');
     expect(restored.marketListings?.[0]?.title).toBe('E14书桌');
     expect(restored.marketDetailIds).toEqual(['desk']);
+    expect(restored.deliverySourceRefs).toEqual(['m1']);
     expect(restored.execution?.fence).toBe(2);
     expect(restored.runDeadlineAt).toBe(999);
   });
@@ -127,6 +129,7 @@ describe('execution research checkpoints', () => {
     const restored = restoreExecutionCheckpoint(f.deps, f.ctx, '找书桌', f.snapshot(), 'new');
     expect(restored.sourceReviewCache).toBeUndefined();
     expect(restored.taskProgressVersion).toBeUndefined();
+    expect(restored.deliverySourceRefs).toBeUndefined();
   });
   it('awaits the SDK tool-use behavior checkpoint before asking for the next model turn', async () => {
     const f = fixture(),

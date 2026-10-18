@@ -253,6 +253,15 @@ export function replyToRequestTool(deps: AgentDeps) {
           error:
             'Use at most 6 independent sources/offers and 24 reference IDs, including inline citations. Multiple passages from one source count once; choose only the sources supporting this answer.',
         };
+      if (
+        ctx.isAnswerFinalization &&
+        ctx.deliverySourceRefs &&
+        args.refs.some((ref) => !ctx.deliverySourceRefs!.includes(ref.replace(/:p\d+$/, '')))
+      )
+        return {
+          error:
+            'Use only the selected delivery packet sources and their real passages. Do not import facts from other discovered alternatives.',
+        };
       // Discover a missing question plan before factual repairs consume the bounded input attempts.
       taskDeliveryForOutbound(ctx, {
         kind:

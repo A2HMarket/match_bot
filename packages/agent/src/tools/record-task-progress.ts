@@ -1,4 +1,10 @@
-import { assessTaskReadiness, recordTaskProgress, TaskTransitionError } from '@matchbot/domain';
+import { taskQuestionAnswerType } from '../task-outbound.js';
+import {
+  assessTaskReadiness,
+  recordTaskProgress,
+  TaskTransitionError,
+  canAskTaskQuestion,
+} from '@matchbot/domain';
 import { tool, type RunContext } from '@openai/agents';
 import type { AgentDeps, MatchContext } from '../context.js';
 import {
@@ -17,7 +23,7 @@ export function recordTaskProgressTool(deps: AgentDeps) {
   return tool({
     name: 'record_task_progress',
     description:
-      'Record verified source evidence and a responsible next step for the selected task. Use known goal/criterion IDs and source refs. Exact source text may be supplied with status=unknown: the server then checks both support and contradiction, keeping missing/ambiguous/unavailable evidence unknown. Each criterion describes the best coherent option; do not mix rejected alternatives into supporting evidence. Use returned passage IDs with quote=null (the server owns the exact text), or exact quotes for whole-source refs. quote=null also works for computed facts. Never combine different offers, treat public status as guaranteed availability, or mark the user goal complete. Choose research for public facts your tools can retrieve; ask_user only for a missing personal condition or decision that changes your next action. Record internal checks without turning them into a public checklist. Use wait_source only after a real failure, or deliver the useful findings with concrete unknowns. This sends nothing.',
+      'Record verified source evidence and a responsible next step for the selected task. Use known goal/criterion IDs and source refs. Exact source text may be supplied with status=unknown: the server then checks both support and contradiction, keeping missing/ambiguous/unavailable evidence unknown. Each criterion describes the best coherent option; do not mix rejected alternatives into supporting evidence. Prefer returned passage IDs with quote=null. For a whole-source ref, quote=null selects a bounded server-owned excerpt and still runs semantic/computed checks; supply an exact quote when the relevant fact is deeper in a long source. Never combine different offers, treat public status as guaranteed availability, or mark the user goal complete. Choose research for public facts your tools can retrieve; ask_user only for a missing personal condition or decision that changes your next action. Record internal checks without turning them into a public checklist. Use wait_source only after a real failure, or deliver the useful findings with concrete unknowns. This sends nothing.',
     parameters: taskProgressParameters,
     needsApproval: false,
     errorFunction: async (rc) => {
@@ -43,6 +49,19 @@ export function recordTaskProgressTool(deps: AgentDeps) {
       }
       try {
         const progress = buildTaskProgress({ ctx, ...args });
+        if (
+          args.next.action === 'ask_user' &&
+          args.next.constraintKey &&
+          !canAskTaskQuestion(ctx.task!, {
+            constraintKey: args.next.constraintKey,
+            answerType: taskQuestionAnswerType(args.next.constraintKey, args.next.reason),
+            text: args.next.reason,
+            ...(args.next.goalId ? { goalId: args.next.goalId } : {}),
+          })
+        )
+          throw new TaskTransitionError(
+            'This personal condition is already known. Use it; choose research for public gaps or deliver useful findings, not another question.',
+          );
         const reviews = await reviewSources(deps, ctx, args.checks);
         const checked = applySourceReviews(progress.checks, reviews.decisions);
         progress.checks = checked.checks;
@@ -75,6 +94,15 @@ export function recordTaskProgressTool(deps: AgentDeps) {
         }
         ctx.task = result.task;
         ctx.taskProgressVersion = result.task.requirementsVersion;
+        if (args.next.action === 'deliver' || args.next.action === 'ask_user')
+          ctx.deliverySourceRefs = [
+            ...new Set(
+              args.checks.flatMap((c) => c.sources.map((s) => s.ref.replace(/:p\d+$/, ''))),
+            ),
+          ]
+            .filter((ref) => /^[km]\d+$/.test(ref))
+            .slice(0, 6);
+        else delete ctx.deliverySourceRefs;
         await trace(deps, ctx, 'recorded');
         return JSON.stringify({
           recorded: true,

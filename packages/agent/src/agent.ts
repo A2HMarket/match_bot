@@ -1,3 +1,4 @@
+import { canHandOffToDelivery } from './delivery-context.js';
 import { contextInputFilter } from './prompts/runtime-context.js';
 import { selectScene } from './prompts/scenes.js';
 import {
@@ -43,7 +44,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.25.0';
+export const AGENT_VERSION = '0.26.0';
 
 /** 「下周六」要换算成 whenAt，模型需要知道今天是哪天、星期几（伦敦时区）。 */
 export function londonToday(now = new Date()): string {
@@ -83,6 +84,7 @@ export function createMatchAgent(
     taskId?: string;
     taskRefs?: string[];
     checkpointInput?: string;
+    requestContext?: MatchContext;
   },
 ) {
   const promptContext = run?.context;
@@ -102,6 +104,30 @@ export function createMatchAgent(
         return (rc.context as MatchContext).taskUpdate
           ? { isFinalOutput: true, isInterrupted: undefined, finalOutput: 'task prepared' }
           : { isFinalOutput: false, isInterrupted: undefined };
+      if (
+        deps.answerRequests &&
+        deps.taskRequests &&
+        !run?.finalAnswerOnly &&
+        canHandOffToDelivery(rc.context as MatchContext) &&
+        results.some((r) => {
+          if (
+            r.tool.name !== 'record_task_progress' ||
+            !('output' in r) ||
+            typeof r.output !== 'string'
+          )
+            return false;
+          try {
+            return (JSON.parse(r.output) as { recorded?: unknown }).recorded === true;
+          } catch {
+            return false;
+          }
+        })
+      )
+        return {
+          isFinalOutput: true,
+          isInterrupted: undefined,
+          finalOutput: 'research ready for delivery',
+        };
       if ((rc.context as MatchContext).outboundBlocked && !run?.requestStatusOnly)
         return {
           isFinalOutput: true,

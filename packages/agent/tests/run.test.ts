@@ -254,185 +254,221 @@ describe('runInbound', () => {
     );
     model.assertComplete();
   });
-  it('refreshes saved sources after planning and before the first answer generation on a short followup', async () => {
-    const model = new ScriptedModel([
-      [
-        functionCall(
-          'update_task',
+  it.each([0, 1, 2] as const)(
+    'refreshes, hands off to an isolated writer and preserves the phase %s gate',
+    async (phase) => {
+      const model = new ScriptedModel([
+        [
+          functionCall(
+            'update_task',
+            {
+              taskRef: 'activity-task',
+              referenceQuote: null,
+              goals: [],
+              constraints: [
+                {
+                  key: 'max_travel_minutes',
+                  goalId: null,
+                  strength: 'hard',
+                  value: { kind: 'duration', minutes: 30 },
+                  sourceQuote: '半小时以内',
+                },
+              ],
+              outcome: null,
+            },
+            { callId: 'plan' },
+          ),
+        ],
+        [
+          functionCall(
+            'record_task_progress',
+            {
+              checks: [],
+              next: {
+                action: 'ask_user',
+                goalId: 'activity',
+                constraintKey: 'day',
+                reason: '需要知道具体哪天方便',
+              },
+            },
+            { callId: 'source-progress' },
+          ),
+        ],
+        [
+          functionCall(
+            'reply_to_request',
+            { kind: 'clarification', text: '周末更方便周六还是周日？', refs: [] },
+            { callId: 'task-reply' },
+          ),
+        ],
+      ]);
+      const { deps, repos, runStates } = makeDeps(model);
+      deps.evaluateOutbound.mockResolvedValue({
+        ok: true,
+        worthReplying: 3,
+        languageOk: 1,
+        mentionsUnverified: 0,
+      });
+      const task = taskSchema.parse({
+        id: 'activity-task',
+        ownerUserId: 'u1',
+        scope: { channel: 'telegram', chatId: '-1' },
+        objective: '找初学者周末羽毛球',
+        category: 'other',
+        counterparty: 'peer',
+        status: 'active',
+        revision: 0,
+        goals: [
           {
-            taskRef: 'activity-task',
-            referenceQuote: null,
-            goals: [],
-            constraints: [
+            id: 'activity',
+            title: '初学者周末羽毛球',
+            required: true,
+            criteria: [
               {
-                key: 'max_travel_minutes',
-                goalId: null,
+                id: 'fit',
+                label: '水平/时间/地点适合',
                 strength: 'hard',
-                value: { kind: 'duration', minutes: 30 },
-                sourceQuote: '半小时以内',
+                status: 'unknown',
+                evidenceRefs: [],
               },
             ],
-            outcome: null,
           },
-          { callId: 'plan' },
-        ),
-      ],
-      [
-        functionCall(
-          'record_task_progress',
+        ],
+        constraints: [
           {
-            checks: [],
-            next: {
-              action: 'ask_user',
-              goalId: 'activity',
-              constraintKey: 'day',
-              reason: '需要知道具体哪天方便',
-            },
+            key: 'area',
+            strength: 'hard',
+            value: { kind: 'location', area: 'E14' },
+            origin: { kind: 'user', sourceMessageId: 'first' },
           },
-          { callId: 'source-progress' },
-        ),
-      ],
-      [
-        functionCall(
-          'reply_to_request',
-          { kind: 'clarification', text: '周末更方便周六还是周日？', refs: [] },
-          { callId: 'task-reply' },
-        ),
-      ],
-    ]);
-    const { deps, repos } = makeDeps(model);
-    deps.evaluateOutbound.mockResolvedValue({
-      ok: true,
-      worthReplying: 3,
-      languageOk: 1,
-      mentionsUnverified: 0,
-    });
-    const task = taskSchema.parse({
-      id: 'activity-task',
-      ownerUserId: 'u1',
-      scope: { channel: 'telegram', chatId: '-1' },
-      objective: '找初学者周末羽毛球',
-      category: 'other',
-      counterparty: 'peer',
-      status: 'active',
-      revision: 0,
-      goals: [
-        {
-          id: 'activity',
-          title: '初学者周末羽毛球',
-          required: true,
-          criteria: [
-            {
-              id: 'fit',
-              label: '水平/时间/地点适合',
-              strength: 'hard',
-              status: 'unknown',
-              evidenceRefs: [],
-            },
-          ],
-        },
-      ],
-      constraints: [
-        {
-          key: 'area',
-          strength: 'hard',
-          value: { kind: 'location', area: 'E14' },
-          origin: { kind: 'user', sourceMessageId: 'first' },
-        },
-      ],
-      evidence: [
-        {
-          id: 'saved',
-          goalId: 'activity',
-          kind: 'source_excerpt',
-          sourceRef: 'market:badminton',
-          summary: '历史活动价格£40',
-          observedAt: '2026-10-16T00:00:00Z',
-        },
-      ],
-      pendingQuestion: null,
-      blockReason: null,
-      delivery: { status: 'none', level: 'none' },
-      userConfirmation: null,
-    });
-    let storedTask = task;
-    const tasks = {
-      findOpenByScope: vi.fn(() => Promise.resolve([task])),
-      applyUserTurn: vi.fn((p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
-        Promise.resolve({
-          kind: 'applied',
-          task: (storedTask = reviseTaskRequirements({
-            task,
-            patch: p.patch,
-            source: { messageId: 'm1', text: '半小时以内' },
-          })),
-        }),
-      ),
-      recordProgress: vi.fn(
-        (p: { progress: Omit<Parameters<typeof recordTaskProgress>[0], 'task'> }) =>
-          Promise.resolve({
-            kind: 'applied',
-            task: (storedTask = recordTaskProgress({ task: storedTask, ...p.progress })),
-          }),
-      ),
-    };
-    Object.assign(tasks, {
-      planTurn: (p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
-        tasks.applyUserTurn(p),
-    });
-    const detail = vi.fn(() =>
-      Promise.resolve({
-        id: 'badminton',
-        title: 'E14初学者周末羽毛球',
-        description: 'E14初学者周末羽毛球搭子，当前活动价格£45',
-        tradeType: 'PEER',
-        status: 'ON_SALE',
-        tags: [],
-        priceLabel: '£45',
-        url: 'https://a2hmarket.ai/listings/badminton',
-        sourceUrl: null,
-        isRepost: false,
-        availableFrom: null,
-        availableUntil: null,
-        sourcePublishedAt: null,
-        createdAt: null,
-      }),
-    );
-    const getResponse = model.getResponse.bind(model);
-    const generations: Array<{ detailReads: number; instructions: string; input: string }> = [];
-    vi.spyOn(model, 'getResponse').mockImplementation((request) => {
-      // The planning call runs first. Every subsequent generation must see the refreshed public source.
-      generations.push({
-        detailReads: detail.mock.calls.length,
-        instructions: JSON.stringify(request.systemInstructions),
-        input: JSON.stringify(request.input),
+        ],
+        evidence: [
+          {
+            id: 'saved',
+            goalId: 'activity',
+            kind: 'source_excerpt',
+            sourceRef: 'market:badminton',
+            summary: '历史活动价格£40',
+            observedAt: '2026-10-16T00:00:00Z',
+          },
+        ],
+        pendingQuestion: null,
+        blockReason: null,
+        delivery: { status: 'none', level: 'none' },
+        userConfirmation: null,
       });
-      return getResponse(request);
-    });
-    await runInbound({
-      deps: {
-        ...deps,
-        repos: { ...repos, tasks },
-        answerRequests: true,
-        taskRequests: true,
-        marketSearch: { detail, find: vi.fn() },
-      } as never,
-      ctx: ctx(2),
-      input: '半小时以内',
-    });
-    expect(tasks.findOpenByScope).toHaveBeenCalledWith({
-      userId: 'u1',
-      scope: { channel: 'telegram', chatId: '-1' },
-    });
-    expect(tasks.applyUserTurn).toHaveBeenCalledOnce();
-    expect(generations[1]).toEqual(expect.objectContaining({ detailReads: 1 }));
-    expect(generations[1]!.instructions).not.toContain('当前活动价格£45');
-    expect(generations[1]!.input).toContain('当前活动价格£45');
-    expect(JSON.stringify(model.calls[1]?.request.input)).toContain('30 minutes');
-    expect(JSON.stringify(model.calls[1]?.request.input)).toContain('E14');
-    expect(repos.outbound.create).toHaveBeenCalledOnce();
-    model.assertComplete();
-  });
+      let storedTask = task;
+      const tasks = {
+        findOpenByScope: vi.fn(() => Promise.resolve([task])),
+        applyUserTurn: vi.fn(
+          (p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
+            Promise.resolve({
+              kind: 'applied',
+              task: (storedTask = reviseTaskRequirements({
+                task,
+                patch: p.patch,
+                source: { messageId: 'm1', text: '半小时以内' },
+              })),
+            }),
+        ),
+        recordProgress: vi.fn(
+          (p: { progress: Omit<Parameters<typeof recordTaskProgress>[0], 'task'> }) =>
+            Promise.resolve({
+              kind: 'applied',
+              task: (storedTask = recordTaskProgress({ task: storedTask, ...p.progress })),
+            }),
+        ),
+      };
+      Object.assign(tasks, {
+        planTurn: (p: { patch: Parameters<typeof reviseTaskRequirements>[0]['patch'] }) =>
+          tasks.applyUserTurn(p),
+      });
+      const detail = vi.fn(() =>
+        Promise.resolve({
+          id: 'badminton',
+          title: 'E14初学者周末羽毛球',
+          description: 'E14初学者周末羽毛球搭子，当前活动价格£45',
+          tradeType: 'PEER',
+          status: 'ON_SALE',
+          tags: [],
+          priceLabel: '£45',
+          url: 'https://a2hmarket.ai/listings/badminton',
+          sourceUrl: null,
+          isRepost: false,
+          availableFrom: null,
+          availableUntil: null,
+          sourcePublishedAt: null,
+          createdAt: null,
+        }),
+      );
+      const getResponse = model.getResponse.bind(model);
+      const generations: Array<{ detailReads: number; instructions: string; input: string }> = [];
+      vi.spyOn(model, 'getResponse').mockImplementation((request) => {
+        // The planning call runs first. Every subsequent generation must see the refreshed public source.
+        generations.push({
+          detailReads: detail.mock.calls.length,
+          instructions: JSON.stringify(request.systemInstructions),
+          input: JSON.stringify(request.input),
+        });
+        return getResponse(request);
+      });
+      const result = await runInbound({
+        deps: {
+          ...deps,
+          repos: { ...repos, tasks },
+          answerRequests: true,
+          taskRequests: true,
+          marketSearch: { detail, find: vi.fn() },
+        } as never,
+        ctx: ctx(phase),
+        input: '半小时以内',
+      });
+      expect(tasks.findOpenByScope).toHaveBeenCalledWith({
+        userId: 'u1',
+        scope: { channel: 'telegram', chatId: '-1' },
+      });
+      expect(tasks.applyUserTurn).toHaveBeenCalledOnce();
+      expect(generations[1]).toEqual(expect.objectContaining({ detailReads: 1 }));
+      expect(generations[1]!.instructions).not.toContain('当前活动价格£45');
+      expect(generations[1]!.input).toContain('当前活动价格£45');
+      expect(JSON.stringify(model.calls[1]?.request.input)).toContain('30 minutes');
+      expect(JSON.stringify(model.calls[1]?.request.input)).toContain('E14');
+      if (phase === 1) {
+        expect(result.kind).toBe('interrupted');
+        expect(repos.outbound.create).not.toHaveBeenCalled();
+        await resumeRun({
+          deps: {
+            ...deps,
+            repos: { ...repos, tasks },
+            answerRequests: true,
+            taskRequests: true,
+          } as never,
+          runState: runStates[0]!,
+          approval: { decision: 'approve' },
+        });
+      } else expect(result.kind).toBe('completed');
+      expect(repos.outbound.create).toHaveBeenCalledOnce();
+      expect(repos.outbound.create).toHaveBeenCalledWith(
+        expect.anything(),
+        phase === 0 ? 'dry_run' : 'pending',
+      );
+      const writer = model.calls[2]!.request;
+      expect(JSON.stringify(writer.systemInstructions)).toContain('FINALIZATION');
+      expect(JSON.stringify(writer.tools)).toContain('reply_to_request');
+      expect(JSON.stringify(writer.tools)).not.toContain('record_task_progress');
+      expect(JSON.stringify(writer.input)).not.toContain('source-progress');
+      expect(repos.traces.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputRef: 'm1',
+          output: expect.objectContaining({
+            gate: 'delivery_stage',
+            reason: 'planned_delivery',
+          }) as unknown,
+        }),
+      );
+      model.assertComplete();
+    },
+  );
   it('passes the selected persistent task into actual SDK instructions for a short followup', async () => {
     const model = new ScriptedModel([
       [

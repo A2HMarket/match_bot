@@ -168,7 +168,7 @@ it('bounds source text with explicit omissions while retaining complete task con
     title: 'source-' + s,
     passages: Array.from({ length: 12 }, (_, p) => ({ id: `k${s}:p${p}`, text: 'x'.repeat(700) })),
   })) as MatchContext['knowledgeSources'];
-  const packet = runtimeContext(ctx, 'finalization');
+  const packet = runtimeContext(ctx, 'execution');
   const evidence = packet.currentPublicEvidence as Array<{
     ref: string;
     passages: Array<{ text: string }>;
@@ -205,4 +205,26 @@ it('passes current validation failures to the fresh finalization input', () => {
   expect(JSON.stringify(runtimeContext(ctx, 'finalization'))).toContain(
     'Question already answered; omit it.',
   );
+});
+
+it('limits delivery to its source whitelist and keeps the evidence budget', () => {
+  const ctx = context();
+  ctx.knowledgeSources = Array.from({ length: 8 }, (_, s) => ({
+    ref: 'k' + s,
+    title: 'source-' + s,
+    passages: Array.from({ length: 4 }, (_, p) => ({ id: `k${s}:p${p}`, text: 'x'.repeat(2000) })),
+  })) as MatchContext['knowledgeSources'];
+  ctx.deliverySourceRefs = ['k2', 'k4', 'k6', 'k7'];
+  const packet = runtimeContext(ctx, 'finalization');
+  const evidence = packet.currentPublicEvidence as Array<{
+    ref: string;
+    passages: Array<{ text: string }>;
+    omittedPassageIds: string[];
+  }>;
+  expect(evidence.map((s) => s.ref)).toEqual(ctx.deliverySourceRefs);
+  expect(evidence.every((s) => s.passages.length > 0)).toBe(true);
+  expect(
+    evidence.flatMap((s) => s.passages).reduce((n, p) => n + p.text.length, 0),
+  ).toBeLessThanOrEqual(24000);
+  expect(evidence.flatMap((s) => s.omittedPassageIds).length).toBeGreaterThan(0);
 });

@@ -1,3 +1,4 @@
+import { buildDeliveryPacket } from '../delivery-context.js';
 import type { AgentInputItem, CallModelInputFilter, ModelInputData } from '@openai/agents';
 import type { MatchContext } from '../context.js';
 import { buildMarketChoices } from '../market-choices.js';
@@ -19,8 +20,12 @@ function owns(ctx: MatchContext, task: NonNullable<MatchContext['task']>): boole
 }
 
 /** Preserve source identity and expose omissions; never silently truncate task conditions. */
-function publicEvidence(ctx: MatchContext) {
-  const sources = (ctx.knowledgeSources ?? []).slice(0, 16);
+function publicEvidence(
+  available: Array<
+    Pick<NonNullable<MatchContext['knowledgeSources']>[number], 'ref' | 'title' | 'passages'>
+  >,
+) {
+  const sources = available.slice(0, 16);
   let remaining = 24000;
   const selected = sources.map((source) => ({
     ref: source.ref,
@@ -73,6 +78,7 @@ export function runtimeContext(ctx: MatchContext, stage: PromptStage): Record<st
       : null,
   };
   if (stage === 'planning') return { ...common, scopedTasks: candidates.map(taskView) };
+  const delivery = stage === 'finalization' ? buildDeliveryPacket(ctx) : null;
   const choices = ctx.marketPlan
     ? buildMarketChoices({
         candidates: ctx.marketListings ?? [],
@@ -100,7 +106,7 @@ export function runtimeContext(ctx: MatchContext, stage: PromptStage): Record<st
           },
         }
       : {}),
-    selectedTask: ctx.task ? taskView(ctx.task) : null,
+    selectedTask: delivery ? delivery.task : ctx.task ? taskView(ctx.task) : null,
     ambiguousTopics: ['ambiguous', 'unbound'].includes(ctx.taskUpdate?.kind ?? '')
       ? candidates.slice(0, 8).map((t) => ({ ref: t.id, objective: t.objective }))
       : [],
@@ -123,18 +129,22 @@ export function runtimeContext(ctx: MatchContext, stage: PromptStage): Record<st
         summary: e.summary.slice(0, 300),
         observedAt: e.observedAt,
       })) ?? [],
-    currentPublicEvidence: publicEvidence(ctx),
-    currentMarketEvidence: choices
-      ? [...choices.primary, ...choices.backup].map((row) => ({
-          ...marketListingForModel(
-            row.listing,
-            600,
-            ctx.marketPlan!.needs.flatMap((n) => n.terms),
-          ),
-          checks: row.assessment.checks,
-          missing: row.essentialMissing,
-        }))
-      : [],
+    currentPublicEvidence: publicEvidence(
+      delivery ? delivery.knowledge : (ctx.knowledgeSources ?? []),
+    ),
+    currentMarketEvidence: delivery
+      ? delivery.market
+      : choices
+        ? [...choices.primary, ...choices.backup].map((row) => ({
+            ...marketListingForModel(
+              row.listing,
+              600,
+              ctx.marketPlan!.needs.flatMap((n) => n.terms),
+            ),
+            checks: row.assessment.checks,
+            missing: row.essentialMissing,
+          }))
+        : [],
   };
 }
 

@@ -100,11 +100,22 @@ describe('record_task_progress source review', () => {
           goalId: 'home',
           criterionId: 'pets',
           status: 'supported',
-          sources: [{ ref: 'm1', quote: '是否可养猫须书面确认' }],
+          sources: [{ ref: 'm1', quote: null }],
         },
       ],
       next: { action: 'deliver', goalId: 'home', constraintKey: null, reason: '给出结果' },
     };
+    const repeatedQuestion = await tool.invoke(
+      new RunContext(ctx),
+      JSON.stringify({
+        checks: [],
+        next: { action: 'ask_user', goalId: 'home', constraintKey: 'pets', reason: '养宠物吗' },
+      }),
+    );
+    expect(repeatedQuestion).toContain('already known');
+    expect(recordProgress).not.toHaveBeenCalled();
+    expect(evaluate).not.toHaveBeenCalled();
+    ctx.taskProgressCalls = 0;
     const first = await tool.invoke(new RunContext(ctx), JSON.stringify(args));
     expect(first).toContain('rejectedCriteria');
     expect(ctx.task?.goals[0]?.criteria[0]?.status).toBe('unknown');
