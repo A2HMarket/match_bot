@@ -193,7 +193,11 @@ export function makeOutboundTool<A>(
   async function recordInvalidDraft(ctx: MatchContext, reason: string, detail?: string[]) {
     const previous = ctx.outboundInputFailures;
     const count = previous?.tool === cfg.name ? previous.count + 1 : 1;
-    ctx.outboundInputFailures = { tool: cfg.name, count };
+    ctx.outboundInputFailures = {
+      tool: cfg.name,
+      count,
+      feedback: (detail ?? [reason]).slice(0, 3).map((item) => item.slice(0, 1000)),
+    };
     await deps.repos.traces.create({
       kind: 'gate',
       inputRef: ctx.sourceMessageId,

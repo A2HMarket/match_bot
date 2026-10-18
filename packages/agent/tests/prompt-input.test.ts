@@ -192,3 +192,17 @@ it('tells finalization which evidence families it can deliver without calling un
     otherSourceCounts: { xhs: 1, legacyWeb: 0 },
   });
 });
+
+it('passes current validation failures to the fresh finalization input', () => {
+  const ctx = context();
+  Object.assign(ctx, {
+    outboundInputFailures: {
+      tool: 'reply_to_request',
+      count: 1,
+      feedback: ['Question already answered; omit it.'],
+    },
+  });
+  expect(JSON.stringify(runtimeContext(ctx, 'finalization'))).toContain(
+    'Question already answered; omit it.',
+  );
+});

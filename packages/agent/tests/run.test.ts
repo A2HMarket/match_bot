@@ -192,7 +192,7 @@ describe('runInbound', () => {
       repos.traces.create.mock.calls.some((c) => JSON.stringify(c).includes('agent_noop')),
     ).toBe(true);
   });
-  it('does not emit an unbound generic status when preparation fails for a short supplement', async () => {
+  it('reports a planning failure instead of silently swallowing a direct short supplement', async () => {
     const model = new ScriptedModel([
       [
         functionCall(
@@ -218,18 +218,17 @@ describe('runInbound', () => {
           },
         },
       } as never,
-      ctx: { ...ctx(2), addressedToBot: true },
+      ctx: { ...ctx(0), addressedToBot: true },
       input: '头痛',
     });
-    expect(result).toEqual({ kind: 'completed', toolsCalled: [] });
-    expect(repos.outbound.create).not.toHaveBeenCalled();
+    expect(result.kind).toBe('completed');
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
     expect(deps.evaluateOutbound).not.toHaveBeenCalled();
   });
   it('does not turn thanks for a recommendation into another research/finalization reply', async () => {
     const model = new ScriptedModel([
       [functionCall('acknowledge_task', {}, { callId: 'ack' })],
       [functionCall('react', { emoji: '👍' }, { callId: 'reaction' })],
-      [assistantMessage('done')],
     ]);
     const { deps, repos } = makeDeps(model);
     deps.evaluateOutbound.mockResolvedValue({
@@ -1529,4 +1528,48 @@ it('persists and resumes a phase 1 request-status approval through the SDK', asy
   const draft = repos.outbound.create.mock.calls[0]?.[0] as { text: string };
   expect(draft.text).not.toMatch(/[?？]|逐项|下一步应/);
   expect(draft.text).toContain('查询没能完成');
+});
+
+it('uses bounded finalization after the research turn budget instead of dropping collected work', async () => {
+  const model = new ScriptedModel([
+    ...Array.from({ length: 12 }, (_, i) => [
+      functionCall('do_nothing', { reason: 'still deciding' }, { callId: 'noop-' + i }),
+    ]),
+    [
+      functionCall(
+        'reply_to_request',
+        { kind: 'unavailable', text: '目前资料不足以确认，可以先核对具体型号。', refs: [] },
+        { callId: 'recover-answer' },
+      ),
+    ],
+  ]);
+  const { deps, repos } = makeDeps(model);
+  await runInbound({
+    deps: { ...deps, answerRequests: true } as never,
+    ctx: ctx(0),
+    input: '伦敦想收无线激光打印机',
+  });
+  expect(repos.outbound.create).toHaveBeenCalledWith(
+    expect.objectContaining({ text: expect.stringContaining('目前资料不足以确认') as unknown }),
+    'dry_run',
+  );
+  model.assertComplete();
+});
+
+it.each(['react', 'do_nothing'])('ends acknowledgement immediately after %s', async (name) => {
+  const model = new ScriptedModel([
+    [
+      functionCall(name, name === 'react' ? { emoji: '👍' } : { reason: 'acknowledgement' }, {
+        callId: 'ack-terminal',
+      }),
+    ],
+    [assistantMessage('This extra model call must not happen')],
+  ]);
+  const { deps } = makeDeps(model);
+  await runInbound({
+    deps: { ...deps, answerRequests: true } as never,
+    ctx: { ...ctx(0), source: { messageId: 'tg', userId: 'owner' } },
+    input: '谢谢',
+  });
+  expect(model.calls).toHaveLength(1);
 });

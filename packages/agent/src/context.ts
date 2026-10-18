@@ -79,7 +79,7 @@ export interface MatchContext {
    */
   outboundBlocked?: boolean;
   /** 同一出站工具连续参数/证据失败最多三次；有效草稿清零。 */
-  outboundInputFailures?: { tool: string; count: number };
+  outboundInputFailures?: { tool: string; count: number; feedback?: string[] };
   /** 本次 run 的 web search 候选；reply_with_search_results 只认这里的编号。 */
   searchResults?: SearchCandidate[];
   /** 本次 run 的小红书笔记候选；reply_with_xhs_notes 只认这里的编号。 */

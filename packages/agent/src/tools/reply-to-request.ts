@@ -1,3 +1,4 @@
+import { unsupportedNumericClaims } from '../numeric-evidence.js';
 import { z } from 'zod';
 import type { AgentDeps, MatchContext } from '../context.js';
 import { makeOutboundTool } from './make-outbound-tool.js';
@@ -33,20 +34,6 @@ const parameters = z.object({
     ),
 });
 
-function numericClaims(text: string, referenceCount = 0): string[] {
-  return (
-    text
-      .replace(/\bA2H\b/gi, '')
-      .replace(/(?:第|这|那)(\d{1,2})(?:条|套|项)/g, (whole: string, value: string) =>
-        Number(value) > 0 && Number(value) <= referenceCount ? '' : whole,
-      )
-      .replace(/(^|\n)\s*\d{1,2}[.、)）]\s*/g, '$1')
-      .match(/\d+(?:\.\d+)?/g) ?? []
-  );
-}
-function hasSupportedNumber(support: string, value: string): boolean {
-  return (support.match(/\d+(?:\.\d+)?/g) ?? []).some((n) => Number(n) === Number(value));
-}
 function claimsUnknownTotalFits(text: string, evidence: string): boolean {
   if (
     !/不(?:含|包).{0,6}(?:账单|水电)|(?:excluding|without)\s+bills|bills (?:are )?(?:extra|excluded|not included)/i.test(
@@ -373,17 +360,12 @@ export function replyToRequestTool(deps: AgentDeps) {
               'Rent excludes bills and the total cost is unknown. Do not claim rent plus bills fits the budget; distinguish the verified rent from the unconfirmed total.',
           };
         const support = rendered.evidence.join('\n') + '\n' + (ctx.currentRequest?.text ?? '');
-        if (numericClaims(args.text, market.length).some((n) => !hasSupportedNumber(support, n)))
+        const unsupported = unsupportedNumericClaims(args.text, support, market.length);
+        if (unsupported.length)
           return {
             error:
               'invalid answer: unsupported numerical values ' +
-              [
-                ...new Set(
-                  numericClaims(args.text, market.length).filter(
-                    (n) => !hasSupportedNumber(support, n) && n.length <= 4,
-                  ),
-                ),
-              ].join(', ') +
+              unsupported.join(', ') +
               '; omit or cite supporting offer evidence.',
           };
         text = args.text + '\n\n' + rendered.text;
@@ -419,22 +401,12 @@ export function replyToRequestTool(deps: AgentDeps) {
             kind: 'research_required',
           };
 
-        if (
-          args.kind !== 'clarification' &&
-          numericClaims(args.text, new Set(sources).size).some(
-            (n) => !hasSupportedNumber(support, n),
-          )
-        )
+        const unsupported = unsupportedNumericClaims(args.text, support, new Set(sources).size);
+        if (args.kind !== 'clarification' && unsupported.length)
           return {
             error:
               'invalid answer: unsupported numerical values ' +
-              [
-                ...new Set(
-                  numericClaims(args.text, new Set(sources).size).filter(
-                    (n) => !hasSupportedNumber(support, n) && n.length <= 4,
-                  ),
-                ),
-              ].join(', ') +
+              unsupported.join(', ') +
               '; omit these factual claims or cite supporting evidence. Citation IDs are not user text.',
           };
         if (

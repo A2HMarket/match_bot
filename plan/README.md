@@ -1,3 +1,5 @@
+P38：Agent 执行链审查与修复已完成本地回归，评审中，见 [P38-agent-runtime-fixes.md](P38-agent-runtime-fixes.md)。
+
 # 开发实施计划与进度看板
 
 > 本目录是项目跟进的唯一事实源。每个工作包一个文件，分给不同 agent 并行执行。
@@ -8,7 +10,7 @@
 
 ## 看板
 
-P37：提示词架构本地实现与回归完成，真实模型质量验收待凭据，见 [P37-prompt-architecture.md](P37-prompt-architecture.md)。
+P37：提示词架构本地实现与离线回归完成；真实模型质量验收未通过，见 [测试报告](../docs/evals/2026-10-18-p37-live.md) 及 [P37-prompt-architecture.md](P37-prompt-architecture.md)。
 
 P36：Jev targeted 策略与本地无 Telegram 对话验证，Codex 本地实现与回归完成，真实模型验收待凭据（2026-10-18）。用户授权减少 Jev 强依赖；保留事实核验、Phase 0/1、主动群聊门控。见 [P36-targeted-jev-local.md](P36-targeted-jev-local.md)。
 

@@ -1,5 +1,5 @@
 import { replyRequestStatusTool } from './tools/reply-request-status.js';
-import { isContextSupplement, canSkipSupplementReply } from './supplement-replies.js';
+import { canSkipSupplementReply } from './supplement-replies.js';
 import { bindCurrentRequest } from './current-request.js';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -77,28 +77,6 @@ export async function runInbound(p: {
     if (!p.deps.answerRequests) throw new Error('taskRequests requires answerRequests');
     bindCurrentRequest(p.ctx, p.input);
     if (!(await prepareTaskTurn({ ...p, signal }))) {
-      const scoped = (p.ctx.taskCandidates ?? []).filter(
-        (t) =>
-          t.ownerUserId === p.ctx.userId &&
-          t.scope.chatId === p.ctx.chatId &&
-          t.scope.channel === (p.ctx.channel ?? 'telegram') &&
-          !['completed', 'cancelled', 'expired'].includes(t.status),
-      );
-      if (isContextSupplement(p.input) && scoped.length === 1) {
-        await p.deps.repos.traces.create({
-          kind: 'gate',
-          inputRef: p.ctx.sourceMessageId,
-          phase: p.ctx.phase,
-          latencyMs: 0,
-          costMicro: 0,
-          output: {
-            gate: 'request_status',
-            decision: 'suppressed',
-            reason: 'unbound_context_supplement',
-          },
-        });
-        return { kind: 'completed', toolsCalled: [] };
-      }
       if (p.ctx.currentRequest && (p.ctx.addressedToBot || p.ctx.taskCandidates?.length))
         p.ctx.currentRequest.isActionable = true;
       return respondRequestStatus(p, session);
@@ -196,6 +174,13 @@ export async function runInbound(p: {
       latencyMs: 0,
       costMicro: 0,
     });
+    // Turn exhaustion is recoverable research exhaustion, not a denied outbound action.
+    if (
+      error.name === 'MaxTurnsExceededError' &&
+      !p.ctx.outboundBlocked &&
+      !p.ctx.answerInputExhausted
+    )
+      return finalizeRequest(p, session);
     return respondRequestStatus(p, session);
   }
   if (

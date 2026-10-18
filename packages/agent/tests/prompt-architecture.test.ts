@@ -135,3 +135,10 @@ it('rejects an assembly with a missing required scene tool before generation', a
     'missing prompt tool: market_search',
   );
 });
+
+it('keeps tool choice required throughout bounded planning and finalization repair', () => {
+  for (const stage of [{ taskPlanningOnly: true }, { finalAnswerOnly: true }]) {
+    const { agent } = createMatchAgent(deps, { phase: 2, ...stage });
+    expect(agent.resetToolChoice).toBe(false);
+  }
+});

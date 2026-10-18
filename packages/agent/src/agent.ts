@@ -43,7 +43,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.24.0';
+export const AGENT_VERSION = '0.25.0';
 
 /** 「下周六」要换算成 whenAt，模型需要知道今天是哪天、星期几（伦敦时区）。 */
 export function londonToday(now = new Date()): string {
@@ -108,6 +108,15 @@ export function createMatchAgent(
           isInterrupted: undefined,
           finalOutput: 'not sent: outbound blocked',
         };
+      const quiet = results.find(
+        (r) =>
+          'output' in r &&
+          r.tool.name === 'do_nothing' &&
+          typeof r.output === 'string' &&
+          /^ok(?:$|:)/.test(r.output),
+      );
+      if (quiet && 'output' in quiet)
+        return { isFinalOutput: true, isInterrupted: undefined, finalOutput: String(quiet.output) };
       const finished = results.find(
         (r) =>
           'output' in r &&
@@ -116,6 +125,7 @@ export function createMatchAgent(
                 'reply_with_xhs_notes',
                 'reply_with_market_results',
                 'reply_to_request',
+                'react',
                 'reply_request_status',
                 'reply_in_group',
                 'reply_with_search_results',
@@ -131,6 +141,7 @@ export function createMatchAgent(
         : { isFinalOutput: false, isInterrupted: undefined };
     },
     // P14 实测：默认 high 思考让多源综合超时；Jev 判断、Flash 生成，证据仍由代码校验。
+    resetToolChoice: !(run?.taskPlanningOnly || run?.finalAnswerOnly || run?.requestStatusOnly),
     modelSettings: {
       ...(deps.env.DEEPSEEK_MODEL === 'deepseek-flash'
         ? { providerData: { thinking: { type: 'disabled' } } }

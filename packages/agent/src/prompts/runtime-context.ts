@@ -104,6 +104,7 @@ export function runtimeContext(ctx: MatchContext, stage: PromptStage): Record<st
     ambiguousTopics: ['ambiguous', 'unbound'].includes(ctx.taskUpdate?.kind ?? '')
       ? candidates.slice(0, 8).map((t) => ({ ref: t.id, objective: t.objective }))
       : [],
+    validationFeedback: ctx.outboundInputFailures ?? null,
     receipts: {
       marketQueries: ctx.marketQueries?.length ?? 0,
       refreshedMarketDetails: ctx.marketDetailIds?.length ?? 0,
