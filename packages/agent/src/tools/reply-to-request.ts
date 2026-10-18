@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { removeSupportedClockClaims } from '../clock-evidence.js';
 import type { AgentDeps, MatchContext } from '../context.js';
 import { makeOutboundTool } from './make-outbound-tool.js';
 import { groupReplyAddressing } from './addressing.js';
@@ -33,9 +34,9 @@ const parameters = z.object({
     ),
 });
 
-function numericClaims(text: string, referenceCount = 0): string[] {
+function numericClaims(text: string, referenceCount = 0, support = ''): string[] {
   return (
-    text
+    removeSupportedClockClaims(text, support)
       .replace(/\bA2H\b/gi, '')
       .replace(/(?:第|这|那)(\d{1,2})(?:条|套|项)/g, (whole: string, value: string) =>
         Number(value) > 0 && Number(value) <= referenceCount ? '' : whole,
@@ -266,6 +267,15 @@ export function replyToRequestTool(deps: AgentDeps) {
           error:
             'Use at most 6 independent sources/offers and 24 reference IDs, including inline citations. Multiple passages from one source count once; choose only the sources supporting this answer.',
         };
+      if (
+        ctx.isAnswerFinalization &&
+        ctx.deliverySourceRefs &&
+        args.refs.some((ref) => !ctx.deliverySourceRefs!.includes(ref.replace(/:p\d+$/, '')))
+      )
+        return {
+          error:
+            'Use only the selected delivery packet sources and their real passages. Do not import facts from other discovered alternatives.',
+        };
       // Discover a missing question plan before factual repairs consume the bounded input attempts.
       taskDeliveryForOutbound(ctx, {
         kind:
@@ -373,13 +383,17 @@ export function replyToRequestTool(deps: AgentDeps) {
               'Rent excludes bills and the total cost is unknown. Do not claim rent plus bills fits the budget; distinguish the verified rent from the unconfirmed total.',
           };
         const support = rendered.evidence.join('\n') + '\n' + (ctx.currentRequest?.text ?? '');
-        if (numericClaims(args.text, market.length).some((n) => !hasSupportedNumber(support, n)))
+        if (
+          numericClaims(args.text, market.length, support).some(
+            (n) => !hasSupportedNumber(support, n),
+          )
+        )
           return {
             error:
               'invalid answer: unsupported numerical values ' +
               [
                 ...new Set(
-                  numericClaims(args.text, market.length).filter(
+                  numericClaims(args.text, market.length, support).filter(
                     (n) => !hasSupportedNumber(support, n) && n.length <= 4,
                   ),
                 ),
@@ -421,7 +435,7 @@ export function replyToRequestTool(deps: AgentDeps) {
 
         if (
           args.kind !== 'clarification' &&
-          numericClaims(args.text, new Set(sources).size).some(
+          numericClaims(args.text, new Set(sources).size, support).some(
             (n) => !hasSupportedNumber(support, n),
           )
         )
@@ -430,7 +444,7 @@ export function replyToRequestTool(deps: AgentDeps) {
               'invalid answer: unsupported numerical values ' +
               [
                 ...new Set(
-                  numericClaims(args.text, new Set(sources).size).filter(
+                  numericClaims(args.text, new Set(sources).size, support).filter(
                     (n) => !hasSupportedNumber(support, n) && n.length <= 4,
                   ),
                 ),

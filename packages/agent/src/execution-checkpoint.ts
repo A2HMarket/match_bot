@@ -72,6 +72,7 @@ export function restoreExecutionCheckpoint(
   if (data.agentVersion !== version) {
     delete restored.sourceReviewCache;
     delete restored.taskProgressVersion;
+    delete restored.deliverySourceRefs;
   }
   if (restored.task && restored.marketPlan)
     restored.marketPlan = bindTaskMarketPlan(restored.marketPlan, restored.task);

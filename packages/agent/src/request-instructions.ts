@@ -1,3 +1,4 @@
+import { deliveryInstructions } from './delivery-instructions.js';
 import { buildMarketChoices } from './market-choices.js';
 import { marketListingForModel } from './market-research.js';
 import type { AgentDeps, MatchContext } from './context.js';
@@ -10,6 +11,7 @@ export function requestInstructions(
   finalOnly: boolean,
   today: string,
 ): string {
+  if (finalOnly) return deliveryInstructions(ctx, today);
   const choices = ctx.marketPlan
     ? buildMarketChoices({
         candidates: ctx.marketListings ?? [],
@@ -60,7 +62,7 @@ export function requestInstructions(
       }) +
       '. Do not invent a search attempt, empty result or source outage. Refreshed sources below are already available: review them before asking the user to provide the same links. A missing user preference can still justify one necessary question.',
     ctx.task
-      ? 'TASK SOURCE LEDGER: Record important criterion checks and the next step once useful evidence is available. The ledger is not a prerequisite for an honest partial reply: if a check fails, keep that criterion unknown and deliver useful checked facts rather than repeatedly rewriting the ledger. Use exact current source refs/quotes; use returned passage IDs with quote=null to let the server copy the text; whole-source refs need an exact quote or a computed fact. General policies do not prove a specific offer accepts cats or matches a date. Keep unknown/conflict in the internal ledger; in the answer explain only the concrete uncertainty that affects the decision; distinct offers cannot be assembled into one offer. If evidence is missing, select the useful next research step, or ONE necessary user question. Record next action=deliver for the best truthful partial/full answer, even with explicitly unknown conditions. Research is not the user real-world goal completed. Public facts are your research work: do not ask whether the user wants you to search again; use the remaining allowed tools when it can change the decision. Ask only for a missing personal condition. On followups revisit saved sources using read_task_sources before repeating broad discovery; historical excerpts are hints, not current citations. Never display internal IDs/ledger fields. Existing progress: ' +
+      ? 'TASK SOURCE LEDGER: Record important criterion checks and the next step once useful evidence is available. The ledger is not a prerequisite for an honest partial reply: if a check fails, keep that criterion unknown and deliver useful checked facts rather than repeatedly rewriting the ledger. Use exact current source refs/quotes; use returned passage IDs with quote=null to let the server copy the text; whole-source refs need an exact quote or a computed fact. General policies do not prove a specific offer accepts cats or matches a date. Keep unknown/conflict in the internal ledger; in the answer explain only the concrete uncertainty that affects the decision; distinct offers cannot be assembled into one offer. If evidence is missing, select the useful next research step, or ONE necessary user question. Record next action=deliver for the best truthful partial/full answer, even with explicitly unknown conditions. A successful deliver/ask_user record transfers control to a separate delivery stage; finish research with selected evidence, not a draft or another search. Research is not the user real-world goal completed. Public facts are your research work: do not ask whether the user wants you to search again; use the remaining allowed tools when it can change the decision. Ask only for a missing personal condition. On followups revisit saved sources using read_task_sources before repeating broad discovery; historical excerpts are hints, not current citations. Never display internal IDs/ledger fields. Existing progress: ' +
         JSON.stringify({
           next: ctx.task.nextStep,
           evidence: ctx.task.evidence.slice(-12).map((e) => ({

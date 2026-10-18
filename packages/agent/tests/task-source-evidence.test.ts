@@ -261,11 +261,13 @@ it('uses server-owned passage text for null quotes and still creates semantic re
   ];
   expect(buildTaskProgress({ ctx, checks, next }).evidence[0]?.summary).toContain('twenty pounds');
   expect(buildTaskSourceReview(ctx, checks).claims).toHaveLength(1);
-  expect(() =>
-    buildTaskProgress({
-      ctx,
-      checks: [{ ...checks[0]!, sources: [{ ref: 'k1', quote: null }] }],
-      next,
-    }),
-  ).toThrow('exact quote');
+  const whole = buildTaskProgress({
+    ctx,
+    checks: [{ ...checks[0]!, sources: [{ ref: 'k1', quote: null }] }],
+    next,
+  });
+  expect(whole.evidence[0]?.summary).toBe(ctx.knowledgeSources[0]!.text);
+  expect(
+    buildTaskSourceReview(ctx, [{ ...checks[0]!, sources: [{ ref: 'k1', quote: null }] }]).claims,
+  ).toHaveLength(1);
 });

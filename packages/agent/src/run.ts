@@ -1,3 +1,4 @@
+import { buildDeliveryPacket } from './delivery-context.js';
 import { replyRequestStatusTool } from './tools/reply-request-status.js';
 import { isContextSupplement, canSkipSupplementReply } from './supplement-replies.js';
 import { bindCurrentRequest } from './current-request.js';
@@ -48,6 +49,7 @@ class ObsoleteResumeError extends Error {
 
 const RUN_OPTIONS = { maxTurns: MAX_TURNS } as const;
 const RUN_TIMEOUT_MS = 150000;
+const DELIVERY_RESERVE_MS = 30000;
 
 export async function runInbound(p: {
   deps: AgentDeps;
@@ -177,11 +179,23 @@ export async function runInbound(p: {
     checkpointInput: p.input,
     finalAnswerOnly: ambiguous,
     inputRef: p.ctx.sourceMessageId,
+    requestContext: p.ctx,
     ...(p.ctx.task ? { taskId: p.ctx.task.id } : {}),
   });
   let result: SettleResult;
   try {
-    result = await runner.run(agent, p.input, { context: p.ctx, session, ...RUN_OPTIONS, signal });
+    const remainingResearch =
+      (p.ctx.runDeadlineAt ?? Date.now()) - Date.now() - DELIVERY_RESERVE_MS;
+    const researchSignal =
+      p.deps.answerRequests && p.deps.taskRequests
+        ? AbortSignal.timeout(Math.max(1, remainingResearch))
+        : signal;
+    result = await runner.run(agent, p.input, {
+      context: p.ctx,
+      session,
+      ...RUN_OPTIONS,
+      signal: researchSignal,
+    });
   } catch (error) {
     if (!p.deps.answerRequests || !(error instanceof Error) || /Guardrail/.test(error.name))
       throw error;
@@ -195,6 +209,17 @@ export async function runInbound(p: {
       latencyMs: 0,
       costMicro: 0,
     });
+    if (
+      p.deps.taskRequests &&
+      !p.ctx.outboundBlocked &&
+      !p.ctx.answerInputExhausted &&
+      (error.name === 'MaxTurnsExceededError' ||
+        error.name === 'TimeoutError' ||
+        error.name === 'AbortError') &&
+      (p.ctx.knowledgeSources?.length || p.ctx.marketListings?.length) &&
+      (p.ctx.runDeadlineAt ?? 0) > Date.now()
+    )
+      return finalizeRequest(p, session);
     return respondRequestStatus(p, session);
   }
   if (
@@ -243,6 +268,32 @@ async function finalizeRequest(
   const remaining = (p.ctx.runDeadlineAt ?? Date.now() + 30000) - Date.now();
   if (remaining <= 0) return respondRequestStatus(p, session);
   p.ctx.isAnswerFinalization = true;
+  const packet = buildDeliveryPacket(p.ctx);
+  p.ctx.deliverySourceRefs = packet.refs;
+  // Keep the same user-owned persistent session, but give this stage its own model window.
+  const deliverySession = createPgSession({
+    repos: p.deps.repos,
+    userId: p.ctx.userId,
+    isolatePreviousTurns: true,
+  });
+  await p.deps.repos.traces.create({
+    kind: 'gate',
+    inputRef: p.ctx.sourceMessageId,
+    phase: p.ctx.phase,
+    latencyMs: 0,
+    costMicro: 0,
+    output: {
+      gate: 'delivery_stage',
+      decision: 'entered',
+      sourceCount: packet.refs.length,
+      marketCount: packet.market.length,
+      knowledgeCount: packet.knowledge.length,
+      reason:
+        p.ctx.taskProgressVersion === p.ctx.task?.requirementsVersion
+          ? 'planned_delivery'
+          : 'bounded_finalization',
+    },
+  });
   if (p.ctx.answerInputExhausted) {
     p.ctx.sourceFailures ??= [];
     p.ctx.sourceFailures.push('processing:invalid_evidence');
@@ -251,22 +302,24 @@ async function finalizeRequest(
     phase: p.ctx.phase,
     input: p.input,
     finalAnswerOnly: true,
+    inputRef: p.ctx.sourceMessageId,
+    ...(p.ctx.task ? { taskId: p.ctx.task.id } : {}),
   });
   try {
     const result = await runner.run(agent, p.input, {
       context: p.ctx,
-      session,
+      session: deliverySession,
       maxTurns: 3,
       signal: AbortSignal.timeout(Math.min(30000, remaining)),
     });
     if (result.interruptions.some((item) => !hasValidArguments(item.arguments)))
-      return respondRequestStatus(p, session);
+      return respondRequestStatus(p, deliverySession);
     if (!result.interruptions.length && !p.ctx.answerRecorded)
-      return respondRequestStatus(p, session);
+      return respondRequestStatus(p, deliverySession);
     return settle(p.deps, p.ctx, result);
   } catch (error) {
     if (!(error instanceof Error) || /Guardrail/.test(error.name)) throw error;
-    return respondRequestStatus(p, session);
+    return respondRequestStatus(p, deliverySession);
   }
 }
 
@@ -322,6 +375,8 @@ async function respondRequestStatus(
     phase: p.ctx.phase,
     input: p.input,
     requestStatusOnly: true,
+    inputRef: p.ctx.sourceMessageId,
+    ...(p.ctx.task ? { taskId: p.ctx.task.id } : {}),
   });
   const result = await runner.run(agent, 'Call reply_request_status with {} exactly once.', {
     context: p.ctx,
@@ -408,6 +463,9 @@ export async function resumeRun(p: {
   const { agent, runner } = createMatchAgent(p.deps, {
     phase: ctx.phase,
     requestStatusOnly: !!ctx.isRequestStatusRun,
+    finalAnswerOnly: !!ctx.isAnswerFinalization && !ctx.isRequestStatusRun,
+    inputRef: ctx.sourceMessageId,
+    ...(ctx.task ? { taskId: ctx.task.id } : {}),
   });
   // PoC V2：用 fromStringWithContext 才能还原自己的 RunContext
   const state = await SdkRunState.fromStringWithContext(agent, snapshot, new RunContext(ctx));

@@ -48,6 +48,8 @@ export interface MatchContext {
   taskPlanFailures?: number;
   taskProgressCalls?: number;
   taskProgressVersion?: number;
+  /** Server-selected source roots for the separate delivery stage; never model-provided snapshots. */
+  deliverySourceRefs?: string[];
   sourceReviewCache?: Record<string, boolean>;
   taskSourceReviewedClaims?: number;
   runDeadlineAt?: number;

@@ -41,6 +41,13 @@ type Source = {
     decisive?: boolean;
   };
 };
+/** Null delegates excerpt selection to the server; it never skips the semantic/computed checks. */
+function sourceQuote(source: Source, quote: string | null): string | null {
+  return source.computed?.decisive
+    ? source.computed.evidence
+    : (quote ?? source.computed?.evidence ?? source.passageText ?? source.text.slice(0, 1000)) ||
+        null;
+}
 export class TaskEvidenceError extends Error {
   constructor(message: string) {
     super(message);
@@ -259,9 +266,7 @@ export function buildTaskProgress(
       const source = getSource(p.ctx, check, input.ref);
       if (input.quote && !source.text.includes(input.quote))
         throw new TaskEvidenceError('quote is not in the returned source');
-      let quote = source.computed?.decisive
-        ? source.computed.evidence
-        : (input.quote ?? source.computed?.evidence ?? source.passageText ?? null);
+      let quote = sourceQuote(source, input.quote);
       if (source.computed && check.status !== 'unknown') {
         const strict = /^(?:budget|area|route_from|route_to|date|capacity)$/.test(
           criterion.constraintKey ?? '',
@@ -413,10 +418,7 @@ export function buildTaskSourceReview(
     if (knownUserOrigin(ctx.task!, goal.id, criterion.constraintKey)) continue;
     for (const [sourceIndex, proof] of check.sources.entries()) {
       const source = getSource(ctx, check, proof.ref);
-      const initialQuote =
-        source.computed?.status !== 'unknown'
-          ? (source.computed?.evidence ?? proof.quote ?? source.passageText)
-          : (proof.quote ?? source.passageText);
+      const initialQuote = sourceQuote(source, proof.quote);
       if (!initialQuote) continue;
       const at = source.text.indexOf(initialQuote);
       const text =
