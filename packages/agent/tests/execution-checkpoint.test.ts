@@ -85,7 +85,18 @@ describe('execution research checkpoints', () => {
   it('encrypts tool results and restores them without restoring an old execution token or deadline', async () => {
     const f = fixture();
     await saveExecutionCheckpoint(f.deps, f.ctx, '找书桌', 'version');
-    expect(f.snapshot()).not.toContain('E14');
+    // Random base64 ciphertext can contain short ASCII strings such as E14 by chance.
+    expect(f.snapshot()).toMatch(/^v1\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+$/);
+    expect(f.snapshot()).not.toContain('"title":"E14书桌"');
+    expect(() =>
+      restoreExecutionCheckpoint(
+        { ...f.deps, env: { ...f.deps.env, SNAPSHOT_KEY: 'different-checkpoint-key' } },
+        f.ctx,
+        '找书桌',
+        f.snapshot(),
+        'version',
+      ),
+    ).toThrow();
     const fresh: MatchContext = {
       ...f.ctx,
       marketListings: [],
@@ -94,6 +105,7 @@ describe('execution research checkpoints', () => {
     };
     const restored = restoreExecutionCheckpoint(f.deps, fresh, '找书桌', f.snapshot(), 'version');
     expect(restored.marketListings?.[0]?.id).toBe('desk');
+    expect(restored.marketListings?.[0]?.title).toBe('E14书桌');
     expect(restored.marketDetailIds).toEqual(['desk']);
     expect(restored.execution?.fence).toBe(2);
     expect(restored.runDeadlineAt).toBe(999);

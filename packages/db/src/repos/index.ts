@@ -17,7 +17,7 @@ import { executionsRepo } from './executions.js';
 import { withExecutionFence } from '../execution-fence.js';
 import type { ExecutionLease } from '@matchbot/domain';
 
-function rawRepositories(prisma: PrismaClient) {
+function rawRepositories(prisma: PrismaClient, senderAccountId = '') {
   return {
     users: usersRepo(prisma),
     tasks: tasksRepo(prisma),
@@ -32,7 +32,7 @@ function rawRepositories(prisma: PrismaClient) {
     sessionItems: sessionItemsRepo(prisma),
     runStates: runStatesRepo(prisma),
     approvals: approvalsRepo(prisma),
-    outbound: outboundRepo(prisma),
+    outbound: outboundRepo(prisma, senderAccountId),
     traces: tracesRepo(prisma),
   };
 }
@@ -40,9 +40,14 @@ type RawRepositories = ReturnType<typeof rawRepositories>;
 export type Repositories = RawRepositories & {
   forExecution: (lease: ExecutionLease) => Repositories;
 };
-export function createRepositories(prisma: PrismaClient, lease?: ExecutionLease): Repositories {
-  const raw = rawRepositories(prisma);
-  if (!lease) return { ...raw, forExecution: (next) => createRepositories(prisma, next) };
+export function createRepositories(
+  prisma: PrismaClient,
+  lease?: ExecutionLease,
+  senderAccountId = '',
+): Repositories {
+  const raw = rawRepositories(prisma, senderAccountId);
+  if (!lease)
+    return { ...raw, forExecution: (next) => createRepositories(prisma, next, senderAccountId) };
   // Mechanical facade keeps the repository contracts; only short DB operations hold the user lock.
   const scoped = Object.fromEntries(
     Object.entries(raw).map(([name, repo]) => {
@@ -54,7 +59,9 @@ export function createRepositories(prisma: PrismaClient, lease?: ExecutionLease)
             method,
             (...args: unknown[]) =>
               withExecutionFence(prisma, lease, async (tx) => {
-                const target = rawRepositories(tx as PrismaClient)[name as keyof RawRepositories];
+                const target = rawRepositories(tx as PrismaClient, senderAccountId)[
+                  name as keyof RawRepositories
+                ];
                 const fn: unknown = Reflect.get(target, method);
                 if (typeof fn !== 'function') throw new Error('unknown repository operation');
                 const result: unknown = Reflect.apply(fn, target, args);
@@ -65,5 +72,5 @@ export function createRepositories(prisma: PrismaClient, lease?: ExecutionLease)
       ];
     }),
   ) as RawRepositories;
-  return { ...scoped, forExecution: (next) => createRepositories(prisma, next) };
+  return { ...scoped, forExecution: (next) => createRepositories(prisma, next, senderAccountId) };
 }

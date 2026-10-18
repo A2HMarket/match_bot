@@ -8,7 +8,7 @@ import {
 } from '@matchbot/channel-telegram';
 import { createLogger, type Env } from '@matchbot/shared';
 import { configureModelProvider, createTraceProcessor, type AgentDeps } from '@matchbot/agent';
-import { createJevClient, evaluateOutbound } from '@matchbot/jev';
+import { createJevClient, evaluateParticipantOutbound } from '@matchbot/jev';
 import { DEFAULT_THRESHOLDS } from '@matchbot/gating';
 import type { ActorLabConfig } from './actor-lab-config.js';
 import { actorRoute, type ActorLabInbox } from './actor-lab-state.js';
@@ -40,7 +40,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
     repos,
     logger,
     thresholds: DEFAULT_THRESHOLDS,
-    evaluateOutbound,
+    evaluateOutbound: evaluateParticipantOutbound,
     jev: createJevClient({
       baseUrl: env.JEV_BASE_URL,
       apiKey: env.JEV_API_KEY,
@@ -50,6 +50,14 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
       timeoutMs: 10000,
       maxRetries: 0,
     }),
+  };
+  const participantRepos = new Map(
+    cfg.actors.map((a) => [a.id, createRepositories(control, undefined, a.id)]),
+  );
+  const depsForActor = (id: string): AgentDeps => {
+    const scoped = participantRepos.get(id);
+    if (!scoped) throw new Error('unknown_actor');
+    return { ...deps, repos: scoped };
   };
   const senders = new Map(
     cfg.actors.map((a, i) => [a.id, createTelegramSender({ bot: bots[i]!, logger })]),
@@ -135,6 +143,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
               errorCode: 'actor_route_rejected',
             });
           }
+          if (row.senderAccountId !== actor) throw new Error('actor_sender_account_mismatch');
           const sender = senders.get(actor);
           if (!sender) throw new Error('actor_sender_missing');
           return sender.send(row, {
@@ -153,7 +162,8 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
     onReply: (actor: string, text: string) => void,
     onStop: () => void,
   ) {
-    const polling = bots.map((bot) => {
+    const polling = bots.map((bot, index) => {
+      const receiverActorId = cfg.actors[index]!.id;
       bot.on('message:text', (ctx) => {
         const m = ctx.message;
         if (String(m.chat.id) !== cfg.groupId) return;
@@ -161,13 +171,17 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
           onStop();
           return;
         }
-        if (String(m.from.id) !== cfg.matchBotId) return;
+        if (
+          String(m.from.id) !== cfg.matchBotId ||
+          String(m.reply_to_message?.from?.id) !== receiverActorId
+        )
+          return;
         const message = toInboundMessage(ctx.update, {
           botId: bot.botInfo.id,
           actorAllowlist: [{ chatId: cfg.groupId, botIds: [cfg.matchBotId] }],
         });
         if (!message) return;
-        const actor = inbox.accept(message);
+        const actor = inbox.accept(message, receiverActorId);
         if (actor) onReply(actor, message.text.slice(0, 1800));
       });
       return bot.start({ timeout: 5, allowed_updates: ['message'] }).catch(() => {
@@ -183,6 +197,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
     repos,
     mainRepos,
     deps,
+    depsForActor,
     processor,
     verify,
     activate,
@@ -194,17 +209,37 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
 }
 export type ActorLabRuntime = Awaited<ReturnType<typeof openActorLab>>;
 
+/** Basic-group IDs belong to the receiving bot account. Correlate synthetic receipts by author, text and time instead. */
 export async function observeActorMessage(
   repos: Repositories,
-  p: { groupId: string; actorId: string; externalMessageId: string },
+  p: { groupId: string; actorId: string; text: string; sentAt: Date },
 ) {
-  const group = await repos.groups.findByExternal('telegram', p.groupId),
-    user = await repos.users.findByExternal('telegram', p.actorId);
-  if (!group || !user) return null;
-  const message = await repos.messages.findExisting({
-    groupId: group.id,
-    userId: user.id,
-    externalId: p.externalMessageId,
+  const messages = await observeActorMessages(repos, {
+    groupId: p.groupId,
+    actorIds: [p.actorId],
+    since: new Date(p.sentAt.getTime() - 15000),
   });
-  return message?.userId === user.id ? message : null;
+  const matches = messages.filter(
+    (m) => m.text === p.text && Math.abs(m.receivedAt.getTime() - p.sentAt.getTime()) <= 15000,
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+export async function observeActorMessages(
+  repos: Repositories,
+  p: { groupId: string; actorIds: readonly string[]; since: Date },
+) {
+  const group = await repos.groups.findByExternal('telegram', p.groupId);
+  if (!group) return [];
+  const rows = await Promise.all(
+    p.actorIds.map(async (actorId) => {
+      const user = await repos.users.findByExternal('telegram', actorId);
+      if (!user) return [];
+      const messages = await repos.messages.recentByUser(user.id, 1, { groupId: group.id });
+      if (messages.length === 50) throw new Error('actor_observation_truncated');
+      return messages.filter(
+        (m) => m.userId === user.id && m.groupId === group.id && m.receivedAt >= p.since,
+      );
+    }),
+  );
+  return rows.flat();
 }

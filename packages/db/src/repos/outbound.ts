@@ -59,7 +59,10 @@ async function trace(
     },
   });
 }
-export function outboundRepo(prisma: PrismaClient) {
+export function outboundRepo(prisma: PrismaClient, accountId = '') {
+  const senderAccountId = z
+    .union([z.literal(''), z.string().regex(/^[1-9]\d{0,19}$/)])
+    .parse(accountId);
   // Reuse an existing transaction boundary in repositories and rollback integration tests.
   const atomic = <T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> =>
     typeof prisma.$transaction === 'function' ? prisma.$transaction(fn) : fn(prisma);
@@ -194,6 +197,7 @@ export function outboundRepo(prisma: PrismaClient) {
         }
         const row = await tx.outboundMessage.create({
           data: {
+            senderAccountId,
             channel: draft.channel,
             target: draft.target,
             text: draft.text,

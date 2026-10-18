@@ -1,11 +1,17 @@
 export function shouldStopActorLab(
-  limits: { maxMessages: number; maxSeconds: number; tokenBudget: number },
+  limits: {
+    maxMessages: number;
+    maxSeconds: number;
+    tokenBudget: number;
+    minRemainingTokens?: number;
+  },
   state: { sent: number; elapsedMs: number; tokens: number; stopped: boolean },
 ): string | null {
   if (state.stopped) return 'stopped';
   if (state.sent >= limits.maxMessages) return 'message_budget';
   if (state.elapsedMs >= limits.maxSeconds * 1000) return 'time_budget';
   if (state.tokens >= limits.tokenBudget) return 'token_budget';
+  if (limits.tokenBudget - state.tokens < (limits.minRemainingTokens ?? 0)) return 'token_reserve';
   return null;
 }
 export function actorRoute(
@@ -39,33 +45,38 @@ export class ActorLabInbox {
     private startedAt: Date,
   ) {}
   registerSent(messageId: string, actorId: string): void {
-    this.sent.set(messageId, actorId);
+    this.sent.set(`${actorId}:${messageId}`, actorId);
   }
-  accept(message: {
-    chatId: string;
-    userId: string;
-    messageId: string;
-    replyToMessageId?: string | undefined;
-    text: string;
-    receivedAt: string;
-  }): string | null {
+  accept(
+    message: {
+      chatId: string;
+      userId: string;
+      messageId: string;
+      replyToMessageId?: string | undefined;
+      text: string;
+      receivedAt: string;
+    },
+    receiverActorId: string,
+  ): string | null {
     if (
       message.chatId !== this.groupId ||
       message.userId !== this.matchBotId ||
       Date.parse(message.receivedAt) < Math.floor(this.startedAt.getTime() / 1000) * 1000 ||
-      this.seen.has(message.messageId)
+      this.seen.has(`${receiverActorId}:${message.messageId}`)
     )
       return null;
-    const actor = message.replyToMessageId ? this.sent.get(message.replyToMessageId) : undefined;
+    const actor = message.replyToMessageId
+      ? this.sent.get(`${receiverActorId}:${message.replyToMessageId}`)
+      : undefined;
     if (!actor) return null;
-    this.seen.add(message.messageId);
+    this.seen.add(`${receiverActorId}:${message.messageId}`);
     const reply = { messageId: message.messageId, text: message.text.slice(0, 1800) };
-    this.bySent.set(message.replyToMessageId!, reply);
+    this.bySent.set(`${actor}:${message.replyToMessageId!}`, reply);
     this.replies.set(actor, reply);
     return actor;
   }
-  forMessage(messageId: string) {
-    return this.bySent.get(messageId);
+  forMessage(messageId: string, actorId: string) {
+    return this.bySent.get(`${actorId}:${messageId}`);
   }
   latest(actorId: string) {
     return this.replies.get(actorId);

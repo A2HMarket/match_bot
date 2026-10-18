@@ -170,3 +170,32 @@ describe('outbound delivery leases', () => {
     });
   });
 });
+
+it('keeps basic-group receipts unique per sender account, not across different bots', async () => {
+  await withTestDb(async (tx) => {
+    await tx.$executeRaw`INSERT INTO outbound_messages (id, channel, target, text, sender_account_id, external_message_id) VALUES ('actor-receipt-one', 'telegram', '-actor-collision', 'synthetic', '111', '3')`;
+    await tx.$executeRaw`INSERT INTO outbound_messages (id, channel, target, text, sender_account_id, external_message_id) VALUES ('actor-receipt-two', 'telegram', '-actor-collision', 'synthetic', '222', '3')`;
+    expect(await tx.outboundMessage.count({ where: { target: '-actor-collision' } })).toBe(2);
+    for (const accountId of ['111', '222']) {
+      const scoped = createRepositories(tx, undefined, accountId);
+      const row = await scoped.outbound.create(
+        { channel: 'telegram', target: '-actor-factory', text: 'synthetic', phase: 2 },
+        'pending',
+      );
+      expect(row.senderAccountId).toBe(accountId);
+    }
+
+    await expect(
+      tx.$executeRaw`INSERT INTO outbound_messages (id, channel, target, text, sender_account_id, external_message_id) VALUES ('actor-receipt-duplicate', 'telegram', '-actor-collision', 'synthetic', '111', '3')`,
+    ).rejects.toThrow();
+  });
+});
+
+it('preserves receipt uniqueness for the default single-bot account', async () => {
+  await withTestDb(async (tx) => {
+    await tx.$executeRaw`INSERT INTO outbound_messages (id, channel, target, text, external_message_id) VALUES ('default-receipt-one', 'telegram', '-default-collision', 'synthetic', '3')`;
+    await expect(
+      tx.$executeRaw`INSERT INTO outbound_messages (id, channel, target, text, external_message_id) VALUES ('default-receipt-two', 'telegram', '-default-collision', 'synthetic', '3')`,
+    ).rejects.toThrow();
+  });
+});

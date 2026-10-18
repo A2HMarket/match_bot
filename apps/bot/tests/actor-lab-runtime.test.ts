@@ -10,7 +10,10 @@ vi.mock('@matchbot/agent', () => ({
   configureModelProvider: vi.fn(),
   createTraceProcessor: () => ({ forceFlush: () => Promise.resolve() }),
 }));
-vi.mock('@matchbot/jev', () => ({ createJevClient: () => ({}), evaluateOutbound: vi.fn() }));
+vi.mock('@matchbot/jev', () => ({
+  createJevClient: () => ({}),
+  evaluateParticipantOutbound: vi.fn(),
+}));
 vi.mock(import('grammy'), async (importOriginal) => ({
   ...(await importOriginal()),
   Bot: class {

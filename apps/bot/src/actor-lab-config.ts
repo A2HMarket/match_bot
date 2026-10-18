@@ -37,6 +37,8 @@ export const actorLabConfigSchema = z
     maxMessages: z.number().int().min(1).max(12).default(6),
     maxSeconds: z.number().int().min(30).max(600).default(600),
     tokenBudget: z.number().int().min(1000).max(500000).default(150000),
+    waitForEachReply: z.boolean().default(false),
+    minRemainingTokens: z.number().int().nonnegative().max(500000).default(0),
     replyWaitSeconds: z.number().int().min(5).max(160).default(150),
   })
   .refine(

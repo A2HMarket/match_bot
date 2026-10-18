@@ -54,6 +54,7 @@ function runtime() {
     cfg,
     repos,
     deps,
+    depsForActor: () => deps,
     mainRepos: {
       groups: { findByExternal: vi.fn().mockResolvedValue(null) },
       users: { findByExternal: vi.fn().mockResolvedValue(null) },
@@ -70,6 +71,7 @@ function runtime() {
     drain: vi.fn(() => {
       if (row) {
         row.status = 'sent';
+        row.sentAt = new Date();
         row.externalMessageId = String(repos.outbound.create.mock.calls.length);
       }
       return Promise.resolve();
@@ -105,6 +107,54 @@ describe('finite actor runs', () => {
       history: [{ speaker: 'self' }, { speaker: 'self' }, { speaker: 'self' }],
     });
     expect(r.close).toHaveBeenCalledOnce();
+  });
+  it('counts receiver-account model usage and stops before the next send', async () => {
+    const { r } = runtime();
+    r.cfg.tokenBudget = 1000;
+    let sent = false;
+    const drain = r.drain.getMockImplementation()!;
+    r.drain.mockImplementation(() => {
+      sent = true;
+      return drain();
+    });
+    const mainRepos = {
+      groups: { findByExternal: vi.fn().mockResolvedValue({ id: 'group' }) },
+      users: { findByExternal: vi.fn((_channel: string, id: string) => Promise.resolve({ id })) },
+      messages: {
+        recentByUser: vi.fn((id: string) =>
+          Promise.resolve(
+            sent && id === r.cfg.actors[0]!.id
+              ? [
+                  {
+                    id: 'main-263',
+                    externalId: '263',
+                    userId: id,
+                    groupId: 'group',
+                    receivedAt: new Date(),
+                    text: r.cfg.actors[0]!.firstMessage,
+                  },
+                ]
+              : [],
+          ),
+        ),
+      },
+      traces: {
+        summarizeUsage: vi.fn((p: { inputRefs: string[] }) =>
+          Promise.resolve({
+            calls: p.inputRefs.length,
+            inputTokens: p.inputRefs.length ? 1001 : 0,
+            outputTokens: 0,
+            missingUsageCalls: 0,
+          }),
+        ),
+      },
+    };
+    const result = await runActorLab({ ...r, mainRepos } as unknown as ActorLabRuntime);
+    expect(result).toMatchObject({ sent: 1, reason: 'token_budget' });
+    expect(mainRepos.traces.summarizeUsage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ inputRefs: ['main-263'] }),
+    );
+    expect(report(result.report)).toMatchObject({ usage: { tokens: 1001 } });
   });
   it('honors a human stop before dispatching another actor', async () => {
     const { r, stop } = runtime(),
