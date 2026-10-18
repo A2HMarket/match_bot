@@ -113,7 +113,7 @@ export interface AgentDeps {
   logger: Logger;
   /** 注入便于测试（单测不连 Jev）。 */
   evaluateOutbound: typeof evaluateOutbound;
-  /** P14 库外兜底搜索；未配 SEARCH_API_KEY 时为空，相关工具不注册。 */
+  /** 网页信息研究（默认DeepSeek）与可选的商家核验搜索，通过装配注入。 */
   webSearch?: WebSearch;
   /** 吃喝玩乐类需求的小红书兜底搜索；未配 SANDBASE_API_KEY 时为空，相关工具不注册。 */
   xhsSearch?: XhsSearch;

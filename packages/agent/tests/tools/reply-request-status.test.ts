@@ -236,3 +236,27 @@ it('keeps an explicitly planned budget question bound to budget rather than inve
   });
   expect(renderRequestStatus(c)).not.toMatch(/[?？]/);
 });
+
+it('separates search failure, successful empty research and answer processing failure', () => {
+  const { c } = setup(2);
+  c.outboundBlocked = false;
+  c.informationQueries = ['public query'];
+  c.knowledgeSources = [];
+  expect(renderRequestStatus(c)).toContain('没搜到');
+  c.sourceFailures = ['information:timeout'];
+  expect(renderRequestStatus(c)).toContain('没查成');
+  c.sourceFailures = [];
+  c.knowledgeSources = [
+    {
+      ref: 'k1',
+      title: 'source',
+      url: 'https://www.nhs.uk/register',
+      text: 'Public information',
+      fetchedAt: new Date().toISOString(),
+      passages: [],
+    },
+  ];
+  c.answerInputExhausted = true;
+  expect(renderRequestStatus(c)).toContain('答复');
+  expect(renderRequestStatus(c)).not.toContain('没找到');
+});

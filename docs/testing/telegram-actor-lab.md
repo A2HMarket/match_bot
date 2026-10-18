@@ -45,3 +45,9 @@ Telegram 官方当前互通规则见 [Bot-to-Bot Communication](https://core.tel
 `turnOrder`可选三个既有role的有限列表，支持一个演员连续对话；是否首句按该演员实际已发送历史判断。五场预登记数据在scripts/poc/p33-live-multiturn/cases.json。新的预算必须先由用户明确批准，然后运行`pnpm exec tsx scripts/poc/p33-live-multiturn/run.mts --run <本轮新增token预算>`。默认`--plan`不读凭证、不调用模型或Telegram。
 
 每场最多3条，总最多15条；串行，每场600秒、等待210秒，使用原有频控并计入旧发送。固定Main0.20.0，不在五场间调prompt/阈值。保存每条真实入站、出站回执、工具trace、任务账本、演员后续与usage；主动补查不能只据回复自述。只读身份检查使用单次getMe，不用SDK init的持续重试；10秒HTTP界限，30秒后不再启动新身份请求。结束仅停用本测试群。
+
+## P34 搜索与校验回归
+
+`pnpm exec tsx scripts/poc/p34-search-validation/compare.mts` 对比6个公开query的原始DeepSeek/Tavily检索（无生成模型），可传已有 `logs/p34/search-<UUID>` 只补剩余请求。`probe.mts` 是官方接口PoC。
+
+`live.mts --plan` 只看计划；`live.mts --run <已批准新增预算>` 真实发送，最多6条，必须先获本批预算并确认Main版本。此脚本冻结0.21.0，只用于对应已记录批次，0.21.1及以后会拒绝启动。角色、测试群和全部原有门沿用；按每场历史最大单请求预留，可能少于6条。P34实际3条/419740 token，亲子场景未启动，不能视为通过。最后0.21.1的问题长度修复另有冻结草稿回归；完整结果见 `docs/evaluations/2026-10-18-search-and-validation-repair.md`。

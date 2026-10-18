@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { taskSchema } from '@matchbot/domain';
 import { taskDeliveryForOutbound } from '../src/task-outbound.js';
@@ -192,4 +193,68 @@ describe('server task outbound metadata', () => {
     delete ctx.execution;
     expect(taskDeliveryForOutbound(ctx, draft())).toBeUndefined();
   });
+});
+
+describe('P33 live question regressions', () => {
+  it.each([
+    '问的时候可以直接说：「HP那台打印机还在吗？型号是什么？」',
+    '先问卖家一句“这台支持 WiFi 吗？”型号还未知。',
+    'You can ask the seller: "Does it support WiFi?"',
+    '来源：[NHS](https://www.nhs.uk/register?practice=e14)',
+  ])('does not turn third-party examples or URL punctuation into user questions: %s', (text) => {
+    const ctx = context();
+    ctx.task!.nextStep = { action: 'deliver', owner: 'agent', reason: 'honest partial evidence' };
+    expect(
+      taskDeliveryForOutbound(ctx, { ...draft(), kind: 'recommendation', text })?.question,
+    ).toBeUndefined();
+  });
+  it.each(['你最多接受多久单程通勤？', '想问你：「你预算多少？」', '你现在不能出门吗？'])(
+    'still rejects an unplanned actual question: %s',
+    (text) => {
+      const ctx = context();
+      ctx.task!.nextStep = { action: 'deliver', owner: 'agent', reason: 'answer' };
+      expect(() =>
+        taskDeliveryForOutbound(ctx, { ...draft(), kind: 'recommendation', text }),
+      ).toThrow('Record');
+    },
+  );
+});
+
+it('replays the actual P33 rejected quoted-question draft without treating it as a user question', () => {
+  const fixtures = JSON.parse(
+    readFileSync(new URL('./fixtures/p33-quoted-question.json', import.meta.url), 'utf8'),
+  ) as Array<{ text: string }>;
+  expect(fixtures).toHaveLength(1);
+  for (const fixture of fixtures) {
+    const ctx = context();
+    ctx.task!.nextStep = { action: 'deliver', owner: 'agent', reason: 'partial evidence' };
+    expect(
+      taskDeliveryForOutbound(ctx, { ...draft(), kind: 'recommendation', text: fixture.text })
+        ?.question,
+    ).toBeUndefined();
+  }
+});
+
+it('checks the actual personal question length rather than rejecting a useful long answer', () => {
+  const fixtures = JSON.parse(
+    readFileSync(new URL('./fixtures/p34-long-answer-question.json', import.meta.url), 'utf8'),
+  ) as Array<{ text: string }>;
+  expect(fixtures.length).toBeGreaterThan(0);
+  for (const fixture of fixtures) {
+    const ctx = context();
+    ctx.task!.nextStep = {
+      action: 'ask_user',
+      owner: 'agent',
+      constraintKey: 'custom:gp_subarea',
+      reason: 'choose practice catchment',
+    };
+    const result = taskDeliveryForOutbound(ctx, {
+      ...draft(),
+      kind: 'recommendation',
+      text: fixture.text,
+      taskQuestionText: fixture.text,
+    });
+    expect(result?.question?.text.length).toBeLessThan(500);
+    expect(fixture.text).toContain(result?.question?.text);
+  }
 });

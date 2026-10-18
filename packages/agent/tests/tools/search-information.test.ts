@@ -12,6 +12,7 @@ it('excludes historical transport press releases from airport operational eviden
       demand: { category: 'other', need: '去希思罗机场', lang: 'zh', confidence: 1 },
     },
   } as MatchContext;
+  const createTrace = vi.fn().mockResolvedValue({});
   const deps = {
     webSearch: {
       research: vi.fn().mockResolvedValue({
@@ -30,12 +31,14 @@ it('excludes historical transport press releases from airport operational eviden
         ],
       }),
     },
-    repos: { traces: { create: vi.fn().mockResolvedValue({}) } },
+    repos: { traces: { create: createTrace } },
   } as unknown as AgentDeps;
   const t = searchInformationTool(deps);
-  await t.invoke(
+  const result = await t.invoke(
     new RunContext(ctx),
     JSON.stringify({ queries: [{ query: 'Heathrow current fares', domains: null }] }),
   );
   expect(ctx.knowledgeSources?.map((s) => s.title)).toEqual(['Current fares']);
+  expect(String(result)).not.toContain('error');
+  expect(createTrace).toHaveBeenCalledOnce();
 });

@@ -561,7 +561,7 @@ describe('reply_to_request', () => {
     );
     expect(d.repos.outbound.create).toHaveBeenCalledOnce();
   });
-  it('requires source progress before a selected-task answer but does not turn this into a gate rejection', async () => {
+  it('keeps source-checked task answers deliverable while ledger progress is incomplete', async () => {
     const { d, c } = setup(0);
     Object.assign(d, { taskRequests: true });
     c.task = taskSchema.parse({
@@ -579,10 +579,9 @@ describe('reply_to_request', () => {
       userConfirmation: null,
     });
     const tool = replyToRequestTool(d as never);
-    expect(await tool.invoke({ context: c } as never, JSON.stringify(args))).toContain(
-      'record_task_progress',
-    );
-    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+    await tool.invoke({ context: c } as never, JSON.stringify(args));
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    expect(c.taskProgressVersion).toBeUndefined();
     expect(c.outboundBlocked).not.toBe(true);
   });
   it('retains later source facts for Jev when a single relevant item does not need bundle filtering', async () => {
@@ -851,4 +850,26 @@ it('does not silently remove an unselected inline offer ref', async () => {
   );
   expect(result).toContain('unselected inline refs');
   expect(d.repos.outbound.create).not.toHaveBeenCalled();
+});
+
+it('delivers sourced partial information without making a complete task ledger a prerequisite', async () => {
+  const { c, d } = setup(0);
+  c.task = taskSchema.parse({
+    id: 'task',
+    ownerUserId: 'u',
+    scope: { channel: 'telegram', chatId: '-1' },
+    objective: 'GP registration',
+    status: 'active',
+    revision: 1,
+    goals: [],
+    evidence: [],
+    pendingQuestion: null,
+    blockReason: null,
+    delivery: { status: 'none', level: 'none' },
+    userConfirmation: null,
+  });
+  const tool = replyToRequestTool({ ...d, taskRequests: true } as never);
+  await tool.invoke({ context: c } as never, JSON.stringify({ ...args, kind: 'partial' }));
+  expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+  expect(c.taskProgressVersion).toBeUndefined();
 });

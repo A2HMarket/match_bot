@@ -17,7 +17,7 @@ export function recordTaskProgressTool(deps: AgentDeps) {
   return tool({
     name: 'record_task_progress',
     description:
-      'Record verified source evidence and a responsible next step for the selected task. Use known goal/criterion IDs and source refs. Exact source text may be supplied with status=unknown: the server then checks both support and contradiction, keeping missing/ambiguous/unavailable evidence unknown. Each criterion describes the best coherent option; do not mix rejected alternatives into supporting evidence. Use exact quotes; quote=null only for a returned computed fact. Never combine different offers, treat public status as guaranteed availability, or mark the user goal complete. Choose research for public facts your tools can retrieve; ask_user only for a missing personal condition or decision that changes your next action. Record internal checks without turning them into a public checklist. Use wait_source only after a real failure, or deliver the useful findings with concrete unknowns. This sends nothing.',
+      'Record verified source evidence and a responsible next step for the selected task. Use known goal/criterion IDs and source refs. Exact source text may be supplied with status=unknown: the server then checks both support and contradiction, keeping missing/ambiguous/unavailable evidence unknown. Each criterion describes the best coherent option; do not mix rejected alternatives into supporting evidence. Use returned passage IDs with quote=null (the server owns the exact text), or exact quotes for whole-source refs. quote=null also works for computed facts. Never combine different offers, treat public status as guaranteed availability, or mark the user goal complete. Choose research for public facts your tools can retrieve; ask_user only for a missing personal condition or decision that changes your next action. Record internal checks without turning them into a public checklist. Use wait_source only after a real failure, or deliver the useful findings with concrete unknowns. This sends nothing.',
     parameters: taskProgressParameters,
     needsApproval: false,
     errorFunction: async (rc) => {
@@ -102,7 +102,17 @@ export function recordTaskProgressTool(deps: AgentDeps) {
               : 'unknown_error',
         );
         return error instanceof TaskEvidenceError || error instanceof TaskTransitionError
-          ? 'task progress rejected: ' + error.message
+          ? JSON.stringify({
+              error: error.message,
+              validRefs: [
+                ...(ctx.marketListings ?? []).map((s) => s.ref),
+                ...(ctx.knowledgeSources ?? []).map((s) => s.ref),
+                ...(ctx.xhsNotes ?? []).filter((n) => n.isDetailLoaded).map((n) => n.ref),
+              ],
+              passages:
+                'Use only exact passage IDs already returned by search_information or xhs_read_notes; quote=null copies their text on the server.',
+              next: 'Use an actual returned ref and quote. Unproved checks stay unknown with sources=[]. Do not repeat the same rejected check. Useful partial answers may go directly to reply_to_request; they still pass source and outbound checks.',
+            })
           : 'task progress could not be saved; stop and explain the current processing gap';
       }
     },

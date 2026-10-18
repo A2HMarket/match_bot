@@ -1,5 +1,6 @@
 import {
   configureModelProvider,
+  createDeepSeekSearch,
   createTraceProcessor,
   resumeRun,
   runInbound,
@@ -53,9 +54,19 @@ export function buildDeps(p: { env?: Env; cards?: ApprovalCards } = {}): WorkerD
     publishApproval,
     cards,
     marketSearch: createMarketSearch({ logger }),
-    ...(env.SEARCH_API_KEY
-      ? { webSearch: createWebSearch({ apiKey: env.SEARCH_API_KEY, logger }) }
-      : {}),
+    ...(env.INFORMATION_SEARCH_PROVIDER === 'deepseek'
+      ? {
+          webSearch: createDeepSeekSearch({
+            apiKey: env.DEEPSEEK_API_KEY,
+            logger,
+            ...(env.SEARCH_API_KEY
+              ? { businessSearch: createWebSearch({ apiKey: env.SEARCH_API_KEY, logger }) }
+              : {}),
+          }),
+        }
+      : env.SEARCH_API_KEY
+        ? { webSearch: createWebSearch({ apiKey: env.SEARCH_API_KEY, logger }) }
+        : {}),
     ...(env.SANDBASE_API_KEY
       ? { xhsSearch: createXhsSearch({ apiKey: env.SANDBASE_API_KEY, logger }) }
       : {}),
