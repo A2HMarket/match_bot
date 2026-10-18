@@ -873,3 +873,66 @@ it('delivers sourced partial information without making a complete task ledger a
   expect(d.repos.outbound.create).toHaveBeenCalledOnce();
   expect(c.taskProgressVersion).toBeUndefined();
 });
+
+describe('P35 citation budgets count sources rather than passages', () => {
+  const cases = JSON.parse(
+    readFileSync(new URL('../fixtures/p35-citation-count.json', import.meta.url), 'utf8'),
+  ) as Array<{ refs: string[]; independentSources: number }>;
+  function addSources(c: MatchContext, indices: number[]) {
+    c.knowledgeSources = indices.map((index) =>
+      createKnowledgeSource(
+        {
+          title: 'NHS registration',
+          url: 'https://www.nhs.uk/register/' + index,
+          text: Array.from(
+            { length: 10 },
+            () => 'You do not need an NHS number to register with a GP.',
+          ).join('\n'),
+        },
+        index,
+      ),
+    );
+  }
+  it('accepts the real eight passage IDs while rendering only four source links', async () => {
+    expect(cases.length).toBeGreaterThan(0);
+    const fixture = cases[0]!;
+    const { c, d, t } = setup(0);
+    addSources(c, [2, 6, 7, 8]);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({ kind: 'partial', text: '没有NHS number也能注册GP。', refs: fixture.refs }),
+    );
+    expect(String(result)).not.toContain('invalid');
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
+    expect(draft.text.match(/https:\/\/www.nhs.uk/g)).toHaveLength(4);
+  });
+  it('still rejects seven independent sources, including inline references', async () => {
+    const { c, d, t } = setup(0);
+    addSources(c, [1, 2, 3, 4, 5, 6, 7]);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        text: '没有NHS number也能注册GP。k7',
+        refs: ['k1', 'k2', 'k3', 'k4', 'k5', 'k6'],
+      }),
+    );
+    expect(String(result)).toContain('6');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('does not hide a nonexistent passage by merging it into a valid source', async () => {
+    const { c, d, t } = setup(0);
+    addSources(c, [1]);
+    const result = await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        text: '没有NHS number也能注册GP。',
+        refs: ['k1:p1', 'k1:p99'],
+      }),
+    );
+    expect(String(result)).toContain('returned source');
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+});

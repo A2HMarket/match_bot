@@ -27,9 +27,9 @@ const parameters = z.object({
     ),
   refs: z
     .array(z.string())
-    .max(6)
+    .max(24)
     .describe(
-      'Known k source refs or k:p passage IDs for evidence-backed answers; m refs for A2H offers. Empty only for clarification/no_match/unavailable. Never invent refs.',
+      'At most 6 distinct sources/offers and 24 total reference IDs. Several real passages of one source count as one source, not several links. Known k source refs or k:p passage IDs for evidence-backed answers; m refs for A2H offers. Empty only for clarification/no_match/unavailable. Never invent refs.',
     ),
 });
 
@@ -258,6 +258,14 @@ export function replyToRequestTool(deps: AgentDeps) {
           .replace(/\bk\d+(?::p\d+)?\b/g, '')
           .trim(),
       };
+      // The budget is six sources, not six excerpts. Validate every exact passage below;
+      // never normalize away a fabricated passage to make it look like a valid source.
+      const sourceRefs = new Set(args.refs.map((ref) => ref.replace(/:p\d+$/, '')));
+      if (args.refs.length > 24 || sourceRefs.size > 6)
+        return {
+          error:
+            'Use at most 6 independent sources/offers and 24 reference IDs, including inline citations. Multiple passages from one source count once; choose only the sources supporting this answer.',
+        };
       // Discover a missing question plan before factual repairs consume the bounded input attempts.
       taskDeliveryForOutbound(ctx, {
         kind:
