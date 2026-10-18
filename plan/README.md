@@ -62,6 +62,7 @@ P36：Jev targeted 策略与本地无 Telegram 对话验证，Codex 本地实现
 | P35 | 0.21.1真实多轮回归 | [P35-agent-regression-round-two.md](./P35-agent-regression-round-two.md) | P34 | 8 | codex | 完成 | 6条799779token；0.22.0引用计数修复；整体质量未通过 | 2026-10-18 |
 | P36 | Agent框架review与交付阶段 | [P36-agent-framework-review.md](./P36-agent-framework-review.md) | P35 | 8 | codex | 完成 | 0.23.0阶段交接/来源摘录/重复追问/时钟等价修复；1128测试；真实多轮未验收 | 2026-10-18 |
 | P39 | 新生成模型与Telegram回归 | [P39-model-provider-telegram-regression.md](./P39-model-provider-telegram-regression.md) | P38 | 8 | codex | 完成 | 0.26.1/gpt-6.1-sol low；264118token；6条均回复，任务质量未通过 | 2026-10-18 |
+| P40 | DSH 多渠道与飞书本地测试 | [P40-dsh-channels.md](./P40-dsh-channels.md) | main #16 | 9 | codex | 待合并/飞书待联调 | 渠道契约、隔离、飞书、DSH 本地 bundle 已实现 | 2026-10-18 |
 
 ## 波次与并行
 
@@ -95,5 +96,3 @@ P36：Jev targeted 策略与本地无 Telegram 对话验证，Codex 本地实现
 P24–P27最终状态以PR #2合并main为生效点，功能分支上的完成标记不代表已合并。最新实际验收与失败边界见docs/evaluations/2026-10-17-task-agent-local-release.md。
 
 主干CI跟进：1b9fa96首次main CI暴露Jev失败smoke test的无ORDER BY顺序假设，单独分支修复准确多重集断言，969项本地检查通过。跟进以该修复PR实际合并为生效点，不改变运行逻辑或出站门。
-
-| P40 | DSH 多渠道与飞书本地测试 | [P40-dsh-channels.md](./P40-dsh-channels.md) | main #16 | 9 | codex | 待合并/飞书待联调 | 渠道契约、隔离、飞书、DSH 本地 bundle 已实现 | 2026-10-18 |

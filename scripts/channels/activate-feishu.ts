@@ -5,7 +5,7 @@ import { loadEnv, createLogger } from '../../packages/shared/src/index.js';
 const env = loadEnv();
 const chatId = process.argv[2];
 if (!chatId || !/^oc_[A-Za-z0-9_-]+$/.test(chatId))
-  throw new Error('Usage: activate-feishu.mts oc_CHAT');
+  throw new Error('Usage: activate-feishu.ts oc_CHAT');
 if (
   !env.FEISHU_ALLOWED_CHATS.split(',')
     .map((s) => s.trim())
@@ -24,7 +24,7 @@ try {
     channel: 'feishu',
     externalId: chatId,
     isActive: true,
-    phase: env.DEFAULT_PHASE,
+    phase: env.DEFAULT_PHASE === 1 || env.DEFAULT_PHASE === 2 ? env.DEFAULT_PHASE : 0,
     rateLimitPerDay: null,
   });
   createLogger('channels').info(

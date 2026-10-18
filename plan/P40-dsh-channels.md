@@ -1,8 +1,8 @@
 # P40 DSH 多渠道插件
 
-状态：进行中。用户授权 goal 模式实施 2026-10-18 渠道架构方案。
+状态：代码与本地验收完成，待 PR 合并及真实飞书联调。用户授权 goal 模式实施 2026-10-18 渠道架构方案。
 
-设计见 docs/design/channels-dsh.md；基线 dcc0473，DSH 源码核对 687f282（0.2.1-rc.2）。
+设计见 docs/design/channels-dsh.md；已整合主干 ce647ac（PR #16），DSH 源码核对 687f282（0.2.1-rc.2）。
 
 顺序：
 1. 公共渠道契约、账号/租户/会话键、平台中立的发送及错误接口，保留 Telegram 行为。
@@ -26,3 +26,5 @@
 - 使用 `scripts/channels/start.ts --doctor` 可检查配置，不联网、不打印 secret。飞书激活与启动步骤见 docs/design/channels-local-testing.md。
 - 新增官方飞书 SDK 用于平台协议，Cordis 仅用于 DSH 生命周期。新增路由标识随业务记录保留，不存凭据；删除与正文保留说明见测试文档。
 - 真实飞书权限/收发/卡片尚未联调：等待专用测试应用配置；不影响离线回归、DB/Redis 测试和 DSH 安装验证。
+
+最终本地 `pnpm check`：typecheck、lint、格式全部通过；147 个测试文件、1216 条测试通过（真实本地 Postgres/Redis，模型与渠道 transport 使用脚本/模拟）。保留主干 #16 的模型凭据隔离、reasoning 设置和 trace 修复。

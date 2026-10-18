@@ -34,6 +34,7 @@ DEFAULT_PHASE=1
 飞书开发者后台创建专用自建应用、启用机器人、配置测试成员和可见范围，使用长连接接收事件。订阅 `im.message.receive_v1` 和 `card.action.trigger`，授予接收私聊/@消息、发送机器人消息、读取机器人信息等所需权限并发布测试版本；使用表情还需对应 reaction 权限。SDK 为官方 `@larksuiteoapi/node-sdk` 1.76.0。后台权限名以该应用控制台实际提示为准。
 
 ```sh
+node --env-file=/absolute/test.env --import tsx scripts/channels/start.ts --doctor
 node --env-file=/absolute/test.env --import tsx scripts/channels/activate-feishu.ts oc_TEST_GROUP
 node --env-file=/absolute/test.env --import tsx scripts/channels/start.ts
 ```
