@@ -392,3 +392,5 @@ P31回执修复：OutboundMessage.senderAccountId默认空字符串；唯一键�
 P33测试观察契约：outbound.findReplyForSource({channel,target,sourceMessageId})只读同一请求/目标的文本类出站，控制器仅将status=sent且有sentAt/externalMessageId者作为真实群转录输入演员，pending/failed/dry_run不可喂入。该路径明确标sent_outbound，回复ID未知时不引用Main账号message_id。turnOrder仅调度三个既有演员role；是否后续回合按该演员实际已发消息判断，不再靠全局第几回合。无模型或发送门变化，无新增个人字段。
 
 P34搜索契约：INFORMATION_SEARCH_PROVIDER=deepseek（默认）或tavily；worker将@matchbot/agent.createDeepSeekSearch注入既有WebSearch，research调用官方原始Search API并经现有knowledgeResultSchema/域名过滤/脱敏，不是模型生成。find仍委托可选Tavily商家核验，无其凭证时不冒充已核验商家。信息搜索trace记录provider；不新增模型/出站通道。账本未完整时可提交正常来源校验的部分回答，只有完整已核验账本才能标ready；必要个人追问规则和Jev/阶段/频控均保留。
+
+P35引用契约：reply_to_request最多6个独立来源/offer、最多24个原始引用ID；同一k来源的多个真实passage只计1个来源。包括正文提取的inline编号也适用同一上限。每个passage仍逐一按本次工具结果验证，不能把未知段落归并成合法整页编号；7独立来源仍拒绝。阶段/审批/Jev/频控和事实检查不变。
