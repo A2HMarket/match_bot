@@ -73,6 +73,7 @@ export function searchInformationTool(deps: AgentDeps) {
           inputRef: ctx.sourceMessageId,
           output: {
             gate: 'information_search',
+            provider: deps.env?.INFORMATION_SEARCH_PROVIDER ?? 'injected',
             status: result.status,
             count: result.sources.length,
             reason: result.reason ?? null,
@@ -88,6 +89,7 @@ export function searchInformationTool(deps: AgentDeps) {
         sources: ctx.knowledgeSources.map((s) => ({
           ref: s.ref,
           title: s.title,
+          url: s.url,
           passages: s.passages.slice(0, 8),
         })),
         remainingQueries: 4 - ctx.informationQueries.length,

@@ -1488,7 +1488,7 @@ describe('request status after recommendation decline', () => {
     const draft = repos.outbound.create.mock.calls[0]?.[0] as { kind: string; text: string };
     expect(draft.kind).toBe('notification');
     expect(draft.text).not.toMatch(/[?？]|逐项|下一步应/);
-    expect(draft.text).toContain('现有信息还不够');
+    expect(draft.text).toContain('查询没能完成');
     expect(deps.evaluateOutbound).toHaveBeenCalledTimes(2);
     expect(deps.evaluateOutbound.mock.calls[1]?.[1]).toMatchObject({
       replyPurpose: 'request_status',
@@ -1523,5 +1523,5 @@ it('persists and resumes a phase 1 request-status approval through the SDK', asy
   expect(repos.outbound.create).toHaveBeenCalledOnce();
   const draft = repos.outbound.create.mock.calls[0]?.[0] as { text: string };
   expect(draft.text).not.toMatch(/[?？]|逐项|下一步应/);
-  expect(draft.text).toContain('现有信息还不够');
+  expect(draft.text).toContain('查询没能完成');
 });

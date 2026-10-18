@@ -55,7 +55,8 @@ export const envSchema = z.object({
   // Phase 2 里出站门拿不准（Jev 不可用 / 触发频控）时怎么办；分数过了硬下限一律自动发，
   // 不再有「分数居中」（2026-10-10 起取消中间带送审）。
   // drop = 不发，无人值守时用；review = 送运营群审批，有人值守时用。
-  // P14 库外需求兜底搜索（Tavily）。不配则不启用，库外需求一律不回。
+  // P34 网页信息研究默认DeepSeek；Tavily保留可回滚的信息研究和原有商家联系方式核验。
+  INFORMATION_SEARCH_PROVIDER: z.enum(['deepseek', 'tavily']).default('deepseek'),
   SEARCH_API_KEY: z.string().min(1).optional(),
   // 吃喝玩乐类需求的兜底搜索：小红书（经 Sandbase）。不配则这类需求走 Tavily 或不回。
   SANDBASE_API_KEY: z.string().min(1).optional(),

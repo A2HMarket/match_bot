@@ -7,6 +7,7 @@ import type { MatchContext } from './context.js';
 import { assessMarketListing } from './market-strategy.js';
 import { getMarketSourceIdentity } from './market-choices.js';
 import { getXhsNoteKey } from './xhs-research.js';
+import { getXhsPassages } from './xhs-evidence.js';
 import type { SourceClaim } from '@matchbot/jev';
 
 const id = z.string().min(1).max(160);
@@ -33,6 +34,7 @@ type Source = {
   sourceRef: string;
   entityKey: string;
   url: string;
+  passageText?: string;
   computed?: {
     status: 'met' | 'unknown' | 'mismatch';
     evidence: string | null;
@@ -134,18 +136,25 @@ function getSource(ctx: MatchContext, check: Check, ref: string): Source {
       throw new TaskEvidenceError('this administrative goal needs NHS official sources');
     return {
       text: known.passages.find((p) => p.id === ref)?.text ?? known.text,
+      ...(known.passages.some((p) => p.id === ref)
+        ? { passageText: known.passages.find((p) => p.id === ref)!.text }
+        : {}),
       sourceRef: 'web:' + hashText(known.url).slice(0, 32),
       entityKey: 'information:' + check.goalId,
       url: known.url,
     };
   }
-  const note = ctx.xhsNotes?.find((n) => n.ref === ref);
+  const note = ctx.xhsNotes?.find(
+    (n) => n.ref === ref || (n.isDetailLoaded && getXhsPassages(n).some((p) => p.id === ref)),
+  );
+  const passage = note ? getXhsPassages(note).find((p) => p.id === ref) : undefined;
   if (note?.isDetailLoaded) {
     const validated = ctx.xhsValidatedRecommendations?.find((r) =>
-      r.sources.some((s) => s.ref === ref),
+      r.sources.some((s) => s.ref === note.ref),
     );
     return {
-      text: note.title + '\n' + note.desc,
+      text: passage?.text ?? note.title + '\n' + note.desc,
+      ...(passage ? { passageText: passage.text } : {}),
       sourceRef: 'xhs:' + getXhsNoteKey(note.url),
       entityKey: validated
         ? 'exhibition:' + hashText(validated.name).slice(0, 32)
@@ -252,7 +261,7 @@ export function buildTaskProgress(
         throw new TaskEvidenceError('quote is not in the returned source');
       let quote = source.computed?.decisive
         ? source.computed.evidence
-        : (input.quote ?? source.computed?.evidence ?? null);
+        : (input.quote ?? source.computed?.evidence ?? source.passageText ?? null);
       if (source.computed && check.status !== 'unknown') {
         const strict = /^(?:budget|area|route_from|route_to|date|capacity)$/.test(
           criterion.constraintKey ?? '',
@@ -276,7 +285,7 @@ export function buildTaskProgress(
         throw new TaskEvidenceError(
           'criterion ' +
             criterion.id +
-            ' requires an exact quote; quote=null is only valid when code returned a computed fact',
+            ' requires an exact quote or a returned passage ID; quote=null is valid for server-owned passages or computed facts',
         );
       const fullLine = source.text.split('\n').find((line) => line.includes(quote!)) ?? quote;
       if (
@@ -406,8 +415,8 @@ export function buildTaskSourceReview(
       const source = getSource(ctx, check, proof.ref);
       const initialQuote =
         source.computed?.status !== 'unknown'
-          ? (source.computed?.evidence ?? proof.quote)
-          : proof.quote;
+          ? (source.computed?.evidence ?? proof.quote ?? source.passageText)
+          : (proof.quote ?? source.passageText);
       if (!initialQuote) continue;
       const at = source.text.indexOf(initialQuote);
       const text =

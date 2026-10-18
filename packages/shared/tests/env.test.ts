@@ -28,6 +28,13 @@ describe('loadEnv', () => {
     ])
       expect(() => loadEnv({ ...base, TELEGRAM_ACTOR_ALLOWLIST: value })).toThrow();
   });
+  it('defaults information research to DeepSeek with an explicit Tavily rollback', () => {
+    expect(loadEnv(base).INFORMATION_SEARCH_PROVIDER).toBe('deepseek');
+    expect(
+      loadEnv({ ...base, INFORMATION_SEARCH_PROVIDER: 'tavily' }).INFORMATION_SEARCH_PROVIDER,
+    ).toBe('tavily');
+    expect(() => loadEnv({ ...base, INFORMATION_SEARCH_PROVIDER: 'unknown' })).toThrow();
+  });
   it('reads the optional Sandbase credential only through the environment boundary', () => {
     expect(loadEnv({ ...base, SANDBASE_API_KEY: 'sandbase-test-key' }).SANDBASE_API_KEY).toBe(
       'sandbase-test-key',

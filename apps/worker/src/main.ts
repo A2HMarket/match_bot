@@ -53,6 +53,7 @@ d.logger.info(
   {
     phase: d.env.DEFAULT_PHASE,
     agentVersion: AGENT_VERSION,
+    informationSearchProvider: d.env.INFORMATION_SEARCH_PROVIDER,
     taskRequests: d.taskRequests === true,
   },
   'worker started',

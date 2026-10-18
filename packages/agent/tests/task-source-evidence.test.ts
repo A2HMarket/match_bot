@@ -1,6 +1,6 @@
 import { taskSchema } from '@matchbot/domain';
 import { describe, expect, it } from 'vitest';
-import { buildTaskProgress } from '../src/task-source-evidence.js';
+import { buildTaskProgress, buildTaskSourceReview } from '../src/task-source-evidence.js';
 import type { MatchContext } from '../src/context.js';
 import { createKnowledgeSource } from '../src/knowledge-evidence.js';
 
@@ -195,4 +195,77 @@ describe('source-grounded task progress', () => {
       }),
     ).toThrow('failure');
   });
+});
+
+it('accepts only real read XHS passage IDs returned by the read tool', () => {
+  const ctx = context();
+  delete ctx.task!.counterparty;
+  ctx.task!.category = 'other';
+  ctx.xhsNotes = [
+    {
+      ref: 'x1',
+      title: '展览',
+      desc: 'Adult admission is free.',
+      url: 'https://www.xiaohongshu.com/explore/abc',
+      author: 'sample',
+      likes: 1,
+      isDetailLoaded: true,
+    },
+  ];
+  const args = {
+    ctx,
+    checks: [
+      {
+        goalId: 'home',
+        criterionId: 'budget',
+        status: 'unknown' as const,
+        sources: [{ ref: 'x1:p1', quote: 'Adult admission is free.' }],
+      },
+    ],
+    next,
+  };
+  expect(buildTaskProgress(args).evidence[0]?.summary).toContain('free');
+  expect(() =>
+    buildTaskProgress({
+      ...args,
+      checks: [
+        { ...args.checks[0]!, sources: [{ ref: 'x1:p99', quote: 'Adult admission is free.' }] },
+      ],
+    }),
+  ).toThrow('unknown or unread');
+  ctx.xhsNotes[0]!.isDetailLoaded = false;
+  expect(() => buildTaskProgress(args)).toThrow('unknown or unread');
+});
+
+it('uses server-owned passage text for null quotes and still creates semantic review claims', () => {
+  const ctx = context();
+  delete ctx.task!.counterparty;
+  ctx.task!.category = 'other';
+  ctx.knowledgeSources = [
+    createKnowledgeSource(
+      {
+        title: 'Museum',
+        url: 'https://museum.example/exhibition',
+        text: 'Adult admission costs twenty pounds.',
+      },
+      1,
+    ),
+  ];
+  const checks = [
+    {
+      goalId: 'home',
+      criterionId: 'budget',
+      status: 'supported' as const,
+      sources: [{ ref: 'k1:p1', quote: null }],
+    },
+  ];
+  expect(buildTaskProgress({ ctx, checks, next }).evidence[0]?.summary).toContain('twenty pounds');
+  expect(buildTaskSourceReview(ctx, checks).claims).toHaveLength(1);
+  expect(() =>
+    buildTaskProgress({
+      ctx,
+      checks: [{ ...checks[0]!, sources: [{ ref: 'k1', quote: null }] }],
+      next,
+    }),
+  ).toThrow('exact quote');
 });

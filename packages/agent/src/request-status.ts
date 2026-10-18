@@ -11,19 +11,35 @@ export function renderRequestStatus(ctx: MatchContext): string | null {
     ctx.currentRequest.demand.category === 'job'
   )
     return null;
-  const unavailable =
-    ctx.sourceFailures?.length &&
-    !ctx.marketListings?.length &&
-    !ctx.knowledgeSources?.length &&
-    !ctx.xhsNotes?.length;
+  const hasResults = !!(
+    ctx.marketListings?.length ||
+    ctx.knowledgeSources?.length ||
+    ctx.xhsNotes?.length ||
+    ctx.searchResults?.length
+  );
+  const attempted = !!(
+    ctx.informationQueries?.length ||
+    ctx.marketQueries?.length ||
+    ctx.xhsQueries?.length ||
+    ctx.supplierSearchEmpty
+  );
+  const searchFailed = ctx.sourceFailures?.some((f) => !f.startsWith('processing:'));
   const zh = ctx.currentRequest.demand.lang !== 'en';
-  const intro = zh
-    ? unavailable
-      ? '刚才没查成，还没拿到结果。'
-      : '我还没找到能放心推荐的，现有信息还不够。'
-    : unavailable
-      ? 'The search ran into a problem before I could get results.'
-      : 'I don’t have enough reliable information to recommend an option yet.';
+  const intro = hasResults
+    ? zh
+      ? '我查到了一些线索，但这次没能整理成可靠的答复。'
+      : 'I found some leads, but could not turn them into a reliable answer this time.'
+    : searchFailed
+      ? zh
+        ? '刚才没查成，还没拿到结果。'
+        : 'The search ran into a problem before I could get results.'
+      : attempted && !ctx.answerInputExhausted
+        ? zh
+          ? '这轮没搜到合适的线索。'
+          : 'This search did not return a suitable lead.'
+        : zh
+          ? '这次查询没能完成，还不能判断有没有合适的。'
+          : 'I could not complete this request, so I cannot tell whether a suitable option is available.';
   const task =
     ctx.task?.ownerUserId === ctx.userId &&
     ctx.task.scope.chatId === ctx.chatId &&

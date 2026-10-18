@@ -26,6 +26,23 @@ function answerType(
     return 'boolean';
   return 'text';
 }
+/** A third-party question template is evidence/advice, not a request for a user constraint. */
+function hasUserQuestion(text: string): boolean {
+  const withoutUrls = text.replace(/https?:\/\/[^\s)]+/g, '');
+  const withoutExamples = withoutUrls.replace(
+    /[「“"]([^」”"]*)[」”"]/g,
+    (whole: string, _quote: string, offset: number) => {
+      const prefix = withoutUrls.slice(Math.max(0, offset - 100), offset);
+      const sentence = prefix.split(/[。！!\n]/).at(-1) ?? '';
+      return /问(?:卖家|贴主|房东|对方)|问的时候|ask the (?:seller|landlord|organiser)|(?:这样问|问一句|这样说)/i.test(
+        sentence,
+      ) && !/问你|ask you/i.test(sentence)
+        ? ''
+        : whole;
+    },
+  );
+  return /[?？]/.test(withoutExamples);
+}
 /** Server metadata only. User-visible text still goes through its original tool and gate. */
 export function taskDeliveryForOutbound(
   ctx: MatchContext,
@@ -47,7 +64,7 @@ export function taskDeliveryForOutbound(
     text = draft.taskQuestionText ?? draft.text;
   if (
     draft.replyPurpose !== 'request_status' &&
-    (draft.kind === 'clarification' || /[?？]/.test(text)) &&
+    (draft.kind === 'clarification' || hasUserQuestion(text)) &&
     (next?.action !== 'ask_user' || !next.constraintKey)
   )
     throw new TaskTransitionError(
@@ -57,7 +74,7 @@ export function taskDeliveryForOutbound(
   if (
     next?.action === 'ask_user' &&
     next.constraintKey &&
-    (draft.kind === 'clarification' || /[?？]/.test(text))
+    (draft.kind === 'clarification' || hasUserQuestion(text))
   ) {
     key = next.constraintKey;
     goalId = next.goalId;
@@ -65,7 +82,7 @@ export function taskDeliveryForOutbound(
   if (
     draft.replyPurpose === 'request_status' &&
     draft.text === renderRequestStatus(ctx) &&
-    /[?？]/.test(text) &&
+    hasUserQuestion(text) &&
     !key
   ) {
     key = /多久.*单程|单程.*多久/.test(text) ? 'max_travel_minutes' : 'custom:next_information';
