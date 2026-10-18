@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createRepositories } from '../../src/repos/index.js';
 import { withTestDb } from './setup.js';
@@ -136,23 +137,27 @@ describe('traces', () => {
   it('create applies defaults and listByKind filters', async () => {
     await withTestDb(async (tx) => {
       const r = createRepositories(tx);
-      await r.traces.create({
+      const inputRef = 'trace-filter-' + randomUUID();
+      const own = await r.traces.create({
         kind: 'jev',
-        inputRef: 'm1',
+        inputRef,
         output: { ok: true },
         phase: 0,
         latencyMs: 5,
         costMicro: 0,
       });
-      await r.traces.create({
+      const rule = await r.traces.create({
         kind: 'rule',
-        inputRef: 'm1',
+        inputRef,
         output: {},
         phase: 0,
         latencyMs: 0,
         costMicro: 0,
       });
-      expect(await r.traces.listByKind('jev', new Date(Date.now() - 60e3))).toHaveLength(1);
+      const rows = await r.traces.listByKind('jev', new Date(Date.now() - 60e3));
+      expect(rows.filter((t) => t.inputRef === inputRef)).toEqual([own]);
+      expect(rows.every((t) => t.kind === 'jev')).toBe(true);
+      expect(rows.some((t) => t.id === rule.id)).toBe(false);
     });
   });
 });

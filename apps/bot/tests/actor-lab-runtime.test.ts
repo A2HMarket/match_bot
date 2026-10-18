@@ -17,23 +17,31 @@ vi.mock('@matchbot/jev', () => ({
 vi.mock(import('grammy'), async (importOriginal) => ({
   ...(await importOriginal()),
   Bot: class {
-    botInfo: { id: number; is_bot: true; username: string; can_read_all_group_messages: boolean };
+    botInfo: {
+      id: number;
+      is_bot: true;
+      first_name: string;
+      username: string;
+      can_read_all_group_messages: boolean;
+    };
     constructor(readonly token: string) {
       const id = Number(token.split(':')[0]);
       this.botInfo = {
         id,
         is_bot: true,
+        first_name: 'Synthetic bot',
         username: id === 999999 ? 'match_bot' : `actor_${id}_bot`,
         can_read_all_group_messages: id === 999999,
       };
     }
     init() {
-      return Promise.resolve();
+      throw new Error('SDK init retry loop must not be used');
     }
     isRunning() {
       return false;
     }
     api = {
+      getMe: (_signal?: AbortSignal) => Promise.resolve(this.botInfo),
       getChat: () => Promise.resolve({ id: -123, type: 'group', title: 'A2H 测试' }),
       getChatMember: () => Promise.resolve({ status: 'member' }),
     };

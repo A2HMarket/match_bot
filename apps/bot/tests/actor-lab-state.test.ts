@@ -100,3 +100,37 @@ it('reserves a configured observed request cost before starting another user tur
     shouldStopActorLab(limits, { sent: 0, elapsedMs: 1, tokens: 0, stopped: false }),
   ).toBeNull();
 });
+
+it('feeds only delivery-confirmed public replies without inventing another bot account message ID', () => {
+  const inbox = new ActorLabInbox('-123', '999', new Date('2026-10-18T00:00:00Z'));
+  inbox.registerSent('3', '111');
+  expect(
+    inbox.acceptDelivered({
+      actorId: '222',
+      originalMessageId: '3',
+      outboundId: 'main-out',
+      text: '真实群回复',
+    }),
+  ).toBe(false);
+  expect(
+    inbox.acceptDelivered({
+      actorId: '111',
+      originalMessageId: '3',
+      outboundId: 'main-out',
+      text: '真实群回复',
+    }),
+  ).toBe(true);
+  expect(inbox.latest('111')).toMatchObject({
+    messageId: null,
+    text: '真实群回复',
+    observation: 'sent_outbound',
+  });
+  expect(
+    inbox.acceptDelivered({
+      actorId: '111',
+      originalMessageId: '3',
+      outboundId: 'main-out',
+      text: '重复',
+    }),
+  ).toBe(false);
+});

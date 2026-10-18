@@ -68,11 +68,41 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
           (s) => s.actorId === actorId && s.externalMessageId === lastMessageId,
         )!.sentAt,
       });
+      const reply = message
+        ? await runtime.mainRepos.outbound.findReplyForSource({
+            channel: 'telegram',
+            target: cfg.groupId,
+            sourceMessageId: message.id,
+          })
+        : null;
+      if (
+        reply?.status === 'sent' &&
+        reply.sentAt &&
+        reply.externalMessageId &&
+        inbox.acceptDelivered({
+          actorId,
+          originalMessageId: lastMessageId,
+          outboundId: reply.id,
+          text: reply.text,
+        })
+      ) {
+        history.push({ actorId, speaker: 'match_bot', text: reply.text.slice(0, 1800) });
+        events.push({
+          turn,
+          actorId,
+          kind: 'reply_observed',
+          observation: 'sent_outbound',
+          sourceMessageId: message!.id,
+          outboundId: reply.id,
+        });
+        observation = 'replied';
+        break;
+      }
       if (message?.executionStatus === 'failed') {
         observation = 'processing_failed';
         break;
       }
-      if (message?.executionStatus === 'completed' && Date.now() - waitStarted > 8000) {
+      if (message?.executionStatus === 'completed' && !reply && Date.now() - waitStarted > 8000) {
         observation = 'completed_without_text';
         done.add(actorId);
         break;
@@ -80,6 +110,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
       await pause(500);
     }
     events.push({ turn, actorId, observation });
+    if (observation === 'timeout' || observation === 'processing_failed') done.add(actorId);
   }
   function writeReport(used: Awaited<ReturnType<typeof usage>> | null, errorKind?: string) {
     mkdirSync('logs/actor-lab', { recursive: true, mode: 0o700 });
@@ -93,12 +124,13 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
           reason,
           limits: { messages: cfg.maxMessages, seconds: cfg.maxSeconds, tokens: cfg.tokenBudget },
           usage: used,
+          turnOrder: cfg.turnOrder,
           ...(errorKind ? { errorKind } : {}),
           events,
           history,
           deliveries: sent,
           boundary:
-            'synthetic test participants only; sender receipts and matched pipeline observations, not a human satisfaction score; in-flight calls can exceed observed token budget',
+            'real Telegram actor sends and Main replies; reply context may use source-bound sent outbound transcript (not a bot update); unknown cross-account reply IDs are not reused; not human satisfaction; in-flight calls may exceed observed token budget',
         },
         null,
         2,
@@ -130,9 +162,17 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
         reason = bound;
         break;
       }
-      const actor = cfg.actors[turn % cfg.actors.length]!;
+      const role = cfg.turnOrder?.[turn];
+      const actor = cfg.turnOrder
+        ? cfg.actors.find((a) => a.role === role)
+        : cfg.actors[turn % cfg.actors.length];
+      if (!actor) {
+        reason = 'schedule_finished';
+        break;
+      }
+      const isFollowup = sent.some((s) => s.actorId === actor.id);
       if (done.has(actor.id)) continue;
-      if (!dryRun && turn >= cfg.actors.length) {
+      if (!dryRun && isFollowup) {
         const prior = sent.filter((s) => s.actorId === actor.id).at(-1);
         if (prior && !inbox.forMessage(prior.externalMessageId, actor.id))
           await waitForReply(actor.id, prior.externalMessageId, turn);
@@ -151,7 +191,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
       }
       const previous = inbox.latest(actor.id);
       let text = actor.firstMessage;
-      if (turn >= cfg.actors.length) {
+      if (isFollowup) {
         if (!previous) {
           done.add(actor.id);
           continue;
@@ -168,6 +208,13 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
             speaker: h.actorId === actor.id ? h.speaker : 'other_actor',
             text: h.text.slice(0, 1800),
           })),
+        });
+        events.push({
+          turn,
+          actorId: actor.id,
+          kind: 'actor_proposal',
+          text: proposal.text,
+          done: proposal.done,
         });
         if (proposal.done) {
           done.add(actor.id);
@@ -189,7 +236,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
       }
       const parts = splitActorTurn(
         text,
-        actor.role === 'short' && turn >= cfg.actors.length,
+        actor.role === 'short' && isFollowup && !cfg.turnOrder,
         cfg.maxMessages - dispatched,
       );
       let lastMessageId: string | undefined;
@@ -237,8 +284,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
         history.push({ actorId: actor.id, speaker: 'self', text: part });
       }
       if (dryRun || !lastMessageId) continue;
-      if (turn >= cfg.actors.length || cfg.waitForEachReply)
-        await waitForReply(actor.id, lastMessageId, turn);
+      if (isFollowup || cfg.waitForEachReply) await waitForReply(actor.id, lastMessageId, turn);
     }
     if (stopped) reason = 'stopped';
     await runtime.processor.forceFlush();

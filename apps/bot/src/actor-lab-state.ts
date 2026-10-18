@@ -34,11 +34,17 @@ export function actorRoute(
   return parts[1];
 }
 
+type ObservedReply = {
+  messageId: string | null;
+  text: string;
+  observation: 'telegram_update' | 'sent_outbound';
+};
+
 export class ActorLabInbox {
   private sent = new Map<string, string>();
   private seen = new Set<string>();
-  private bySent = new Map<string, { messageId: string; text: string }>();
-  private replies = new Map<string, { messageId: string; text: string }>();
+  private bySent = new Map<string, ObservedReply>();
+  private replies = new Map<string, ObservedReply>();
   constructor(
     private groupId: string,
     private matchBotId: string,
@@ -69,11 +75,39 @@ export class ActorLabInbox {
       ? this.sent.get(`${receiverActorId}:${message.replyToMessageId}`)
       : undefined;
     if (!actor) return null;
+    if (this.bySent.has(`${actor}:${message.replyToMessageId!}`)) return null;
     this.seen.add(`${receiverActorId}:${message.messageId}`);
-    const reply = { messageId: message.messageId, text: message.text.slice(0, 1800) };
+    const reply: ObservedReply = {
+      messageId: message.messageId,
+      text: message.text.slice(0, 1800),
+      observation: 'telegram_update',
+    };
     this.bySent.set(`${actor}:${message.replyToMessageId!}`, reply);
     this.replies.set(actor, reply);
     return actor;
+  }
+  acceptDelivered(p: {
+    actorId: string;
+    originalMessageId: string;
+    outboundId: string;
+    text: string;
+  }): boolean {
+    const key = `${p.actorId}:${p.originalMessageId}`;
+    if (
+      this.sent.get(key) !== p.actorId ||
+      this.bySent.has(key) ||
+      this.seen.has('outbox:' + p.outboundId)
+    )
+      return false;
+    const reply: ObservedReply = {
+      messageId: null,
+      text: p.text.slice(0, 1800),
+      observation: 'sent_outbound',
+    };
+    this.bySent.set(key, reply);
+    this.replies.set(p.actorId, reply);
+    this.seen.add('outbox:' + p.outboundId);
+    return true;
   }
   forMessage(messageId: string, actorId: string) {
     return this.bySent.get(`${actorId}:${messageId}`);
