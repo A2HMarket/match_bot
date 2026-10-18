@@ -3,7 +3,11 @@ import { mkdirSync, writeFileSync, openSync, closeSync, unlinkSync } from 'node:
 import { setTimeout as pause } from 'node:timers/promises';
 import { generateSimulatedUserTurn, queueSimulatedUserTurn } from '@matchbot/agent';
 import { ActorLabInbox, shouldStopActorLab, splitActorTurn } from './actor-lab-state.js';
-import { observeActorMessage, type ActorLabRuntime } from './actor-lab-runtime.js';
+import {
+  observeActorMessage,
+  observeActorMessages,
+  type ActorLabRuntime,
+} from './actor-lab-runtime.js';
 
 export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
   const { cfg } = runtime,
@@ -14,7 +18,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
   const lock = openSync(lockPath, 'wx', 0o600);
   writeFileSync(lock, String(process.pid));
   const inbox = new ActorLabInbox(cfg.groupId, cfg.matchBotId, since),
-    sent: Array<{ actorId: string; externalMessageId: string }> = [],
+    sent: Array<{ actorId: string; externalMessageId: string; text: string; sentAt: Date }> = [],
     history: Array<{ actorId: string; speaker: 'self' | 'match_bot'; text: string }> = [],
     modelRefs: string[] = [],
     events: unknown[] = [];
@@ -32,15 +36,17 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
   let polling: Promise<void>[] = [];
   const path = `logs/actor-lab/${runId}.json`;
   async function usage() {
-    const ids: string[] = [];
-    for (const row of sent) {
-      const m = await observeActorMessage(runtime.mainRepos, { groupId: cfg.groupId, ...row });
-      if (m) ids.push(m.id);
-    }
+    const messages = await observeActorMessages(runtime.mainRepos, {
+      groupId: cfg.groupId,
+      actorIds: cfg.actors.map((a) => a.id),
+      since,
+    });
+    const ids = messages.map((m) => m.id);
     const [actor, target] = await Promise.all([
       runtime.repos.traces.summarizeUsage({ since, inputRefs: modelRefs }),
       runtime.mainRepos.traces.summarizeUsage({ since, inputRefs: ids }),
     ]);
+    if (actor.missingUsageCalls || target.missingUsageCalls) throw new Error('actor_usage_missing');
     tokens = actor.inputTokens + actor.outputTokens + target.inputTokens + target.outputTokens;
     return { actor, target, tokens };
   }
@@ -48,7 +54,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
     const waitStarted = Date.now();
     let observation = 'timeout';
     while (!stopped && Date.now() - waitStarted < cfg.replyWaitSeconds * 1000) {
-      const latest = inbox.forMessage(lastMessageId);
+      const latest = inbox.forMessage(lastMessageId, actorId);
       if (latest) {
         observation = 'replied';
         break;
@@ -56,7 +62,11 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
       const message = await observeActorMessage(runtime.mainRepos, {
         groupId: cfg.groupId,
         actorId,
-        externalMessageId: lastMessageId,
+        text: sent.findLast((s) => s.actorId === actorId && s.externalMessageId === lastMessageId)!
+          .text,
+        sentAt: sent.findLast(
+          (s) => s.actorId === actorId && s.externalMessageId === lastMessageId,
+        )!.sentAt,
       });
       if (message?.executionStatus === 'failed') {
         observation = 'processing_failed';
@@ -86,6 +96,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
           ...(errorKind ? { errorKind } : {}),
           events,
           history,
+          deliveries: sent,
           boundary:
             'synthetic test participants only; sender receipts and matched pipeline observations, not a human satisfaction score; in-flight calls can exceed observed token budget',
         },
@@ -123,7 +134,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
       if (done.has(actor.id)) continue;
       if (!dryRun && turn >= cfg.actors.length) {
         const prior = sent.filter((s) => s.actorId === actor.id).at(-1);
-        if (prior && !inbox.forMessage(prior.externalMessageId))
+        if (prior && !inbox.forMessage(prior.externalMessageId, actor.id))
           await waitForReply(actor.id, prior.externalMessageId, turn);
         if (stopped || done.has(actor.id)) continue;
         await usage();
@@ -211,12 +222,17 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
         if (dryRun) continue;
         await runtime.drain(runId, () => !stopped && Date.now() - started < cfg.maxSeconds * 1000);
         const row = await runtime.repos.outbound.findByToolCallId(result.callId);
-        if (row?.status !== 'sent' || !row.externalMessageId) {
+        if (row?.status !== 'sent' || !row.externalMessageId || !row.sentAt) {
           reason = 'delivery_unconfirmed';
           break steps;
         }
         lastMessageId = row.externalMessageId;
-        sent.push({ actorId: actor.id, externalMessageId: row.externalMessageId });
+        sent.push({
+          actorId: actor.id,
+          externalMessageId: row.externalMessageId,
+          text: part,
+          sentAt: row.sentAt,
+        });
         inbox.registerSent(row.externalMessageId, actor.id);
         history.push({ actorId: actor.id, speaker: 'self', text: part });
       }

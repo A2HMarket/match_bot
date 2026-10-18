@@ -34,6 +34,18 @@ const cases = [
     expected: 'not_queued',
   },
 ];
+cases.splice(
+  3,
+  0,
+  { actor: cfg.actors[0]!, text: '我坐地铁，单程半小时以内', expected: 'queued' },
+  { actor: cfg.actors[1]!, text: '我养猫，希望包账单，总预算不能超过1600镑', expected: 'queued' },
+  { actor: cfg.actors[2]!, text: '只能周日下午，想打室内的', expected: 'queued' },
+);
+cases.push({
+  actor: cfg.actors[2]!,
+  text: '我在Stratford找一居室，月租1600镑以内',
+  expected: 'not_queued',
+});
 const results: unknown[] = [];
 try {
   await rt.mainRepos.groups.setPolicy({
@@ -43,7 +55,7 @@ try {
     phase: 0,
     rateLimitPerDay: 30,
   });
-  for (const [i, c] of cases.entries()) {
+  for (const [i, c] of [...cases, ...cases].entries()) {
     row = null;
     const result = await queueSimulatedUserTurn(deps, {
       actorId: c.actor.id,
@@ -77,7 +89,7 @@ try {
         results,
         traces,
         boundary:
-          'Real Jev with unchanged questions/thresholds; memory outbox only. Original rejected live attempt preserved. No Telegram send.',
+          'Real Jev with participant-role questions and unchanged thresholds; memory outbox only. Original rejected live attempt preserved. No Telegram send.',
       },
       null,
       2,
@@ -86,7 +98,7 @@ try {
   );
   rt.logger.info(
     {
-      cases: cases.length,
+      cases: cases.length * 2,
       correct: results.filter((r) => (r as { correct: boolean }).correct).length,
       boundary: 'memory outbox, no Telegram send',
     },

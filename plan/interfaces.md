@@ -384,3 +384,5 @@ P25/P27 0.16.26候选：DeepSeek任务规划及正文显式temperature=0，其�
 DB导出`createPrisma(connectionString)`供隔离控制库及Match Bot只读观察连接，`getPrisma`继续原单例语义；traces新增`summarizeUsage({since,inputRefs})`只返回限定调用的DeepSeek token计数及缺失usage数，eval内存仓储保持同形。users.findByExternal只读定位合成actor；groups.setPolicy只更新指定channel/externalId的群策略，controller仅在API和白名单验证后对新群显式激活。outbound.findByToolCallId读取当前演员回执，countUnfinished防止遗留pending/sending跨run发送。
 
 agent新增模拟用户生成与门控出站工具供apps/bot有限actor-lab控制器调用，不注册到正常matchAgent工具集。演员消息的`toolCallId=actor:<id>:<runId>:<turn>`是测试出站路由标识，controller只发当前run/已配置actor/固定测试群；出站表独立数据库，原sender不会误领。所有真实发送仍经channel createTelegramSender。新工具须完整phase/Jev门测试。配置文件含token，仅本地.env.*、600权限、不提交；无新业务表或模型供应商。
+
+P31修复验证中（2026-10-18）：仅actor-lab装配evaluateParticipantOutbound，按合成用户提出/补充个人目标评估，正常助手evaluateOutbound不变，阶段/阈值/Jev不可用/频控/出站表仍复用。基本群的message_id属于接收账户；ActorLabInbox以receiverActorId+messageId隔离，Main观察按群/演员/发送时间/原文关联，存在歧义返回空；用量按整个run的群/白名单演员消息汇总，50条查询截断或缺usage时停止，禁止默默少算。无DB迁移或新增个人字段。

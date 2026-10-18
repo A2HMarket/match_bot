@@ -49,7 +49,7 @@
 
 | P30 | 续接竞争与无增量静默 | [P30-followup-race-and-quiet-replies.md](./P30-followup-race-and-quiet-replies.md) | P29 | 9 | codex | 完成 | 0.18.3：1035测试/12契约、PG竞争复现、重复草稿压制；模型失败留证，PR合并main生效 | 2026-10-17 |
 
-| P31 | Telegram多演员测试群 | [P31-telegram-actor-lab.md](./P31-telegram-actor-lab.md) | P30 | 10 | codex | 进行中 | 用户明确接受测试token暂不重置；凭证私有保存，正在接入隔离群并进行一轮真实测试 | 2026-10-18 |
+| P31 | Telegram多演员测试群 | [P31-telegram-actor-lab.md](./P31-telegram-actor-lab.md) | P30 | 10 | codex | 进行中 | 已发1条/83,437 token；暂停修复跨Bot关联及演员Jev，先更新SOUL v2；累计上限40万/8条 | 2026-10-18 |
 
 ## 波次与并行
 
