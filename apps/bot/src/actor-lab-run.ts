@@ -204,7 +204,7 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
           reason = beforeSend;
           break steps;
         }
-        const result = await queueSimulatedUserTurn(runtime.deps, {
+        const result = await queueSimulatedUserTurn(runtime.depsForActor(actor.id), {
           actorId: actor.id,
           runId,
           turn: dispatched++,
@@ -237,7 +237,8 @@ export async function runActorLab(runtime: ActorLabRuntime, dryRun = false) {
         history.push({ actorId: actor.id, speaker: 'self', text: part });
       }
       if (dryRun || !lastMessageId) continue;
-      if (turn >= cfg.actors.length) await waitForReply(actor.id, lastMessageId, turn);
+      if (turn >= cfg.actors.length || cfg.waitForEachReply)
+        await waitForReply(actor.id, lastMessageId, turn);
     }
     if (stopped) reason = 'stopped';
     await runtime.processor.forceFlush();

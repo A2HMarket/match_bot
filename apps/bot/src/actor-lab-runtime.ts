@@ -51,6 +51,14 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
       maxRetries: 0,
     }),
   };
+  const participantRepos = new Map(
+    cfg.actors.map((a) => [a.id, createRepositories(control, undefined, a.id)]),
+  );
+  const depsForActor = (id: string): AgentDeps => {
+    const scoped = participantRepos.get(id);
+    if (!scoped) throw new Error('unknown_actor');
+    return { ...deps, repos: scoped };
+  };
   const senders = new Map(
     cfg.actors.map((a, i) => [a.id, createTelegramSender({ bot: bots[i]!, logger })]),
   );
@@ -135,6 +143,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
               errorCode: 'actor_route_rejected',
             });
           }
+          if (row.senderAccountId !== actor) throw new Error('actor_sender_account_mismatch');
           const sender = senders.get(actor);
           if (!sender) throw new Error('actor_sender_missing');
           return sender.send(row, {
@@ -188,6 +197,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
     repos,
     mainRepos,
     deps,
+    depsForActor,
     processor,
     verify,
     activate,

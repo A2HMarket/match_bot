@@ -85,3 +85,18 @@ it('isolates identical basic-group message IDs in different bot accounts', () =>
   expect(inbox.forMessage('3', '111')?.text).toBe('预算？');
   expect(inbox.forMessage('3', '222')?.text).toBe('入住时间？');
 });
+
+it('reserves a configured observed request cost before starting another user turn', () => {
+  const limits = {
+    maxMessages: 8,
+    maxSeconds: 600,
+    tokenBudget: 150907,
+    minRemainingTokens: 120449,
+  };
+  expect(shouldStopActorLab(limits, { sent: 1, elapsedMs: 1, tokens: 40000, stopped: false })).toBe(
+    'token_reserve',
+  );
+  expect(
+    shouldStopActorLab(limits, { sent: 0, elapsedMs: 1, tokens: 0, stopped: false }),
+  ).toBeNull();
+});

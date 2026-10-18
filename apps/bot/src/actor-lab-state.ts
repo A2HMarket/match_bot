@@ -1,11 +1,17 @@
 export function shouldStopActorLab(
-  limits: { maxMessages: number; maxSeconds: number; tokenBudget: number },
+  limits: {
+    maxMessages: number;
+    maxSeconds: number;
+    tokenBudget: number;
+    minRemainingTokens?: number;
+  },
   state: { sent: number; elapsedMs: number; tokens: number; stopped: boolean },
 ): string | null {
   if (state.stopped) return 'stopped';
   if (state.sent >= limits.maxMessages) return 'message_budget';
   if (state.elapsedMs >= limits.maxSeconds * 1000) return 'time_budget';
   if (state.tokens >= limits.tokenBudget) return 'token_budget';
+  if (limits.tokenBudget - state.tokens < (limits.minRemainingTokens ?? 0)) return 'token_reserve';
   return null;
 }
 export function actorRoute(

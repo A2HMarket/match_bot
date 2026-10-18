@@ -386,3 +386,5 @@ DB导出`createPrisma(connectionString)`供隔离控制库及Match Bot只读观�
 agent新增模拟用户生成与门控出站工具供apps/bot有限actor-lab控制器调用，不注册到正常matchAgent工具集。演员消息的`toolCallId=actor:<id>:<runId>:<turn>`是测试出站路由标识，controller只发当前run/已配置actor/固定测试群；出站表独立数据库，原sender不会误领。所有真实发送仍经channel createTelegramSender。新工具须完整phase/Jev门测试。配置文件含token，仅本地.env.*、600权限、不提交；无新业务表或模型供应商。
 
 P31修复验证中（2026-10-18）：仅actor-lab装配evaluateParticipantOutbound，按合成用户提出/补充个人目标评估，正常助手evaluateOutbound不变，阶段/阈值/Jev不可用/频控/出站表仍复用。基本群的message_id属于接收账户；ActorLabInbox以receiverActorId+messageId隔离，Main观察按群/演员/发送时间/原文关联，存在歧义返回空；用量按整个run的群/白名单演员消息汇总，50条查询截断或缺usage时停止，禁止默默少算。无DB迁移或新增个人字段。
+
+P31回执修复：OutboundMessage.senderAccountId默认空字符串；唯一键改为(channel,senderAccountId,target,externalMessageId)。createRepositories(prisma,lease?,senderAccountId='')第三参数仅由服务端绑定已核验演员Bot ID，贯穿forExecution；不放入模型工具参数/OutboundDraft，普通单Bot的空字符串作用域保留旧去重。actor-lab仅用绑定的repos创建消息，发送前复核row.senderAccountId与toolCall路由一致。真实渠道message_id保持原值。新增字段只保存公开测试Bot账号，不是个人数据，沿出站记录保留/删除路径；原个人数据规则不变。迁移在一个事务内替换索引，无新出站动作或权限。

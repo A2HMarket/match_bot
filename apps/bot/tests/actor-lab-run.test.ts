@@ -54,6 +54,7 @@ function runtime() {
     cfg,
     repos,
     deps,
+    depsForActor: () => deps,
     mainRepos: {
       groups: { findByExternal: vi.fn().mockResolvedValue(null) },
       users: { findByExternal: vi.fn().mockResolvedValue(null) },

@@ -47,3 +47,13 @@
 2026-10-18 attempt2：真实桌椅请求已发送1条并收到Main Bot回答，5次DeepSeek调用共83,437 token。第二演员被Jev拒绝，终止，保留失败。普通群跨Bot账号的消息ID不同（演员3/Main263），测试器因此漏计Main调用、错误关联回复。修复按接收账号隔离ID，主链路按演员/群/时间范围计量，精确文本及发送窗口仅用于单条关联，歧义不猜。用户批准累计400,000已观测DeepSeek token、累计最多8条演员消息，已用83,437及1条计入。当前新增用户角色Jev量表第一次18条预览仅4/18通过，尚未验收、未真实重发；不降低阈值。按用户新指令先换SOUL v2，再验证和继续；群在预览前已暂停。
 
 演员Jev第二版：使用goal_relevance/is_same_language/contradicts_goal三个明确角色问题及participant_goal/participant_message输入，映射回既有出站门，不改门阈值。固定9例完整重复两次18/18（6正3反/轮），第一次量表失败保留。9条真实client响应冻结为无网络回归fixture，另测超时/限流/格式/trace失败。编号碰撞、主账号263对应演员3、预算计量及缺usage/截断停止已覆盖。SOUL v2原文件SHA256 0bcb046c74952d95bf8c1bbfa097b657789d9ff3be21deb76e72e5fa8aa4d6b2；全量check131文件/1081测试及92离线回放通过。即将以0.19.3继续，最多7条新演员消息/316,563已观测token。
+
+Attempt3（54cfe71f-0db8-4408-9234-c70613124786，febb4da/0.19.3）：实际两条演员消息到达Main265/266并得到两条真实回答；控制器只保存第一条回执，第二条送达后数据库唯一键(channel,target,externalMessageId)冲突，保守停止且未重发。最终10次Main调用165,656 token，累计249,093 token、3条实际演员消息，剩余150,907 token/最多5条。SOUL v2已实际注入；回答语气有增量接话，但固定来源卡片仍冗长、租房正文有空候选名，不能称人感验收通过。测试群已停用。
+
+数据库修复中：新增senderAccountId（服务端选择Bot账户ID，非个人字段）区分基本群回执唯一性，正常单Bot默认空字符串保留原去重。createRepositories第三参数仅供隔离演员仓储绑定，无模型工具可选账号。先写SQL复现缺列失败。pnpm db:migrate --create-only三次未成功：专用库不存在→已建库，之后两次均被Prisma非交互限制拒绝（含PTY）；依AGENTS停止，已向用户请求允许官方migrate diff生成SQL后migrate deploy，仅本地，不重发不确定回执。迁移尚未生成/应用，代码未提交、未构建、未替换运行Worker。
+
+用户已明确批准官方diff生成/本地deploy。SQL从已应用14条历史迁移的专用库与当前schema比较生成，仅新增默认空sender_account_id并原子替换唯一索引，不改写Telegram原始ID。正常单Bot默认账号维持去重；隔离actor仓储由服务端绑定BotID，发送前验证。补真实PG不同账号相同ID可共存/相同账号仍冲突/工厂绑定测试。另发现PR9 CI的旧加密测试把随机base64中偶现ASCII“E14”误判成明文泄漏；改为验证密文结构、完整明文不暴露、错key解密失败及正确还原，未删测试或放宽业务校验。
+
+本地测试库已deploy新增迁移；全量check131文件/1083测试通过。余150,907 token/5条；既有单条最高120,449 token（租房），继续轮次配置waitForEachReply串行及minRemainingTokens=120449的下轮启动预留，以免余量不足仍并发启动两个大请求。该预留不取消在途模型调用，不宣称严格计费配额；如果额度不足，宁可报告多轮未完成。
+
+回执修复和预算控制最终本地check131文件/1084测试通过。新增migration经migrate deploy已应用本地test/main/actor_lab三库，未reset或db push；正式来源以提交SHA冻结后才续跑。当前群仍停用、无活动入站/出站/待审快照。
