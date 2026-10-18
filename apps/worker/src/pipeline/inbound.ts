@@ -39,7 +39,7 @@ function toDemandDraft(d: Demand): DemandDraft {
  * 架构 §3 流程图的直译：代码门 → Jev 入站门 → agent。
  * 每个终点写一条 decision_traces（AGENTS.md §3.3 第 2 条）：dropped_by_rule / dropped_by_jev /
  * tagged_move_event / entered_agent / agent_interrupted / agent_completed。
- * Jev 不可用一律按「不进 agent」降级（§3.3 第 5 条）。
+ * strict 策略及群内主动插话在 Jev 不可用时不进 agent；targeted 直接请求由任务规划接管。
  */
 export async function processInbound(
   d: PipelineDeps,
@@ -123,54 +123,68 @@ export async function processInbound(
   let runStateId: string | undefined;
   let errorCode: string | undefined;
   try {
-    const recent = (
-      await d.repos.messages.recentByUser(user.id, RECENT_WINDOW_HOURS, { groupId: stored.groupId })
-    )
-      .filter((m) => m.id !== stored.id && m.text.length > 0 && m.groupId === stored.groupId)
-      .slice(0, RECENT_TEXTS)
-      .map((m) => m.text);
-    const verdict = await d.evaluateInbound(d.jev, {
-      text: msg.text,
-      groupName: group?.name ?? 'private',
-      ...(msg.lang ? { lang: msg.lang } : {}),
-      recentTexts: recent,
-      inputRef: stored.id,
-      phase,
-    });
-    if (!verdict.ok) {
-      terminal = 'failed';
-      errorCode = 'jev_unavailable';
-      // Jev 挂了不等于放行：入站方向固定为不进 agent（AGENTS.md §3.3 第 5 条）。
-      await trace('gate', stored.id, {
-        outcome: 'dropped_by_jev',
-        reason: verdict.reason,
-        jevAvailable: false,
+    const directAdmission =
+      d.env.JEV_POLICY === 'targeted' &&
+      d.answerRequests &&
+      d.taskRequests &&
+      (isPrivate || msg.addressedToBot);
+    let verdict: Awaited<ReturnType<typeof d.evaluateInbound>> | undefined;
+    let decision: ReturnType<typeof decideInbound>;
+    if (directAdmission) {
+      decision = { action: 'enter_agent', category: 'other', kind: 'followup' };
+      await trace('gate', stored.id, { outcome: 'direct_request_admitted', policy: 'targeted' });
+    } else {
+      const recent = (
+        await d.repos.messages.recentByUser(user.id, RECENT_WINDOW_HOURS, {
+          groupId: stored.groupId,
+        })
+      )
+        .filter((m) => m.id !== stored.id && m.text.length > 0 && m.groupId === stored.groupId)
+        .slice(0, RECENT_TEXTS)
+        .map((m) => m.text);
+      verdict = await d.evaluateInbound(d.jev, {
+        text: msg.text,
+        groupName: group?.name ?? 'private',
+        ...(msg.lang ? { lang: msg.lang } : {}),
+        recentTexts: recent,
+        inputRef: stored.id,
+        phase,
       });
-      return;
-    }
+      if (!verdict.ok) {
+        terminal = 'failed';
+        errorCode = 'jev_unavailable';
+        // Jev 挂了不等于放行：入站方向固定为不进 agent（AGENTS.md §3.3 第 5 条）。
+        await trace('gate', stored.id, {
+          outcome: 'dropped_by_jev',
+          reason: verdict.reason,
+          jevAvailable: false,
+        });
+        return;
+      }
 
-    const decision = decideInbound(verdict, d.thresholds, {
-      addressedToBot: msg.addressedToBot,
-      text: msg.text,
-    });
-    if (decision.action === 'drop') {
-      await trace('gate', stored.id, {
-        outcome: 'dropped_by_jev',
-        reason: decision.reason,
-        verdict,
+      decision = decideInbound(verdict, d.thresholds, {
+        addressedToBot: msg.addressedToBot,
+        text: msg.text,
       });
-      return;
-    }
-    if (decision.action === 'tag_move_event') {
-      await d.repos.demands.create({
-        userId: user.id,
-        category: verdict.category,
-        confidence: verdict.categoryConfidence,
-        sourceMessageId: stored.id,
-        isMoveEvent: true,
-      });
-      await trace('gate', stored.id, { outcome: 'tagged_move_event', verdict });
-      return;
+      if (decision.action === 'drop') {
+        await trace('gate', stored.id, {
+          outcome: 'dropped_by_jev',
+          reason: decision.reason,
+          verdict,
+        });
+        return;
+      }
+      if (decision.action === 'tag_move_event') {
+        await d.repos.demands.create({
+          userId: user.id,
+          category: verdict.category,
+          confidence: verdict.categoryConfidence,
+          sourceMessageId: stored.id,
+          isMoveEvent: true,
+        });
+        await trace('gate', stored.id, { outcome: 'tagged_move_event', verdict });
+        return;
+      }
     }
 
     // 接话时 Jev 判的品类未必可靠（「谢谢」没有品类），取该用户最近一条未结需求
@@ -187,7 +201,7 @@ export async function processInbound(
       groupId: group?.id ?? null,
       phase,
       sourceMessageId: stored.id,
-      requestCategory: verdict.category,
+      requestCategory: decision.category,
       source: { messageId: msg.messageId, userId: msg.userId },
       ...(group?.rateLimitPerDay != null ? { rateLimitPerDay: group.rateLimitPerDay } : {}),
       ...(msg.addressedToBot ? { addressedToBot: true } : {}),

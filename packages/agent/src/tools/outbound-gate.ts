@@ -123,8 +123,36 @@ export async function decideForOutbound(
     });
     return 'drop';
   }
+  const targeted = deps.env.JEV_POLICY === 'targeted';
+  const direct = targeted && (ctx.addressedToBot === true || ctx.source?.userId === ctx.chatId);
+  // Only exact server-authored status is exempt, never arbitrary text labelled as a status.
+  if (targeted && isVerifiedRequestStatus && ctx.phase === 2) {
+    await deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: d.inputRef,
+      phase: ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+      output: {
+        gate: 'outbound',
+        decision: 'auto',
+        policy: 'targeted',
+        reason: 'verified_fixed_status',
+        isVerifiedRequestStatus: true,
+      },
+    });
+    return 'auto';
+  }
   const key = hashText(
-    JSON.stringify([ctx.phase, d.kind, d.target, d.text, d.replyPurpose ?? 'answer']),
+    JSON.stringify([
+      ctx.phase,
+      targeted,
+      direct,
+      d.kind,
+      d.target,
+      d.text,
+      d.replyPurpose ?? 'answer',
+    ]),
   );
   const cached = decisionCache.get(ctx)?.get(key);
   if (cached) return cached;
@@ -179,6 +207,7 @@ export async function decideForOutbound(
     t: deps.thresholds,
     onUnsure: deps.env.OUTBOUND_UNSURE_ACTION,
     isVerifiedRequestStatus,
+    isDirectRequest: direct,
   });
   await deps.repos.traces.create({
     kind: 'gate',
@@ -201,7 +230,7 @@ export async function decideForOutbound(
       ? 'jev_unavailable'
       : verdict.mentionsUnverified >= deps.thresholds.T_MENTIONS_UNVERIFIED_DROP
         ? 'unverified_claims'
-        : verdict.worthReplying < deps.thresholds.T_WORTH_REPLYING_DROP
+        : !direct && verdict.worthReplying < deps.thresholds.T_WORTH_REPLYING_DROP
           ? 'low_value'
           : 'rate_limited';
   let byKey = decisionCache.get(ctx);

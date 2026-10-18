@@ -1,3 +1,4 @@
+import { renderRequestStatus } from '../../src/request-status.js';
 import { DEFAULT_THRESHOLDS } from '@matchbot/gating';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -229,4 +230,90 @@ describe('disclaimer voice', () => {
       }
     }
   });
+});
+
+describe('targeted Jev outbound policy', () => {
+  it('does not silence a direct reply for low usefulness, but still checks facts', async () => {
+    const d = deps();
+    Object.assign(d.env, { JEV_POLICY: 'targeted' });
+    d.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 0,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    expect(
+      await decideForOutbound(
+        d as never,
+        { ...(ctx(2) as object), addressedToBot: true } as never,
+        draft,
+      ),
+    ).toBe('auto');
+    expect(d.evaluateOutbound).toHaveBeenCalledOnce();
+    d.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 0,
+      languageOk: 1,
+      mentionsUnverified: 1,
+    });
+    expect(
+      await decideForOutbound(
+        d as never,
+        { ...(ctx(2) as object), addressedToBot: true } as never,
+        draft,
+      ),
+    ).toBe('drop');
+  });
+  it('still applies usefulness to unsolicited group replies', async () => {
+    const d = deps();
+    Object.assign(d.env, { JEV_POLICY: 'targeted' });
+    d.evaluateOutbound.mockResolvedValue({
+      ok: true,
+      worthReplying: 0,
+      languageOk: 1,
+      mentionsUnverified: 0,
+    });
+    expect(await decideForOutbound(d as never, ctx(2), draft)).toBe('drop');
+  });
+});
+
+describe('targeted fixed status boundary', () => {
+  it.each([0, 1, 2] as const)('preserves phase %i without Jev', async (phase) => {
+    const d = deps();
+    Object.assign(d.env, { JEV_POLICY: 'targeted' });
+    const c = {
+      ...(ctx(phase) as object),
+      isRequestStatusRun: true,
+      currentRequest: { isActionable: true, demand: { category: 'second_hand', confidence: 1 } },
+    } as never;
+    const status = {
+      ...draft,
+      kind: 'notification' as const,
+      replyPurpose: 'request_status' as const,
+      inputRef: 'm1',
+      supplierSummaries: [],
+      text: renderRequestStatus(c)!,
+    };
+    expect(await decideForOutbound(d as never, c, status)).toBe(
+      ['dry_run', 'review', 'auto'][phase],
+    );
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+    expect(
+      await decideForOutbound(d as never, c, { ...status, text: status.text + 'guaranteed' }),
+    ).toBe('drop');
+    expect(await decideForOutbound(d as never, c, { ...status, target: 'another-chat' })).toBe(
+      'drop',
+    );
+  });
+});
+
+it('targeted retains unavailable-fact-check fallback and rate limits', async () => {
+  const d = deps();
+  Object.assign(d.env, { JEV_POLICY: 'targeted' });
+  const direct = () =>
+    ({ ...(ctx(2) as object), addressedToBot: true, rateLimitPerDay: 1 }) as never;
+  d.evaluateOutbound.mockResolvedValueOnce({ ok: false, reason: 'not_configured' });
+  expect(await decideForOutbound(d as never, direct(), draft)).toBe('review');
+  d.repos.outbound.countSentToTargetSince.mockResolvedValue(1);
+  expect(await decideForOutbound(d as never, direct(), draft)).toBe('review');
 });

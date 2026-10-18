@@ -66,3 +66,11 @@ describe('loadEnv', () => {
     expect(loadEnv({ ...base, DEFAULT_PHASE: '2' }).DEFAULT_PHASE).toBe(2);
   });
 });
+
+it('targeted allows missing Jev credentials, strict remains the default', () => {
+  const { JEV_API_KEY: _key, ...without } = base;
+  expect(loadEnv(base).JEV_POLICY).toBe('strict');
+  expect(() => loadEnv(without)).toThrow('JEV_API_KEY');
+  expect(loadEnv({ ...without, JEV_POLICY: 'targeted' }).JEV_API_KEY).toBe('');
+  expect(() => loadEnv({ ...base, JEV_POLICY: 'disabled' })).toThrow();
+});

@@ -26,6 +26,8 @@ export function decideOutbound(p: {
   onUnsure?: 'review' | 'drop';
   /** Server-verified fixed status, never free-form recommendation text. */
   isVerifiedRequestStatus?: boolean;
+  /** Direct requests do not need an unsolicited-participation usefulness threshold. */
+  isDirectRequest?: boolean;
 }): OutboundDecision {
   if (p.phase === 0) return 'dry_run';
   if (p.phase === 1) return 'review';
@@ -33,7 +35,7 @@ export function decideOutbound(p: {
   if (!p.verdict) return unsure;
   if (p.isVerifiedRequestStatus) return p.rateOk ? 'auto' : unsure;
   if (p.verdict.mentionsUnverified >= p.t.T_MENTIONS_UNVERIFIED_DROP) return 'drop';
-  if (p.verdict.worthReplying < p.t.T_WORTH_REPLYING_DROP) return 'drop';
+  if (!p.isDirectRequest && p.verdict.worthReplying < p.t.T_WORTH_REPLYING_DROP) return 'drop';
   if (!p.rateOk) return unsure;
   return 'auto';
 }

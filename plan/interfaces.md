@@ -394,3 +394,6 @@ P33测试观察契约：outbound.findReplyForSource({channel,target,sourceMessag
 P34搜索契约：INFORMATION_SEARCH_PROVIDER=deepseek（默认）或tavily；worker将@matchbot/agent.createDeepSeekSearch注入既有WebSearch，research调用官方原始Search API并经现有knowledgeResultSchema/域名过滤/脱敏，不是模型生成。find仍委托可选Tavily商家核验，无其凭证时不冒充已核验商家。信息搜索trace记录provider；不新增模型/出站通道。账本未完整时可提交正常来源校验的部分回答，只有完整已核验账本才能标ready；必要个人追问规则和Jev/阶段/频控均保留。
 
 P35引用契约：reply_to_request最多6个独立来源/offer、最多24个原始引用ID；同一k来源的多个真实passage只计1个来源。包括正文提取的inline编号也适用同一上限。每个passage仍逐一按本次工具结果验证，不能把未知段落归并成合法整页编号；7独立来源仍拒绝。阶段/审批/Jev/频控和事实检查不变。
+# P36 增量契约
+
+Env 增加 `JEV_POLICY: 'strict' | 'targeted'`，默认 strict。targeted 的直接对话进入现有任务规划，不伪造 Jev 分数；固定、服务端验证的状态回复在 Phase 2 无需 Jev；自由文本事实审核和来源核验保持 fail-closed。无 key 的 Jev 返回 `not_configured` 并留痕，不发网络请求。本地 CLI 只允许命名的 loopback 测试库，并通过模拟 transport 复用出站回执路径。

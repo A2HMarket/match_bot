@@ -1,0 +1,14 @@
+name: matchbot-local-test
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: matchbot
+      POSTGRES_PASSWORD: matchbot
+      POSTGRES_DB: matchbot_local_test
+    ports:
+      - '127.0.0.1:15432:5432'
+  redis:
+    image: redis:7.4
+    ports:
+      - '127.0.0.1:16379:6379'
