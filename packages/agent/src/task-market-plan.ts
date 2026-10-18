@@ -100,7 +100,20 @@ export function bindTaskMarketPlan(plan: MarketPlan, task: UserTask): MarketPlan
     ...rulesForConstraints(base, plan.intent),
     needs: goals.map((goal) => {
       const aliases = plan.needs.find((need) => need.id === goal.id)?.terms ?? [];
-      const rules = rulesForConstraints(scoped(goal.id), plan.intent);
+      const conditions = scoped(goal.id);
+      const rules = rulesForConstraints(conditions, plan.intent);
+      // Activity titles often include scheduling/participant qualifiers. Those are checked
+      // independently; requiring the whole phrase as an exact subject loses valid offers.
+      let activitySubject = goal.title;
+      if (plan.intent === 'companion') {
+        for (const c of conditions.filter((c) =>
+          ['day', 'time', 'level', 'area'].includes(c.key),
+        )) {
+          const modifier = textValue(c);
+          if (modifier) activitySubject = activitySubject.replaceAll(modifier, '').trim();
+        }
+        activitySubject = activitySubject.replace(/(?:搭子|球友|伙伴)$/, '').trim();
+      }
       return {
         id: goal.id,
         terms: [
@@ -112,6 +125,9 @@ export function bindTaskMarketPlan(plan: MarketPlan, task: UserTask): MarketPlan
                 '',
               )
               .trim(),
+            ...(plan.intent === 'companion' && activitySubject.length >= 2
+              ? [activitySubject]
+              : []),
             ...aliases,
             ...(goal.searchTerms ?? []),
           ]),

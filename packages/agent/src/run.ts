@@ -1,6 +1,6 @@
 import { buildDeliveryPacket } from './delivery-context.js';
 import { replyRequestStatusTool } from './tools/reply-request-status.js';
-import { isContextSupplement, canSkipSupplementReply } from './supplement-replies.js';
+import { canSkipSupplementReply } from './supplement-replies.js';
 import { bindCurrentRequest } from './current-request.js';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
@@ -79,28 +79,6 @@ export async function runInbound(p: {
     if (!p.deps.answerRequests) throw new Error('taskRequests requires answerRequests');
     bindCurrentRequest(p.ctx, p.input);
     if (!(await prepareTaskTurn({ ...p, signal }))) {
-      const scoped = (p.ctx.taskCandidates ?? []).filter(
-        (t) =>
-          t.ownerUserId === p.ctx.userId &&
-          t.scope.chatId === p.ctx.chatId &&
-          t.scope.channel === (p.ctx.channel ?? 'telegram') &&
-          !['completed', 'cancelled', 'expired'].includes(t.status),
-      );
-      if (isContextSupplement(p.input) && scoped.length === 1) {
-        await p.deps.repos.traces.create({
-          kind: 'gate',
-          inputRef: p.ctx.sourceMessageId,
-          phase: p.ctx.phase,
-          latencyMs: 0,
-          costMicro: 0,
-          output: {
-            gate: 'request_status',
-            decision: 'suppressed',
-            reason: 'unbound_context_supplement',
-          },
-        });
-        return { kind: 'completed', toolsCalled: [] };
-      }
       if (p.ctx.currentRequest && (p.ctx.addressedToBot || p.ctx.taskCandidates?.length))
         p.ctx.currentRequest.isActionable = true;
       return respondRequestStatus(p, session);
@@ -174,6 +152,7 @@ export async function runInbound(p: {
   const ambiguous = p.ctx.taskUpdate?.kind === 'ambiguous' || p.ctx.taskUpdate?.kind === 'unbound';
   if (!ambiguous) await refreshTaskSourceMemory({ ...p, agentVersion: AGENT_VERSION });
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: p.ctx,
     phase: p.ctx.phase,
     input: p.ctx.currentRequest?.text ?? p.input,
     checkpointInput: p.input,
@@ -210,13 +189,12 @@ export async function runInbound(p: {
       costMicro: 0,
     });
     if (
-      p.deps.taskRequests &&
       !p.ctx.outboundBlocked &&
       !p.ctx.answerInputExhausted &&
       (error.name === 'MaxTurnsExceededError' ||
-        error.name === 'TimeoutError' ||
-        error.name === 'AbortError') &&
-      (p.ctx.knowledgeSources?.length || p.ctx.marketListings?.length) &&
+        (p.deps.taskRequests &&
+          (error.name === 'TimeoutError' || error.name === 'AbortError') &&
+          (p.ctx.knowledgeSources?.length || p.ctx.marketListings?.length))) &&
       (p.ctx.runDeadlineAt ?? 0) > Date.now()
     )
       return finalizeRequest(p, session);
@@ -299,6 +277,7 @@ async function finalizeRequest(
     p.ctx.sourceFailures.push('processing:invalid_evidence');
   }
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: p.ctx,
     phase: p.ctx.phase,
     input: p.input,
     finalAnswerOnly: true,
@@ -372,6 +351,7 @@ async function respondRequestStatus(
     return { kind: 'completed', toolsCalled: ['reply_request_status'] };
   }
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: p.ctx,
     phase: p.ctx.phase,
     input: p.input,
     requestStatusOnly: true,
@@ -461,6 +441,7 @@ export async function resumeRun(p: {
     if (ctx.task && ctx.marketPlan) ctx.marketPlan = bindTaskMarketPlan(ctx.marketPlan, ctx.task);
   }
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: ctx,
     phase: ctx.phase,
     requestStatusOnly: !!ctx.isRequestStatusRun,
     finalAnswerOnly: !!ctx.isAnswerFinalization && !ctx.isRequestStatusRun,

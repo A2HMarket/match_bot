@@ -408,3 +408,48 @@ describe('task proposal normalization', () => {
     ).toMatchObject({ amountPence: 5000 });
   });
 });
+
+it('does not turn explicit preferences into hard exclusions, even with custom keys or shortened quotes', () => {
+  const input = taskPatchProposalSchema.parse({
+    goals: [],
+    constraints: [
+      {
+        key: 'custom:budget_inclusions',
+        goalId: null,
+        strength: 'hard',
+        value: { kind: 'text', text: '包bills' },
+        sourceQuote: '包bills',
+      },
+      {
+        key: 'budget',
+        goalId: 'desk',
+        strength: 'hard',
+        value: { kind: 'money', amountPence: 5000, unit: 'item' },
+        sourceQuote: '总预算不能增加',
+      },
+    ],
+  });
+  const patch = normalizeTaskPatch({ input, task, text: '最好包bills，但总预算不能增加' });
+  expect(patch?.constraints.find((c) => c.key === 'custom:budget_inclusions')?.strength).toBe(
+    'preference',
+  );
+  expect(patch?.constraints.find((c) => c.key === 'budget')?.strength).toBe('hard');
+});
+
+it('rejects boolean budget accounting aliases instead of creating an independent offer requirement', () => {
+  const input = taskPatchProposalSchema.parse({
+    goals: [],
+    constraints: [
+      {
+        key: 'custom:budget_includes_bills',
+        goalId: null,
+        strength: 'hard',
+        value: { kind: 'boolean', value: true },
+        sourceQuote: '总预算不能增加',
+      },
+    ],
+  });
+  expect(() => normalizeTaskPatch({ input, task, text: '最好包bills，但总预算不能增加' })).toThrow(
+    'budget accounting',
+  );
+});

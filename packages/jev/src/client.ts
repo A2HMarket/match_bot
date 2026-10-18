@@ -15,7 +15,13 @@ export type JevOutcome<Q extends string> =
     }
   | {
       ok: false;
-      reason: 'timeout' | 'rate_limited' | 'http_error' | 'invalid_response' | 'trace_unavailable';
+      reason:
+        | 'timeout'
+        | 'rate_limited'
+        | 'http_error'
+        | 'invalid_response'
+        | 'trace_unavailable'
+        | 'not_configured';
     };
 
 export interface JevClient {
@@ -90,9 +96,11 @@ export function createJevClient(p: {
         questions: q.questions,
         provider: { zdr: true },
       });
-      let outcome: JevOutcome<never> | null = null;
+      let outcome: JevOutcome<never> | null = p.apiKey.trim()
+        ? null
+        : { ok: false, reason: 'not_configured' };
       let cost = 0;
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      for (let attempt = 0; !outcome && attempt <= maxRetries; attempt++) {
         const r = await once(body, q.deadlineAt);
         if (r.kind === 'retry') {
           if (attempt < maxRetries) {

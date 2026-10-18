@@ -248,6 +248,13 @@ export function normalizeTaskPatch(p: {
     );
   let convertedOrigin = false;
   const constraints = p.input.constraints.map((c) => {
+    if (
+      c.value.kind === 'boolean' &&
+      /^(?:custom:)?budget_(?:includes_bills|inclusions|scope)$/.test(c.key)
+    )
+      throw new TaskProposalError(
+        'Use the money budget constraint for budget accounting; its scope is derived from the user quote. Do not create a boolean budget accounting requirement. A preference or requirement that the rent itself includes bills belongs in bills, with the user-stated strength.',
+      );
     checkMoney(c, p.task);
     let key = canonicalKey(c.key);
     if (
@@ -259,6 +266,17 @@ export function normalizeTaskPatch(p: {
       convertedOrigin = true;
     }
     const { goalId, ...value } = c;
+    // Qualifiers in the owner's clause outrank the model's proposed strength.
+    // Do not propagate a preference across an adversative into another hard condition.
+    const sourceClauses = p.text
+      .split(/[，,。；;\n]|但是|但|\bbut\b/i)
+      .filter((clause) => c.sourceQuote && clause.includes(c.sourceQuote));
+    const explicitPreference =
+      sourceClauses.length === 1 &&
+      /^(?:\s*(?:我|我们)?\s*)(?:最好|尽量|优先|prefer(?:ably)?\b|ideally\b)/i.test(
+        sourceClauses[0]!,
+      ) &&
+      !/必须|一定|不能|不得|\bmust\b|\brequired\b/i.test(sourceClauses[0]!);
     const executable = executableValue({
       condition: c,
       key,
@@ -269,6 +287,7 @@ export function normalizeTaskPatch(p: {
     const scope = budgetScope({ condition: c, key, task: p.task, text: p.text });
     return {
       ...value,
+      ...(explicitPreference ? { strength: 'preference' as const } : {}),
       value: executable,
       ...(scope ? { budgetScope: scope } : {}),
       key,

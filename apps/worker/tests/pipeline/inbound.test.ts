@@ -359,3 +359,37 @@ describe('processInbound — follow-ups addressed to the bot', () => {
     expect(runInbound).not.toHaveBeenCalled();
   });
 });
+
+describe('targeted Jev admission', () => {
+  it.each([true, false])('admits a direct turn without Jev (private=%s)', async (privateChat) => {
+    const r = makeDeps({
+      env: { DEFAULT_PHASE: 2, JEV_POLICY: 'targeted' },
+      answerRequests: true,
+      taskRequests: true,
+    });
+    r.evaluateInbound.mockRejectedValue(new Error('Jev must not run'));
+    await processInbound(r.deps as never, {
+      ...msg,
+      chatId: privateChat ? msg.userId : msg.chatId,
+      addressedToBot: !privateChat,
+    });
+    expect(r.evaluateInbound).not.toHaveBeenCalled();
+    expect(r.runInbound).toHaveBeenCalledOnce();
+    expect(r.traces.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        output: expect.objectContaining({ outcome: 'direct_request_admitted' }) as unknown,
+      }),
+    );
+  });
+  it('still requires Jev before unsolicited group participation', async () => {
+    const r = makeDeps({
+      env: { DEFAULT_PHASE: 2, JEV_POLICY: 'targeted' },
+      answerRequests: true,
+      taskRequests: true,
+    });
+    r.evaluateInbound.mockResolvedValue({ ok: false, reason: 'timeout' } as never);
+    await processInbound(r.deps as never, msg);
+    expect(r.evaluateInbound).toHaveBeenCalledOnce();
+    expect(r.runInbound).not.toHaveBeenCalled();
+  });
+});

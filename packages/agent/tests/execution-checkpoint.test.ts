@@ -148,6 +148,11 @@ describe('execution research checkpoints', () => {
       { ...f.deps, modelProvider: { getModel: () => model } },
       { phase: 2, input: '找书桌' },
     );
+    f.ctx.currentRequest = {
+      text: '找书桌',
+      demand: { category: 'second_hand', confidence: 1 },
+      isActionable: true,
+    };
     const pending = runner.run(agent, '找书桌', { context: f.ctx, maxTurns: 3 });
     for (let attempt = 0; attempt < 50 && !release; attempt++)
       await new Promise((resolve) => setTimeout(resolve, 5));

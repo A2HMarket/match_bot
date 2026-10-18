@@ -978,3 +978,13 @@ describe('P35 citation budgets count sources rather than passages', () => {
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
   });
 });
+
+it('keeps validation feedback in request context when an aborted run cannot persist tool history', async () => {
+  const { c, t } = setup(0);
+  await t.invoke({ context: c } as never, JSON.stringify({ ...args, text: '注册要999英镑。' }));
+  expect(c.outboundInputFailures).toMatchObject({
+    tool: 'reply_to_request',
+    count: 1,
+    feedback: [expect.stringContaining('999')],
+  });
+});

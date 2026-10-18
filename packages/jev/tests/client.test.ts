@@ -231,3 +231,20 @@ describe('createJevClient', () => {
     expect(r).toEqual({ ok: false, reason: 'http_error' });
   });
 });
+
+it('returns not_configured without network calls or retries when key is absent', async () => {
+  const fetchImpl = vi.fn();
+  const client = createJevClient({
+    baseUrl: 'https://jev.test',
+    apiKey: '',
+    model: 'jev',
+    traces,
+    logger,
+    fetchImpl,
+  });
+  expect(
+    await client.evaluate({ state: 'synthetic', questions, inputRef: 'missing-key', phase: 2 }),
+  ).toEqual({ ok: false, reason: 'not_configured' });
+  expect(fetchImpl).not.toHaveBeenCalled();
+  expect(traces.create).toHaveBeenCalledOnce();
+});

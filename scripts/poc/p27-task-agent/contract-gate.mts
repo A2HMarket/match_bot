@@ -36,7 +36,7 @@ try {
   const failed =
     ctx.state.getFiles().length !== 1 ||
     ctx.state.getFiles().reduce((sum, file) => sum + passedTests(file.tasks), 0) !==
-      expectedCount ||
+      expectedCount * 2 ||
     ctx.state.getFiles().some((file) => file.result?.state === 'fail') ||
     ctx.state.getUnhandledErrors().length > 0;
   process.exitCode = failed ? 1 : 0;

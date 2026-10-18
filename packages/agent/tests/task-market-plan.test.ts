@@ -277,3 +277,42 @@ describe('task-bound marketplace plan', () => {
     expect(result.capacityKg).toBe(2);
   });
 });
+
+it('separates an activity subject from its independently checked time and participant conditions', () => {
+  const t = task();
+  t.category = 'other';
+  t.counterparty = 'peer';
+  t.goals = [{ ...t.goals[0]!, title: '周末羽毛球搭子', searchTerms: ['badminton club E14'] }];
+  t.constraints = [
+    {
+      key: 'day',
+      strength: 'hard',
+      value: { kind: 'text', text: '周末' },
+      origin: { kind: 'user', sourceMessageId: 'm' },
+    },
+  ];
+  const plan = bindTaskMarketPlan({ ...modelPlan, intent: 'companion', needs: [] }, t);
+  expect(plan.needs[0]?.terms).toContain('羽毛球');
+  expect(plan.needs[0]?.rules?.essentialPreferences).toContain('周末');
+  expect(plan.needs[0]?.terms).not.toContain('球');
+  const source: MarketListing = {
+    id: 'activity',
+    title: 'E14周日下午羽毛球新手局',
+    description: '每周日室内羽毛球，欢迎初学者。',
+    tradeType: 'PEER',
+    status: 'ON_SALE',
+    tags: [],
+    priceLabel: '£8',
+    url: 'https://example.com/activity',
+    sourceUrl: null,
+    isRepost: false,
+    availableFrom: null,
+    availableUntil: null,
+    sourcePublishedAt: null,
+    createdAt: null,
+  };
+  expect(assessMarketListing(source, plan).needs).toContain(t.goals[0]!.id);
+  expect(
+    assessMarketListing({ ...source, title: '周末网球', description: '新手网球活动' }, plan).needs,
+  ).toEqual([]);
+});
