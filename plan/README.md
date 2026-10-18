@@ -53,6 +53,7 @@
 | P32 | 回答风格清理与主动承担 | [P32-conversation-style-cleanup.md](./P32-conversation-style-cleanup.md) | P31 | 7 | codex | 完成 | 0.20.0：1089测试/12契约；默认自然正文+来源，失败不派清单；模型预览限制留证 | 2026-10-18 |
 | P33 | 五场真实多轮验收 | [P33-live-multiturn-five-cases.md](./P33-live-multiturn-five-cases.md) | P32 | 8 | codex | 完成 | 五场13条实测结束；1935913token，产品质量未通过；报告见PR11 | 2026-10-18 |
 | P34 | 搜索接入与校验阻塞修复 | [P34-search-and-validation-repair.md](./P34-search-and-validation-repair.md) | P33 | 8 | codex | 完成 | 0.21.1修复；原始搜索AB6组；真实回归3条，仍有失败 | 2026-10-18 |
+| P35 | 0.21.1真实多轮回归 | [P35-agent-regression-round-two.md](./P35-agent-regression-round-two.md) | P34 | 8 | codex | 进行中 | 固定0.21.1；新增120万token/最多6条已批准，真实回归中 | 2026-10-18 |
 
 ## 波次与并行
 
