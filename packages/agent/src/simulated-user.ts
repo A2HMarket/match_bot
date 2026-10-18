@@ -99,7 +99,9 @@ export async function queueSimulatedUserTurn(deps: AgentDeps, input: z.input<typ
     rateLimitPerDay: 20,
     demand: {
       category: 'other',
-      need: 'Authorized synthetic participant message in an isolated test group',
+      need:
+        '在隔离测试群中，让合成群成员向撮合机器人提出或补充自己的生活需求。该成员的已知个人目标是：' +
+        p.goal,
       lang: 'zh',
       confidence: 1,
     },

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 import { functionCall, ScriptedModel } from '@openai/agents/testing';
 import { generateSimulatedUserTurn, queueSimulatedUserTurn } from '../src/simulated-user.js';
 import type { AgentDeps } from '../src/context.js';
@@ -63,6 +64,17 @@ describe('simulated user', () => {
     );
     expect(result.text).toContain('半小时');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('binds actor speech to the actual synthetic goal and participant role for Jev', async () => {
+    const d = deps();
+    await queueSimulatedUserTurn(d as unknown as AgentDeps, { ...input, phase: 2 });
+    const request = z
+      .object({ draft: z.string(), demand: z.object({ need: z.string() }) })
+      .parse(d.evaluateOutbound.mock.calls[0]?.[1]);
+    expect(request.draft).toBe(input.text);
+    expect(request.demand.need).toContain(input.goal);
+    expect(request.demand.need).toContain('群成员');
+    expect(request.demand.need).toContain('提出或补充');
   });
   it.each([0, 1, 2] as const)('phase %i retains the original gate', async (phase) => {
     const d = deps();
