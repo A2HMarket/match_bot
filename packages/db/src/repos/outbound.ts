@@ -70,6 +70,23 @@ export function outboundRepo(prisma: PrismaClient, accountId = '') {
     countUnfinished(): Promise<number> {
       return prisma.outboundMessage.count({ where: { status: { in: ['pending', 'sending'] } } });
     },
+    findReplyForSource(input: {
+      channel: 'telegram' | 'whatsapp';
+      target: string;
+      sourceMessageId: string;
+    }): Promise<OutboundMessage | null> {
+      const p = z
+        .object({
+          channel: z.enum(['telegram', 'whatsapp']),
+          target: z.string().min(1),
+          sourceMessageId: z.string().min(1),
+        })
+        .parse(input);
+      return prisma.outboundMessage.findFirst({
+        where: { ...p, kind: { in: ['recommendation', 'clarification', 'notification'] } },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
     findByToolCallId(toolCallId: string): Promise<OutboundMessage | null> {
       return prisma.outboundMessage.findFirst({
         where: { toolCallId: z.string().min(1).max(200).parse(toolCallId) },

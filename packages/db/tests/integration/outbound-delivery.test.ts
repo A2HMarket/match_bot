@@ -199,3 +199,62 @@ it('preserves receipt uniqueness for the default single-bot account', async () =
     ).rejects.toThrow();
   });
 });
+
+it('reads only a text reply bound to the exact source and destination', async () => {
+  await withTestDb(async (tx) => {
+    const user = await tx.user.create({
+      data: { channel: 'telegram', externalId: 'actor-observation-user', lastSeenAt: new Date() },
+    });
+    const source = await tx.message.create({
+      data: {
+        userId: user.id,
+        externalId: '263',
+        text: 'synthetic request',
+        textHash: 'synthetic',
+        receivedAt: new Date(),
+      },
+    });
+    const row = await tx.outboundMessage.create({
+      data: {
+        channel: 'telegram',
+        target: '-actor-source',
+        text: 'real pending reply',
+        sourceMessageId: source.id,
+        kind: 'recommendation',
+        phase: 2,
+      },
+    });
+    const r = createRepositories(tx);
+    expect(
+      (
+        await r.outbound.findReplyForSource({
+          channel: 'telegram',
+          target: '-actor-source',
+          sourceMessageId: source.id,
+        })
+      )?.status,
+    ).toBe('pending');
+    expect(
+      await r.outbound.findReplyForSource({
+        channel: 'telegram',
+        target: '-other',
+        sourceMessageId: source.id,
+      }),
+    ).toBeNull();
+    expect(
+      await r.outbound.findReplyForSource({
+        channel: 'telegram',
+        target: '-actor-source',
+        sourceMessageId: 'other',
+      }),
+    ).toBeNull();
+    await tx.outboundMessage.update({ where: { id: row.id }, data: { kind: 'reaction' } });
+    expect(
+      await r.outbound.findReplyForSource({
+        channel: 'telegram',
+        target: '-actor-source',
+        sourceMessageId: source.id,
+      }),
+    ).toBeNull();
+  });
+});

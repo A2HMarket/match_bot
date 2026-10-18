@@ -18,6 +18,7 @@ const meSchema = z.object({
   id: z.number().int().positive(),
   is_bot: z.literal(true),
   username: z.string(),
+  first_name: z.string(),
   can_read_all_group_messages: z.boolean().optional(),
 });
 const chatSchema = z.object({
@@ -71,6 +72,17 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
     await Promise.allSettled([main.$disconnect(), control.$disconnect()]);
   };
   async function verify() {
+    const deadline = Date.now() + 30000;
+    const checkDeadline = () => {
+      if (Date.now() >= deadline) throw new Error('actor_verify_deadline');
+    };
+    const readMe = async (bot: Bot) => {
+      checkDeadline();
+      const info = await bot.api.getMe();
+      const parsed = meSchema.parse(info);
+      bot.botInfo = info;
+      return parsed;
+    };
     const allow = env.TELEGRAM_ACTOR_ALLOWLIST.find((rule) => rule.chatId === cfg.groupId);
     if (
       !allow ||
@@ -78,8 +90,7 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
       !cfg.actors.every((a) => allow.botIds.includes(a.id))
     )
       throw new Error('actor_allowlist_not_configured');
-    await target.init();
-    const targetMe = meSchema.parse(target.botInfo);
+    const targetMe = await readMe(target);
     if (
       String(targetMe.id) !== cfg.matchBotId ||
       targetMe.username.toLowerCase() !== cfg.matchBotUsername.toLowerCase()
@@ -87,16 +98,17 @@ export function openActorLab(env: Env, cfg: ActorLabConfig) {
       throw new Error('wrong_match_bot');
     if (!targetMe.can_read_all_group_messages)
       throw new Error('match_bot_requires_group_message_visibility');
+    checkDeadline();
     const chat = chatSchema.parse(await target.api.getChat(Number(cfg.groupId)));
     if (String(chat.id) !== cfg.groupId || chat.title !== cfg.groupTitle)
       throw new Error('wrong_test_group');
     for (const [i, bot] of bots.entries()) {
-      await bot.init();
-      const me = meSchema.parse(bot.botInfo),
+      const me = await readMe(bot),
         actor = cfg.actors[i]!;
       if (String(me.id) !== actor.id || me.username.toLowerCase() !== actor.username.toLowerCase())
         throw new Error('wrong_actor_identity');
       // Actors only consume direct replies to their own run messages; group-wide access is unnecessary.
+      checkDeadline();
       const member = z
         .object({ status: z.enum(['member', 'administrator', 'creator']) })
         .parse(await bot.api.getChatMember(Number(cfg.groupId), Number(actor.id)));

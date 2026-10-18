@@ -26,6 +26,18 @@ const config = () => ({
 describe('private actor configuration', () => {
   it('provides finite defaults and rejects cross-database or identity confusion', () => {
     expect(actorLabConfigSchema.parse(config()).maxMessages).toBe(6);
+    expect(actorLabConfigSchema.safeParse({ ...config(), replyWaitSeconds: 210 }).success).toBe(
+      true,
+    );
+    expect(actorLabConfigSchema.safeParse({ ...config(), replyWaitSeconds: 211 }).success).toBe(
+      false,
+    );
+    expect(
+      actorLabConfigSchema.parse({ ...config(), turnOrder: ['short', 'short', 'short'] }).turnOrder,
+    ).toEqual(['short', 'short', 'short']);
+    expect(actorLabConfigSchema.safeParse({ ...config(), turnOrder: ['stranger'] }).success).toBe(
+      false,
+    );
     for (const controlDatabaseUrl of [
       'postgresql://local:local@remote:5432/matchbot_actor_lab',
       'postgresql://local:local@localhost:5432/matchbot',
