@@ -12,7 +12,7 @@ export function marketEnrichTool(deps: AgentDeps & { marketSearch: MarketSearch 
   return tool({
     name: 'market_enrich',
     description:
-      'Read public details of already discovered A2H listings before recommending them. Fills original-post publication date, status and public practical information (descriptions truncated to the first 1500 characters). Choose 1-4 returned refs per batch; at most 8 distinct listing details per run. Re-check status: sold/expired is not an available offer. No contact lookup or private messages.',
+      'Resolve important missing public facts yourself by reading details of discovered A2H listings before answering; do not send the user a list of facts this tool can look up. Fills original-post publication date, status and public practical information (descriptions truncated to the first 1500 characters). Choose 1-4 returned refs per batch; at most 8 distinct listing details per run. Re-check status: sold/expired is not an available offer. No contact lookup or private messages.',
     parameters: z.object({ refs: z.array(z.string()).min(1).max(4) }),
     execute: async (args, rc) => {
       const ctx = (rc as RunContext<MatchContext>).context;

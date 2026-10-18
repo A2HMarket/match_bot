@@ -37,3 +37,13 @@ describe('versioned SOUL', () => {
     },
   );
 });
+
+it('does not inject mandatory handoff phrasing or a two-sentence card-report instruction', async () => {
+  const agent = createMatchAgent(deps as never, { phase: 0, finalAnswerOnly: true }).agent;
+  const prompt = await agent.getSystemPrompt(new RunContext(context));
+  expect(prompt).not.toContain(
+    'When the next action belongs to the user, say 建议你先问/你可以确认',
+  );
+  expect(prompt).not.toContain('the code adds detailed cards');
+  expect(prompt).not.toContain('Code supplies each offer price');
+});

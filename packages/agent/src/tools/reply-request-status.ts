@@ -8,7 +8,7 @@ export function replyRequestStatusTool(deps: AgentDeps) {
   return makeOutboundTool(deps, {
     name: 'reply_request_status',
     description:
-      'SENDS one code-generated request explanation, next step and clarification. No recommendation, names, URLs or model text. Still respects phase, Jev availability and status policy.',
+      'SENDS one brief code-generated status; it asks only an already-planned, unanswered personal constraint. No recommendation, names, URLs or model text. Still respects phase, Jev availability and status policy.',
     isRequestStatus: true,
     parameters: z.object({}),
     toDraft: (ctx) => {

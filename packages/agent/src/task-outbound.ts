@@ -65,7 +65,8 @@ export function taskDeliveryForOutbound(
   if (
     draft.replyPurpose === 'request_status' &&
     draft.text === renderRequestStatus(ctx) &&
-    /[?？]/.test(text)
+    /[?？]/.test(text) &&
+    !key
   ) {
     key = /多久.*单程|单程.*多久/.test(text) ? 'max_travel_minutes' : 'custom:next_information';
     goalId = undefined;

@@ -121,7 +121,7 @@ export function marketSearchTool(
       if (!allowed)
         return deny(
           deps.answerRequests
-            ? 'This request is outside the A2H marketplace routes. Do not retry market_search or call legacy upsert tools. Use search_information for public shops/services, then reply_to_request with useful evidence and one necessary practical question.'
+            ? 'This request is outside the A2H marketplace routes. Do not retry market_search or call legacy upsert tools. Use search_information for public shops/services, then answer from useful evidence. Ask a personal question only if it is still necessary.'
             : 'not allowed: upsert_demand with housing/second_hand, or other for carry/companion, before market_search',
         );
       if (ctx.marketIntent && ctx.marketIntent !== args.intent)

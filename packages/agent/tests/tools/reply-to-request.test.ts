@@ -224,10 +224,10 @@ describe('reply_to_request', () => {
       JSON.stringify({
         kind: 'partial',
         refs: ['m1'],
-        text: '请先确认具体地址和取货时间。'.repeat(20),
+        text: '这段建议没有收敛，重复了过多信息。'.repeat(60),
       }),
     );
-    expect(result).toContain('200 characters');
+    expect(result).toContain('700 characters');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
   });
   it('does not enqueue a background promise as a clarification', async () => {
@@ -628,8 +628,9 @@ describe('reply_to_request', () => {
     );
     const input = d.evaluateOutbound.mock.calls[0] as unknown as [
       unknown,
-      { supplierSummaries: string[] },
+      { supplierSummaries: string[]; draft: string },
     ];
+    expect(input[1].draft).toContain('伦敦激光打印机这条');
     expect(input[1].supplierSummaries.join('\n')).toContain('支持无线打印');
     expect(JSON.stringify(input[1])).not.toContain('m1这条');
   });
@@ -673,7 +674,7 @@ describe('reply_to_request', () => {
     const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
     expect(draft.text).toContain('£60');
     expect(draft.text).not.toContain('£65');
-    expect(draft.text).toContain('尚未确认到：办公椅');
+    expect(draft.text).toContain('办公椅还没有可推荐的');
   });
   it('does not match a smaller price as a substring of another price', async () => {
     const { d, c, t } = setup(0);
@@ -804,4 +805,50 @@ describe('reply_to_request', () => {
     await t.invoke({ context: c } as never, JSON.stringify(input));
     expect(d.repos.outbound.create).toHaveBeenCalledOnce();
   });
+});
+
+it('does not prepend an internal no-match verdict to a helpful answer', async () => {
+  const { d, c, t } = setup(0);
+  bindCurrentRequest(c, 'Stratford找一居室');
+  c.marketQueries = ['Stratford 一居室'];
+  const text = '这几条房源都没写月租，还没法按预算挑出合适的一套。';
+  await t.invoke({ context: c } as never, JSON.stringify({ kind: 'no_match', refs: [], text }));
+  const [draft] = d.repos.outbound.create.mock.calls[0] as unknown as [{ text: string }];
+  expect(draft.text).toBe(text);
+});
+
+it('does not silently remove an unselected inline offer ref', async () => {
+  const { d, c, t } = setup(0);
+  bindCurrentRequest(c, 'E14收书桌，50镑以内');
+  c.marketPlan = {
+    intent: 'second_hand',
+    needs: [{ id: 'desk', terms: ['书桌'] }],
+    preferences: [],
+    budget: 50,
+  };
+  c.marketListings = [
+    {
+      id: 'desk',
+      ref: 'm1',
+      title: 'E14书桌',
+      description: '出售：伦敦E14书桌£40',
+      priceLabel: '£40',
+      tradeType: 'SELL',
+      status: 'ON_SALE',
+      tags: [],
+      url: 'https://a2hmarket.ai/listings/desk',
+      sourceUrl: null,
+      isRepost: false,
+      sourcePublishedAt: null,
+      createdAt: null,
+      availableFrom: null,
+      availableUntil: null,
+    },
+  ];
+  const result = await t.invoke(
+    { context: c } as never,
+    JSON.stringify({ kind: 'partial', refs: ['m1'], text: 'm2这条书桌更合适。' }),
+  );
+  expect(result).toContain('unselected inline refs');
+  expect(d.repos.outbound.create).not.toHaveBeenCalled();
 });
