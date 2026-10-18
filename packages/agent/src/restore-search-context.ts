@@ -25,6 +25,10 @@ export const researchContextSchema = z.object({
   supplierSearchEmpty: z.boolean().optional(),
   taskProgressCalls: z.number().int().nonnegative().max(100).optional(),
   taskProgressVersion: z.number().int().nonnegative().optional(),
+  deliverySourceRefs: z
+    .array(z.string().regex(/^[km]\d+$/))
+    .max(6)
+    .optional(),
   taskSourceReviewedClaims: z.number().int().nonnegative().max(96).optional(),
   sourceReviewCache: z.record(z.string(), z.boolean()).optional(),
   outboundDeclineReason: z
@@ -109,6 +113,7 @@ export function restoreSearchContext(ctx: MatchContext, snapshot: string): Match
     ...(saved.taskProgressCalls !== undefined
       ? { taskProgressCalls: saved.taskProgressCalls }
       : {}),
+    ...(saved.deliverySourceRefs ? { deliverySourceRefs: saved.deliverySourceRefs } : {}),
     ...(saved.taskProgressVersion !== undefined
       ? { taskProgressVersion: saved.taskProgressVersion }
       : {}),

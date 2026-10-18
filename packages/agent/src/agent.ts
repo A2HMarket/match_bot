@@ -1,3 +1,4 @@
+import { canHandOffToDelivery, selectRequestToolNames } from './delivery-context.js';
 import { SOUL_INSTRUCTIONS } from './soul.js';
 import { replyRequestStatusTool } from './tools/reply-request-status.js';
 import { replyToRequestTool } from './tools/reply-to-request.js';
@@ -36,7 +37,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.22.0';
+export const AGENT_VERSION = '0.23.0';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:
@@ -106,6 +107,7 @@ export function createMatchAgent(
     taskId?: string;
     taskRefs?: string[];
     checkpointInput?: string;
+    requestContext?: MatchContext;
   },
 ) {
   const agent = new Agent<MatchContext>({
@@ -124,6 +126,30 @@ export function createMatchAgent(
         return (rc.context as MatchContext).taskUpdate
           ? { isFinalOutput: true, isInterrupted: undefined, finalOutput: 'task prepared' }
           : { isFinalOutput: false, isInterrupted: undefined };
+      if (
+        deps.answerRequests &&
+        deps.taskRequests &&
+        !run?.finalAnswerOnly &&
+        canHandOffToDelivery(rc.context as MatchContext) &&
+        results.some((r) => {
+          if (
+            r.tool.name !== 'record_task_progress' ||
+            !('output' in r) ||
+            typeof r.output !== 'string'
+          )
+            return false;
+          try {
+            return (JSON.parse(r.output) as { recorded?: unknown }).recorded === true;
+          } catch {
+            return false;
+          }
+        })
+      )
+        return {
+          isFinalOutput: true,
+          isInterrupted: undefined,
+          finalOutput: 'research ready for delivery',
+        };
       if ((rc.context as MatchContext).outboundBlocked && !run?.requestStatusOnly)
         return {
           isFinalOutput: true,
@@ -262,6 +288,20 @@ export function createMatchAgent(
     inputGuardrails: [sensitiveInputGuardrail],
     outputGuardrails: [noGuaranteeOutputGuardrail],
   });
+  if (
+    deps.answerRequests &&
+    deps.taskRequests &&
+    run?.requestContext &&
+    !run.finalAnswerOnly &&
+    !run.taskPlanningOnly &&
+    !run.requestStatusOnly
+  ) {
+    const allowed = selectRequestToolNames(
+      agent.tools.filter((t) => t.type === 'function').map((t) => t.name),
+      run.requestContext,
+    );
+    agent.tools = agent.tools.filter((t) => t.type !== 'function' || allowed.includes(t.name));
+  }
   const runner = new Runner({
     traceIncludeSensitiveData: false,
     ...(run

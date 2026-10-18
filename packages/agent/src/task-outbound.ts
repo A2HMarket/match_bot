@@ -9,7 +9,7 @@ import type { MatchContext } from './context.js';
 import type { OutboundDraftInput } from './tools/outbound-gate.js';
 import { renderRequestStatus } from './request-status.js';
 
-function answerType(
+export function taskQuestionAnswerType(
   key: string,
   text: string,
 ): NonNullable<UserTask['pendingQuestion']>['answerType'] {
@@ -96,7 +96,7 @@ export function taskDeliveryForOutbound(
     key &&
     !canAskTaskQuestion(task, {
       constraintKey: key,
-      answerType: answerType(key, text),
+      answerType: taskQuestionAnswerType(key, text),
       text,
       ...(goalId ? { goalId } : {}),
     })
@@ -111,7 +111,12 @@ export function taskDeliveryForOutbound(
       'The question must appear in the actual outbound text. Keep the advice and question short enough that the rendered message preserves them.',
     );
   const question = key
-    ? { constraintKey: key, answerType: answerType(key, text), text, ...(goalId ? { goalId } : {}) }
+    ? {
+        constraintKey: key,
+        answerType: taskQuestionAnswerType(key, text),
+        text,
+        ...(goalId ? { goalId } : {}),
+      }
     : undefined;
   return {
     id: task.id,

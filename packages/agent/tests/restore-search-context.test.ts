@@ -82,6 +82,7 @@ describe('restoreSearchContext', () => {
         isRequestStatusRun: true,
         outboundBlocked: true,
         isAnswerFinalization: true,
+        deliverySourceRefs: ['k1', 'm2'],
         sourceFailures: ['processing:invalid_evidence'],
       }),
     );
@@ -91,6 +92,7 @@ describe('restoreSearchContext', () => {
     expect(restored.isRequestStatusRun).toBe(true);
     expect(restored.outboundBlocked).toBe(true);
     expect(restored.isAnswerFinalization).toBe(true);
+    expect(restored.deliverySourceRefs).toEqual(['k1', 'm2']);
   });
   it('keeps normalized requirements through encrypted approval snapshot reconstruction', () => {
     const plan = {

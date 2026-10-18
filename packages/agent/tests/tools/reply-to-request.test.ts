@@ -56,6 +56,48 @@ const args = {
   refs: ['k1'],
 };
 describe('reply_to_request', () => {
+  it('accepts an equivalent source clock and rejects an unsupported clock through the actual tool', async () => {
+    const { c, d, t } = setup(0);
+    bindCurrentRequest(c, '伦敦这个展下午能去吗');
+    c.knowledgeSources = [
+      createKnowledgeSource(
+        {
+          title: 'Exhibition hours',
+          url: 'https://museum.example/hours',
+          text: 'Exhibition opening hours: 10 am to 5:30 pm.',
+        },
+        1,
+      ),
+    ];
+    await t.invoke(
+      { context: c } as never,
+      JSON.stringify({
+        kind: 'partial',
+        text: '展览开放时间10:00–17:30，下午在开放时段内。',
+        refs: ['k1'],
+      }),
+    );
+    expect(d.repos.outbound.create).toHaveBeenCalledOnce();
+    const other = setup(0);
+    bindCurrentRequest(other.c, '伦敦这个展下午能去吗');
+    other.c.knowledgeSources = c.knowledgeSources;
+    expect(
+      await other.t.invoke(
+        { context: other.c } as never,
+        JSON.stringify({ kind: 'partial', text: '开放到18:00。', refs: ['k1'] }),
+      ),
+    ).toContain('unsupported numerical');
+    expect(other.d.repos.outbound.create).not.toHaveBeenCalled();
+  });
+  it('rejects a real but unselected source before any outbound evaluation or write', async () => {
+    const { c, d, t } = setup(2);
+    c.isAnswerFinalization = true;
+    c.deliverySourceRefs = ['k2'];
+    const result = await t.invoke({ context: c } as never, JSON.stringify(args));
+    expect(result).toContain('selected delivery packet');
+    expect(d.evaluateOutbound).not.toHaveBeenCalled();
+    expect(d.repos.outbound.create).not.toHaveBeenCalled();
+  });
   it('uses the source-rendering outbound kind for a factual answer that also asks a question', async () => {
     const { c, d, t } = setup(0);
     await t.invoke(
