@@ -139,7 +139,7 @@ describe('reply_with_search_results', () => {
     expect(row.kind).toBe('recommendation');
     expect(row).toMatchObject({ mentionUserId: '42', replyToMessageId: '77' });
     expect(row.text).toBe(
-      "可以看看这两家：\nPolly Chan's Bakehouse（WhatsApp 07700900123）、Chinatown Bakery（instagram.com/chinatown.bakery）\n\n这些是网上搜到的，我没核实过，建议先私信问问。",
+      "可以看看这两家：\nPolly Chan's Bakehouse（WhatsApp 07700900123）、Chinatown Bakery（instagram.com/chinatown.bakery）\n\n这些是公开网页信息，实际价格和可用情况以提供方回复为准。",
     );
     // Instagram 不能写成 @handle：Telegram 会把它渲染成同名 Telegram 用户的链接
     expect(row.text).not.toMatch(/@chinatown/);

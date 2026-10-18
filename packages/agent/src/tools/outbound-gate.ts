@@ -48,15 +48,15 @@ const DISCLAIMERS: Record<'catalogue' | 'web' | 'xhs' | 'market', Record<string,
   },
   // P14：搜索结果没有人工把关，必须说清楚没核实过
   web: {
-    zh: '这些是网上搜到的，我没核实过，建议先私信问问。',
+    zh: '这些是公开网页信息，实际价格和可用情况以提供方回复为准。',
     en: "Found these online and haven't checked them myself, so maybe message them first.",
     ru: 'Нашёл это в интернете и сам не проверял — лучше сначала напишите им.',
     uk: 'Знайшов це в інтернеті й сам не перевіряв — краще спершу напишіть їм.',
     pt: 'Achei isso na internet e não conferi — vale mandar mensagem antes.',
   },
   market: {
-    zh: '以上来自A2H公开帖子，库存、房源、时间与价格请向贴主确认；转载帖请到原帖联系，我不经手交易。',
-    en: 'From public A2H listings. Confirm availability, dates and prices with the poster; contact reposts through the original post. I do not handle transactions.',
+    zh: '信息来自A2H公开帖子，是否还在以贴主回复为准；转载帖的联系入口在原帖。我不经手交易。',
+    en: 'From public A2H listings; actual availability depends on the poster. Reposts link to their original contact entry. I do not handle transactions.',
     ru: 'Публичные объявления A2H. Наличие, даты и цены уточняйте у автора; для репостов используйте оригинал. Я не участвую в сделке.',
     uk: 'Публічні оголошення A2H. Наявність, дати й ціни уточнюйте в автора; для репостів відкрийте оригінал. Я не проводжу угоди.',
     pt: 'Anúncios públicos do A2H. Confirme disponibilidade, datas e preços com o autor; para reposts, use o original. Não intermedio a transação.',

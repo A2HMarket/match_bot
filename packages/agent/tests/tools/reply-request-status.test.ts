@@ -9,6 +9,7 @@ import { makeOutboundTool } from '../../src/tools/make-outbound-tool.js';
 import { z } from 'zod';
 import { renderRequestStatus } from '../../src/request-status.js';
 import { taskSchema } from '@matchbot/domain';
+import { taskDeliveryForOutbound } from '../../src/task-outbound.js';
 function setup(phase: 0 | 1 | 2, available = true) {
   const c: MatchContext = {
     userId: 'u',
@@ -55,12 +56,12 @@ describe('reply_request_status', () => {
       expect(draft.text).not.toMatch(/[?？]/);
     },
   );
-  it('asks about the practical obstacle instead of making the user choose an official fact to research', async () => {
+  it('does not manufacture a clarification or research checklist after an unsuccessful answer', async () => {
     const { c, d, t } = setup(2);
     bindCurrentRequest(c, '狗岛找止疼药');
     await t.invoke(new RunContext(c), '{}');
     const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
-    expect(draft.text).toContain('出行不方便');
+    expect(draft.text).not.toMatch(/[?？]|逐项|先核对|先补全|下一步应/);
     expect(draft.text).not.toMatch(/时刻表|先补全哪|https?:|止疼药|狗岛|\d/);
     expect(c.outboundBlocked).toBe(true);
   });
@@ -91,7 +92,7 @@ describe('reply_request_status', () => {
     await t.invoke(new RunContext(c), '{}');
     const draft = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
     expect(draft.text).not.toContain('最多能接受多久');
-    expect(draft.text).toContain('通勤范围');
+    expect(draft.text).not.toMatch(/[?？]/);
     expect(draft.text).not.toMatch(/30|E14|https?:/);
     expect(c.outboundBlocked).toBe(true);
   });
@@ -104,7 +105,7 @@ describe('reply_request_status', () => {
       await t.invoke(rc, JSON.stringify({ text: 'invented club £99 guaranteed' }));
       expect(d.repos.outbound.create).toHaveBeenCalledOnce();
       const body = d.repos.outbound.create.mock.calls[0]?.[0] as { text: string };
-      expect(body.text).toContain('单程通勤');
+      expect(body.text).not.toMatch(/[?？]|逐项|先核对|下一步应/);
       expect(body.text).not.toContain('invented');
       expect(c.outboundBlocked).toBe(true);
       await t.invoke(rc, '{}');
@@ -184,4 +185,54 @@ describe('reply_request_status', () => {
     await forged.invoke(new RunContext(c), '{}');
     expect(d.repos.outbound.create).not.toHaveBeenCalled();
   });
+});
+
+it('keeps an explicitly planned budget question bound to budget rather than inventing another field', () => {
+  const { c } = setup(0);
+  c.task = taskSchema.parse({
+    id: 'task',
+    ownerUserId: 'u',
+    scope: { channel: 'telegram', chatId: '-1' },
+    objective: '找桌子',
+    status: 'active',
+    revision: 1,
+    goals: [],
+    constraints: [],
+    evidence: [],
+    pendingQuestion: null,
+    nextStep: {
+      action: 'ask_user',
+      owner: 'agent',
+      constraintKey: 'budget',
+      reason: 'choose an affordable option',
+    },
+    blockReason: null,
+    delivery: { status: 'none', level: 'none' },
+    userConfirmation: null,
+  });
+  const text = renderRequestStatus(c)!;
+  expect(text).toContain('预算');
+  expect(text.match(/[?？]/g)).toHaveLength(1);
+  c.execution = {
+    userId: 'u',
+    messageId: 'm',
+    token: '00000000-0000-4000-8000-000000000001',
+    fence: 1,
+  };
+  const delivery = taskDeliveryForOutbound(c, {
+    kind: 'notification',
+    replyPurpose: 'request_status',
+    target: c.chatId,
+    text,
+    supplierSummaries: [],
+    inputRef: c.sourceMessageId,
+  });
+  expect(delivery?.question).toMatchObject({ constraintKey: 'budget', answerType: 'money' });
+  c.task.constraints.push({
+    key: 'budget',
+    strength: 'hard',
+    value: { kind: 'money', amountPence: 5000, unit: 'item' },
+    origin: { kind: 'user', sourceMessageId: 'prior' },
+  });
+  expect(renderRequestStatus(c)).not.toMatch(/[?？]/);
 });

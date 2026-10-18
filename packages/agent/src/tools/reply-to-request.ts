@@ -23,7 +23,7 @@ const parameters = z.object({
     .min(1)
     .max(1400)
     .describe(
-      'Useful answer in user language. With m refs, MAX 200 characters about ONLY those selected offers: respond to the current change and give a judgement or next step. Do not describe excluded/unselected alternatives, even to explain why they lost. Code renders facts. Keep unknowns explicit. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable explain only this search and next step.',
+      'Useful answer in user language. With m refs, MAX 700 characters about ONLY the selected offers: explain useful source-backed facts and your judgement in natural prose. Do not describe excluded/unselected alternatives, even to explain why they lost. Code appends links; state important remaining uncertainty in your answer. Explain important unknowns without internal match/status labels. No URLs, contacts, guarantees or promises to act for the user. For no_match/unavailable briefly explain the concrete obstacle; add a next step only if it helps.',
     ),
   refs: z
     .array(z.string())
@@ -93,6 +93,7 @@ function renderMarketRefs(
   zh: boolean,
 ): {
   text: string;
+  names: Record<string, string>;
   evidence: string[];
   hasConfirmedChoice: boolean;
   hasVerifiedTravel: boolean;
@@ -157,22 +158,18 @@ function renderMarketRefs(
     plan: ctx.marketPlan,
     zh,
     assessWholeOffer: true,
-    format:
-      ctx.taskUpdate?.kind === 'continued' &&
-      ctx.task?.ownerUserId === ctx.userId &&
-      ctx.task.scope.chatId === ctx.chatId &&
-      ctx.task.scope.channel === (ctx.channel ?? 'telegram') &&
-      !/展开|详细|完整|重新列|show.{0,15}details|full.{0,12}(?:details|list)/i.test(
-        ctx.currentRequest?.text.split('\n')[0] ?? '',
-      )
-        ? 'brief'
-        : 'full',
+    format: !/展开|详细|完整|重新列|show.{0,15}details|full.{0,12}(?:details|list)/i.test(
+      ctx.currentRequest?.text.split('\n')[0] ?? '',
+    )
+      ? 'conversation'
+      : 'full',
     ...(ctx.taskProgressVersion === ctx.task?.requirementsVersion && ctx.task
       ? { task: ctx.task }
       : {}),
   });
   return {
     text: rendered.text,
+    names: Object.fromEntries(selections.map((s) => [s.ref, s.name])),
     hasConfirmedChoice: rendered.choices.primary.length > 0,
     hasVerifiedTravel: [...rendered.choices.primary, ...rendered.choices.backup].some((row) =>
       row.assessment.checks.some(
@@ -227,7 +224,7 @@ export function replyToRequestTool(deps: AgentDeps) {
   return makeOutboundTool(deps, {
     name: 'reply_to_request',
     description:
-      'SENDS a useful, source-grounded reply to the current request: advice/steps, partial matches, local no-match explanation, ONE clarification or source unavailability. Complete the user goal even without a perfect offer. Use k refs from search_information for facts, m refs for valid A2H offers; code formats their facts and links. Keep explicit role/date/area/budget; never relax must-have constraints or contact people. This remains subject to phase/Jev/rate gates.',
+      'SENDS a useful, source-grounded reply to the current request: advice/steps, partial matches, local no-match explanation, ONE clarification or source unavailability. Complete the user goal even without a perfect offer. Use k refs from search_information for facts, m refs for valid A2H offers; write the useful explanation yourself; code supplies links. Keep explicit role/date/area/budget; never relax must-have constraints or contact people. This remains subject to phase/Jev/rate gates.',
     parameters,
     toDraft: async (ctx, args: z.infer<typeof parameters>) => {
       if (
@@ -243,19 +240,13 @@ export function replyToRequestTool(deps: AgentDeps) {
         };
       if (ctx.answerInputExhausted && ctx.isAnswerFinalization) {
         const zhFailure = ctx.currentRequest?.demand.lang !== 'en';
-        const next =
-          ctx.currentRequest?.demand.category === 'housing'
-            ? '看房前请让房东逐项确认月租、入住时间、房型和宠物许可，宠物要求最好取得书面确认。'
-            : ctx.currentRequest?.demand.category === 'second_hand'
-              ? '联系候选前请逐项核对具体型号、成色、实际价格与自提地点，未确认的条件不能当成已满足。'
-              : '请以提供方或主办方公布的信息核对时间、地点及适用条件，未核实前不能据此做安排。';
         // A failed evidence draft is not a gate rejection. The bounded final response still passes the same gate.
         args = {
           kind: 'unavailable',
           refs: [],
           text: zhFailure
-            ? '本次回答的证据核对没有完成，暂时无法可靠推荐。' + next + '你可以稍后重试。'
-            : 'This answer could not complete reliable evidence checks. Confirm the exact terms, dates, location and price with the provider before making plans; please try again later.',
+            ? '我没把这件事查清楚，暂时给不了可靠的建议。'
+            : 'I haven’t established enough reliable information to recommend an option yet.',
         };
       }
       if (
@@ -274,9 +265,6 @@ export function replyToRequestTool(deps: AgentDeps) {
           .replace(/\*\*([^*]+)\*\*/g, '$1')
           .replace(/[（(]\s*(?:k\d+(?::p\d+)?[\s、,]*)+[)）]/g, '')
           .replace(/\bk\d+(?::p\d+)?\b/g, '')
-          .replace(/\bm\d+\b/g, (ref) =>
-            ctx.marketListings?.some((n) => n.ref === ref) ? '' : ref,
-          )
           .trim(),
       };
       // Discover a missing question plan before factual repairs consume the bounded input attempts.
@@ -325,10 +313,10 @@ export function replyToRequestTool(deps: AgentDeps) {
           error:
             'Seller identity is not established by anonymous offer refs. State that it is unknown; do not infer the same/different sellers or pickup addresses from separate posts.',
         };
-      if (market.length && args.text.length > 200)
+      if (market.length && args.text.length > 700)
         return {
           error:
-            'Keep market advice within 200 characters. Give the priority and ONE practical next step; code renders the source facts. Shorten the advice yourself without removing its important uncertainty.',
+            'Keep the market answer within 700 characters. Explain the useful facts and judgement without a report or checklist; retain the important uncertainty.',
         };
       let text = args.text;
       let evidence: string[] = [];
@@ -342,6 +330,12 @@ export function replyToRequestTool(deps: AgentDeps) {
               'invalid answer: offer is unknown, inactive or conflicts with the original hard conditions. Remove excluded refs AND their facts; choose useful eligible leads or no_match. Current choices: ' +
               JSON.stringify(marketChoiceFeedback(ctx)),
           };
+        const inline = args.text.match(/\bm\d+\b/g) ?? [];
+        if (inline.some((ref) => !market.includes(ref)))
+          return {
+            error: 'Use only the selected offer names; unselected inline refs are not evidence.',
+          };
+        args = { ...args, text: args.text.replace(/\bm\d+\b/g, (ref) => rendered.names[ref]!) };
         if (!rendered.hasConfirmedChoice && claimsCompleteMarketFit(args.text))
           return {
             error:
@@ -450,19 +444,9 @@ export function replyToRequestTool(deps: AgentDeps) {
           !/免费|free/i.test(evidence.join('\n'))
         )
           return { error: 'invalid answer: free admission requires source evidence' };
-        if (args.kind === 'no_match')
-          text =
-            (zh
-              ? '这次没有确认到完全匹配的结果。\n'
-              : 'This search did not confirm a complete match.\n') + args.text;
         if (args.kind === 'unavailable') {
           if (!ctx.sourceFailures?.length)
             return { error: 'no recorded source failure; do not claim a service outage' };
-          text =
-            (zh
-              ? '这次查询没能完成，不能据此判断没有匹配结果。\n'
-              : 'A source is currently unavailable; that does not prove no offers exist.\n') +
-            args.text;
         }
         const unique = [...new Set(sources.filter((s) => !!s))];
         if (unique.length)

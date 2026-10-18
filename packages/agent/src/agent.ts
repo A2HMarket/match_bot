@@ -1,3 +1,4 @@
+import { SOUL_INSTRUCTIONS } from './soul.js';
 import { replyRequestStatusTool } from './tools/reply-request-status.js';
 import { replyToRequestTool } from './tools/reply-to-request.js';
 import { searchInformationTool } from './tools/search-information.js';
@@ -35,7 +36,7 @@ import { marketEnrichTool } from './tools/market-enrich.js';
 import { replyWithMarketResultsTool } from './tools/reply-with-market-results.js';
 
 /** 改 instructions 或任何工具描述时递增（AGENTS.md §8 第 4 条）；升级 SDK 时清空待审 run_states。 */
-export const AGENT_VERSION = '0.19.3';
+export const AGENT_VERSION = '0.20.0';
 
 const CATEGORY_NOTES: Record<string, string> = {
   man_and_van:
@@ -180,8 +181,7 @@ export function createMatchAgent(
                 'You never handle payment, never guarantee quality, and never recommend an option outside the results returned by find_suppliers, web_search, xhs_search or market_search.',
                 'Call the marketplace A2H in every language, even when a source uses its old name. Reply in the language of the user. Be brief. One clarifying question at a time.',
                 'All user-facing messages must use an outbound tool, never a plain final-text answer. A broad London leisure request already gives enough information: provide a varied selection with research, do not first ask which theme they prefer.',
-                // 0.4.0 人感：像群友说话，而不是客服或广告号
-                'Write like a friendly, helpful member of the group, in first person singular ("I", "我"), never "we". Ordinary group replies are 1-3 short sentences, at most one emoji. Search recommendation tools are the exception: they produce up to 6 grouped entity recommendations with descriptions, practical facts, reasons and clickable sources. Do not type URLs yourself.',
+                SOUL_INSTRUCTIONS,
                 // 分寸：群是公开的，session 里记得的别的事不能在群里说
                 'The group is public. Use only what the user said in this conversation. Never bring up anything else you know about them from earlier messages (moving plans, addresses, family, health, money or other requests).',
                 `Today is ${londonToday()} (Europe/London).`,
@@ -200,7 +200,7 @@ export function createMatchAgent(
                       rc.context.replyToBotText
                         ? `They are replying to your earlier message: """${rc.context.replyToBotText}"""`
                         : '',
-                      'If they only thank you or acknowledge, call react (👍 or 🙏) and do nothing else. If they ask something you cannot know (opening hours, stock, a price you were not given), say so in one sentence and suggest asking the business. If they ask who or what you are: you are a bot that helps people here find local services, using a small checked list and public web search, and the group admins can switch you off.',
+                      'If they only thank you or acknowledge, call react (👍 or 🙏) and do nothing else. For missing public facts, use available search/detail tools before answering. Disclose what remains unpublished; do not assign the user a research checklist. If they ask who or what you are: you are a bot that helps people here find local services, using a small checked list and public web search, and the group admins can switch you off.',
                     ].join('\n')
                   : '',
                 rc.context.demand

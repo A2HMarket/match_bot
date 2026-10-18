@@ -50,6 +50,7 @@
 | P30 | 续接竞争与无增量静默 | [P30-followup-race-and-quiet-replies.md](./P30-followup-race-and-quiet-replies.md) | P29 | 9 | codex | 完成 | 0.18.3：1035测试/12契约、PG竞争复现、重复草稿压制；模型失败留证，PR合并main生效 | 2026-10-17 |
 
 | P31 | Telegram多演员测试群 | [P31-telegram-actor-lab.md](./P31-telegram-actor-lab.md) | P30 | 10 | codex | 进行中 | SOUL v2已本地生效；三角色4条/4回复、351,908 token，预留停止；完整多轮与人感未通过 | 2026-10-18 |
+| P32 | 回答风格清理与主动承担 | [P32-conversation-style-cleanup.md](./P32-conversation-style-cleanup.md) | P31 | 7 | codex | 完成 | 0.20.0：1089测试/12契约；默认自然正文+来源，失败不派清单；模型预览限制留证 | 2026-10-18 |
 
 ## 波次与并行
 

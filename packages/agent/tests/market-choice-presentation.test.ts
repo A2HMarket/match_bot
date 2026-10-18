@@ -228,3 +228,47 @@ describe('market choice practical details', () => {
     expect(text).toContain(listing.url);
   });
 });
+
+it('keeps conversational sources readable without report headers or delegating a checklist', () => {
+  const listing: MarketCandidate = {
+    id: 'home',
+    ref: 'm1',
+    title: 'Stratford一居室',
+    description: '出租：伦敦Stratford一居室\n费用：月租£1550，不含账单',
+    tags: [],
+    tradeType: 'SELL',
+    status: 'ON_SALE',
+    url: 'https://a2hmarket.ai/listings/home',
+    sourceUrl: 'https://www.xiaohongshu.com/explore/home',
+    isRepost: true,
+    priceLabel: '£1550/月',
+    sourcePublishedAt: null,
+    createdAt: null,
+    availableFrom: null,
+    availableUntil: null,
+  };
+  const { text, choices } = renderMarketChoiceReply({
+    listings: [listing],
+    selections: [{ ref: 'm1', name: listing.title, evidence: listing.description }],
+    format: 'conversation',
+    zh: true,
+    plan: {
+      intent: 'housing',
+      needs: [{ id: 'home', terms: ['一居室'] }],
+      preferences: ['允许养猫'],
+      essentialPreferences: ['允许养猫'],
+      budget: 1600,
+      budgetScope: 'all_in',
+    },
+  });
+  expect(choices.primary).toHaveLength(0);
+  expect(choices.backup[0]?.essentialMissing).toContain('允许养猫');
+  expect(text).toContain('£1550');
+  expect(text).not.toContain('这条还没写清');
+  expect(text).toContain(listing.url);
+  expect(text).toContain(listing.sourceUrl);
+  expect(text).toMatch(/^来源：/m);
+  expect(text).not.toMatch(
+    /尚未确认|匹配的选项|可作备选|待确认：|推荐理由：|单品报价：|逐项核对|【/,
+  );
+});

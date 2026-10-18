@@ -1,7 +1,7 @@
 import type { MarketCandidate } from './market-research.js';
 import type { MarketPlan } from './market-strategy.js';
 import type { UserTask } from '@matchbot/domain';
-import { buildMarketChoices, type MarketChoice, type MarketChoices } from './market-choices.js';
+import { buildMarketChoices, type MarketChoice } from './market-choices.js';
 export type MarketSelection = { ref: string; name: string; evidence: string };
 const compact = (s: string, max = 180) => {
   const plain = s.replace(/\s+/g, ' ').trim();
@@ -193,6 +193,33 @@ function renderBriefChoice(
     .filter(Boolean)
     .join('\n');
 }
+function renderConversationChoice(p: {
+  row: MarketChoice;
+  selection: MarketSelection;
+  plan: MarketPlan;
+  zh: boolean;
+}): string {
+  const { row, selection, plan, zh } = p;
+  const name = compact(selection.name, 80).replace(/[\[\]()\r\n]/g, '');
+  const price = row.assessment.itemPriceGBP;
+  const quote = price
+    ? `£${price.min}${price.max !== price.min ? `–${price.max}` : ''}${plan.intent === 'housing' ? (zh ? '/月' : '/month') : ''}`
+    : '';
+  const label = [name, compact(quote, 90)]
+    .filter(Boolean)
+    .join(' · ')
+    .replace(/[\[\]()\r\n]/g, '');
+  return [
+    `${zh ? '来源：' : 'Source: '}[${label}](${row.listing.url})${row.listing.sourceUrl ? ` · [${zh ? '原帖' : 'Original post'}](${row.listing.sourceUrl})` : ''}`,
+    row.warning
+      ? zh
+        ? `原帖提到“${compact(row.warning, 100)}”。`
+        : `The post notes: ${compact(row.warning, 100)}.`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
 function uniqueSourceDetails(lines: string[]): string[] {
   const kept: string[] = [];
   const content = (s: string) =>
@@ -210,15 +237,6 @@ function uniqueSourceDetails(lines: string[]): string[] {
   }
   return kept;
 }
-function introduction(choices: MarketChoices, zh: boolean): string {
-  if (!choices.primary.length)
-    return zh
-      ? `这次尚未确认完全匹配的选项。下面${choices.backup.length}条是待核实线索，先看标出的缺口。`
-      : 'This search did not confirm every essential condition. These are leads to check first.';
-  return zh
-    ? `先看这${choices.primary.length}条相关线索，报价和待确认项已分别标出。${choices.backup.length ? `另外${choices.backup.length}条备选还缺关键信息。` : ''}`
-    : 'Here are the most relevant leads from this search. Quotes and remaining questions are shown for each option.';
-}
 export function renderMarketChoiceReply(p: {
   listings: MarketCandidate[];
   selections: MarketSelection[];
@@ -226,7 +244,7 @@ export function renderMarketChoiceReply(p: {
   zh: boolean;
   assessWholeOffer?: boolean;
   task?: UserTask;
-  format?: 'full' | 'brief';
+  format?: 'full' | 'brief' | 'conversation';
 }) {
   const choices = buildMarketChoices({
     candidates: p.listings,
@@ -236,7 +254,7 @@ export function renderMarketChoiceReply(p: {
       ? {}
       : { names: Object.fromEntries(p.selections.map((s) => [s.ref, s.name])) }),
   });
-  const blocks = p.format === 'brief' ? [] : [introduction(choices, p.zh)];
+  const blocks: string[] = [];
   const covered = new Set(
     [...choices.primary, ...choices.backup].flatMap((row) => row.assessment.needs),
   );
@@ -244,24 +262,34 @@ export function renderMarketChoiceReply(p: {
     .filter((need) => !covered.has(need.id))
     .map((need) => need.terms[0] ?? need.id);
   if (missing.length)
-    blocks.push((p.zh ? '尚未确认到：' : 'Not yet confirmed: ') + missing.join(' / '));
+    blocks.push(
+      p.format === 'conversation'
+        ? p.zh
+          ? `${missing.join('、')}还没有可推荐的。`
+          : `No suitable lead for ${missing.join(', ')} yet.`
+        : (p.zh ? '尚未确认到：' : 'Not yet confirmed: ') + missing.join(' / '),
+    );
   let index = 0;
   for (const [heading, rows] of [
     [p.zh ? '【优先看】' : '【Start here】', choices.primary],
     [p.zh ? '【备选 · 需要确认】' : '【Backups · check first】', choices.backup],
   ] as const) {
     if (!rows.length) continue;
-    if (p.format !== 'brief') blocks.push(heading);
-    for (const row of rows)
+    if (p.format !== 'brief' && p.format !== 'conversation') blocks.push(heading);
+    for (const row of rows) {
+      const selection = p.selections.find((s) => s.ref === row.listing.ref)!;
       blocks.push(
-        (p.format === 'brief' ? renderBriefChoice : renderChoice)(
-          row,
-          p.selections.find((s) => s.ref === row.listing.ref)!,
-          p.plan,
-          ++index,
-          p.zh,
-        ),
+        p.format === 'conversation'
+          ? renderConversationChoice({ row, selection, plan: p.plan, zh: p.zh })
+          : (p.format === 'brief' ? renderBriefChoice : renderChoice)(
+              row,
+              selection,
+              p.plan,
+              ++index,
+              p.zh,
+            ),
       );
+    }
   }
   return { text: blocks.join('\n\n'), choices };
 }

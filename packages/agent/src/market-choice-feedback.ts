@@ -29,6 +29,6 @@ export function marketChoiceFeedback(ctx: MatchContext) {
       .filter((row) => !eligible.some((item) => item.ref === row.ref))
       .map((row) => row.ref),
     guidance:
-      'Only cite eligible refs and their own facts. Leads have unconfirmed conditions, not a complete match. Excluded refs must not appear as recommendations or donate facts to the chosen offer. Eligibility is not guaranteed real-world availability.',
+      'These are internal checks, not wording for the user. Do not quote eligibility/lead/missing field labels as a report. Explain the concrete finding or obstacle in ordinary language. Only cite eligible refs and their own facts. Leads have unconfirmed conditions, not a complete match. Excluded refs must not appear as recommendations or donate facts to the chosen offer. Eligibility is not guaranteed real-world availability.',
   };
 }
