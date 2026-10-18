@@ -1,4 +1,4 @@
-P42：网页核验与交付恢复第一批实现完成，待评审；浏览器与代码沙箱未实现，见 [工作包](P42-web-research-recovery.md)。
+P42：网页核验与交付恢复第一批实现完成，[PR #19](https://github.com/xemaya/match_bot/pull/19) 评审中，包含 #18；浏览器与代码沙箱未实现，见 [工作包](P42-web-research-recovery.md)。
 
 P38：Agent执行链及提示词整合已通过PR #15合并主干48ebd3e。P39新生成模型接入和真实Telegram回归完成，6条均送达，但任务推进质量未通过，见[回归报告](../docs/evaluations/2026-10-18-gpt-telegram-regression.md)。
 
