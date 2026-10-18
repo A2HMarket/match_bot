@@ -11,6 +11,7 @@ export function pendingResearchConditions(ctx: MatchContext): string[] {
     ctx.taskUpdate?.kind !== 'continued' ||
     ['completed', 'cancelled', 'expired'].includes(task.status) ||
     ctx.informationQueries?.length ||
+    ctx.pageReads?.length ||
     ctx.marketQueries?.length ||
     ctx.xhsQueries?.length ||
     ctx.sourceFailures?.some((f) => f.startsWith('information:') || f === 'market:unavailable') ||

@@ -118,6 +118,7 @@ export function runtimeContext(ctx: MatchContext, stage: PromptStage): Record<st
       marketSourceCount: ctx.marketListings?.length ?? 0,
       informationSourceCount: ctx.knowledgeSources?.length ?? 0,
       informationQueries: ctx.informationQueries?.length ?? 0,
+      pageReads: ctx.pageReads?.length ?? 0,
       xhsQueries: ctx.xhsQueries?.length ?? 0,
       failures: ctx.sourceFailures ?? [],
       evidenceValidationExhausted: !!ctx.answerInputExhausted,

@@ -1566,6 +1566,47 @@ it('persists and resumes a phase 1 request-status approval through the SDK', asy
   expect(draft.text).toContain('查询没能完成');
 });
 
+it.each([false, true])(
+  'repairs unsupported final delivery numbers even after an early stop: %s',
+  async (stopsEarly) => {
+    const model = new ScriptedModel([
+      [functionCall('do_nothing', { reason: 'research done' }, { callId: 'research-done' })],
+      [assistantMessage('done')],
+      [
+        functionCall(
+          'reply_to_request',
+          { kind: 'partial', text: '展览开放到17:45。', refs: [] },
+          { callId: 'unsupported-time' },
+        ),
+      ],
+      ...(stopsEarly ? [[assistantMessage('Unable to answer')]] : []),
+      [
+        functionCall(
+          'reply_to_request',
+          {
+            kind: 'no_match',
+            text: '未核实当天开放时间和儿童票档，暂不能确认符合条件。',
+            refs: [],
+          },
+          { callId: 'corrected-time' },
+        ),
+      ],
+    ]);
+    const { deps, repos } = makeDeps(model);
+    await runInbound({
+      deps: { ...deps, answerRequests: true } as never,
+      ctx: ctx(0),
+      input: '周六下午带孩子看展，预算20镑',
+    });
+    expect(repos.outbound.create).toHaveBeenCalledOnce();
+    expect(repos.outbound.create).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('未核实当天') as unknown }),
+      'dry_run',
+    );
+    model.assertComplete();
+  },
+);
+
 it('uses bounded finalization after the research turn budget instead of dropping collected work', async () => {
   const model = new ScriptedModel([
     ...Array.from({ length: 12 }, (_, i) => [

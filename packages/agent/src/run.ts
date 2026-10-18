@@ -324,12 +324,47 @@ async function finalizeRequest(
     ...(p.ctx.task ? { taskId: p.ctx.task.id } : {}),
   });
   try {
-    const result = await runner.run(agent, p.input, {
+    let result = await runner.run(agent, p.input, {
       context: p.ctx,
       session: deliverySession,
       maxTurns: 3,
       signal: AbortSignal.timeout(Math.min(30000, remaining)),
     });
+    const failures = p.ctx.outboundInputFailures?.count ?? 0;
+    const repairRemaining = (p.ctx.runDeadlineAt ?? Date.now()) - Date.now();
+    if (
+      !result.interruptions.length &&
+      !p.ctx.answerRecorded &&
+      !p.ctx.outboundBlocked &&
+      !p.ctx.answerInputExhausted &&
+      failures > 0 &&
+      failures < 3 &&
+      repairRemaining > 0
+    ) {
+      await p.deps.repos.traces.create({
+        kind: 'gate',
+        inputRef: p.ctx.sourceMessageId,
+        phase: p.ctx.phase,
+        latencyMs: 0,
+        costMicro: 0,
+        output: {
+          gate: 'delivery_repair',
+          decision: 'continued',
+          reason: 'stopped_after_invalid_draft',
+          attempts: failures,
+        },
+      });
+      result = await runner.run(
+        agent,
+        'Correct the rejected draft using validationFeedback. Preserve supported useful facts, remove unsupported claims, and call reply_to_request. Do not claim the user task is complete.',
+        {
+          context: p.ctx,
+          session: deliverySession,
+          maxTurns: Math.min(2, 3 - failures),
+          signal: AbortSignal.timeout(Math.min(15000, repairRemaining)),
+        },
+      );
+    }
     if (result.interruptions.some((item) => !hasValidArguments(item.arguments)))
       return respondRequestStatus(p, deliverySession);
     if (!result.interruptions.length && !p.ctx.answerRecorded)
@@ -337,6 +372,27 @@ async function finalizeRequest(
     return settle(p.deps, p.ctx, result);
   } catch (error) {
     if (!(error instanceof Error) || /Guardrail/.test(error.name)) throw error;
+    await p.deps.repos.traces.create({
+      kind: 'gate',
+      inputRef: p.ctx.sourceMessageId,
+      phase: p.ctx.phase,
+      latencyMs: 0,
+      costMicro: 0,
+      output: {
+        gate: 'delivery_stage',
+        decision: 'failed',
+        errorKind: error.name,
+        ...(error instanceof z.ZodError
+          ? {
+              issues: error.issues.map((issue) => ({
+                path: issue.path.join('.'),
+                code: issue.code,
+              })),
+            }
+          : {}),
+        inputFailures: p.ctx.outboundInputFailures?.count ?? 0,
+      },
+    });
     return respondRequestStatus(p, deliverySession);
   }
 }

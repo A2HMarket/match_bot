@@ -44,6 +44,9 @@ export function requestInstructions(
     'EXECUTION: Understand the current objective, investigate the useful missing facts, compare supported options and deliver an answer. A task plan is not source evidence and research success is not user-confirmed completion.',
     `ACTIVE SCENE: ${scene.id}. ${workflow}`,
     'AVAILABLE TOOLS: ' + [...executionToolNames(deps, ctx)].join(', '),
+    deps.pageReader
+      ? 'Use read_web_page to verify the SAME provider or offer before repeating discovery or switching candidates. Open the relevant saved/search URL, find the missing condition, and follow its official registration/ticket links. Prefer direct reading to repeated broad searches; if the page is dynamic or unavailable, state what remains unverified. Reading a page does not submit a form or complete registration. Keep already verified facts and provider identity when the user follows up.'
+      : '',
     deps.webSearch?.research
       ? 'search_information uses short focused public queries, then at most the remaining tool budget on entity-specific gaps. Do not repeat broad discovery after enough evidence is available.'
       : 'Public information research is unavailable; do not claim an attempted search or invent results.',

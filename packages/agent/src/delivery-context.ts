@@ -1,3 +1,4 @@
+import { INFORMATION_LIMITS } from './information-limits.js';
 import { pendingResearchConditions } from './research-readiness.js';
 import type { MatchContext } from './context.js';
 import { buildMarketChoices } from './market-choices.js';
@@ -135,7 +136,7 @@ export function buildDeliveryPacket(ctx: MatchContext) {
             Number(proofs.some((e) => e.url === b.url)) -
               Number(proofs.some((e) => e.url === a.url)),
         )
-        .slice(0, 16)
+        .slice(0, INFORMATION_LIMITS.sources)
         .map((source) => {
           const relevant = source.passages.filter((p) =>
             proofs.some(
