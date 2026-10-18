@@ -70,7 +70,7 @@ async function run() {
     .parse(JSON.parse(readFileSync('logs/actor-lab/cumulative-budget.json', 'utf8')));
   const env = loadEnv(),
     base = loadActorLabConfig(env.ACTOR_LAB_CONFIG_PATH!);
-  if (AGENT_VERSION !== '0.21.0') throw new Error('unexpected_agent_version');
+  if (String(AGENT_VERSION) !== '0.21.0') throw new Error('unexpected_agent_version');
   const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   if (execFileSync('git', ['diff', 'HEAD', '--', 'packages', 'apps'], { encoding: 'utf8' }).trim())
     throw new Error('uncommitted_runtime_changes');

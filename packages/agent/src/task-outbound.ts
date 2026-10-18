@@ -27,8 +27,8 @@ function answerType(
   return 'text';
 }
 /** A third-party question template is evidence/advice, not a request for a user constraint. */
-function hasUserQuestion(text: string): boolean {
-  const withoutUrls = text.replace(/https?:\/\/[^\s)]+/g, '');
+function findUserQuestion(text: string): string | undefined {
+  const withoutUrls = text.replace(/https?:\/\/[^\s)]+/g, (value) => ' '.repeat(value.length));
   const withoutExamples = withoutUrls.replace(
     /[「“"]([^」”"]*)[」”"]/g,
     (whole: string, _quote: string, offset: number) => {
@@ -37,11 +37,16 @@ function hasUserQuestion(text: string): boolean {
       return /问(?:卖家|贴主|房东|对方)|问的时候|ask the (?:seller|landlord|organiser)|(?:这样问|问一句|这样说)/i.test(
         sentence,
       ) && !/问你|ask you/i.test(sentence)
-        ? ''
+        ? ' '.repeat(whole.length)
         : whole;
     },
   );
-  return /[?？]/.test(withoutExamples);
+  const questions = [...withoutExamples.matchAll(/[^。！？?!.\n]*[?？]/g)];
+  const first = questions[0],
+    last = questions.at(-1);
+  if (!first || !last) return undefined;
+  const leading = first[0].length - first[0].trimStart().length;
+  return text.slice(first.index + leading, last.index + last[0].length).trim();
 }
 /** Server metadata only. User-visible text still goes through its original tool and gate. */
 export function taskDeliveryForOutbound(
@@ -60,29 +65,28 @@ export function taskDeliveryForOutbound(
     draft.kind === 'lead'
   )
     return undefined;
-  const next = task.nextStep,
-    text = draft.taskQuestionText ?? draft.text;
+  const next = task.nextStep;
+  const proposedText = draft.taskQuestionText ?? draft.text;
+  const questionText = findUserQuestion(proposedText);
+  const isQuestion = draft.kind === 'clarification' || questionText !== undefined;
+  const text = questionText ?? proposedText;
   if (
     draft.replyPurpose !== 'request_status' &&
-    (draft.kind === 'clarification' || hasUserQuestion(text)) &&
+    isQuestion &&
     (next?.action !== 'ask_user' || !next.constraintKey)
   )
     throw new TaskTransitionError(
       'Record the one missing condition with record_task_progress next action=ask_user and its constraintKey before asking the user.',
     );
   let key: string | undefined, goalId: string | undefined;
-  if (
-    next?.action === 'ask_user' &&
-    next.constraintKey &&
-    (draft.kind === 'clarification' || hasUserQuestion(text))
-  ) {
+  if (next?.action === 'ask_user' && next.constraintKey && isQuestion) {
     key = next.constraintKey;
     goalId = next.goalId;
   }
   if (
     draft.replyPurpose === 'request_status' &&
     draft.text === renderRequestStatus(ctx) &&
-    hasUserQuestion(text) &&
+    isQuestion &&
     !key
   ) {
     key = /多久.*单程|单程.*多久/.test(text) ? 'max_travel_minutes' : 'custom:next_information';

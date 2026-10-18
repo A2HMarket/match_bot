@@ -234,3 +234,27 @@ it('replays the actual P33 rejected quoted-question draft without treating it as
     ).toBeUndefined();
   }
 });
+
+it('checks the actual personal question length rather than rejecting a useful long answer', () => {
+  const fixtures = JSON.parse(
+    readFileSync(new URL('./fixtures/p34-long-answer-question.json', import.meta.url), 'utf8'),
+  ) as Array<{ text: string }>;
+  expect(fixtures.length).toBeGreaterThan(0);
+  for (const fixture of fixtures) {
+    const ctx = context();
+    ctx.task!.nextStep = {
+      action: 'ask_user',
+      owner: 'agent',
+      constraintKey: 'custom:gp_subarea',
+      reason: 'choose practice catchment',
+    };
+    const result = taskDeliveryForOutbound(ctx, {
+      ...draft(),
+      kind: 'recommendation',
+      text: fixture.text,
+      taskQuestionText: fixture.text,
+    });
+    expect(result?.question?.text.length).toBeLessThan(500);
+    expect(fixture.text).toContain(result?.question?.text);
+  }
+});
