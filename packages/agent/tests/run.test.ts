@@ -400,12 +400,13 @@ describe('runInbound', () => {
       }),
     );
     const getResponse = model.getResponse.bind(model);
-    const generations: Array<{ detailReads: number; instructions: string }> = [];
+    const generations: Array<{ detailReads: number; instructions: string; input: string }> = [];
     vi.spyOn(model, 'getResponse').mockImplementation((request) => {
       // The planning call runs first. Every subsequent generation must see the refreshed public source.
       generations.push({
         detailReads: detail.mock.calls.length,
         instructions: JSON.stringify(request.systemInstructions),
+        input: JSON.stringify(request.input),
       });
       return getResponse(request);
     });
@@ -426,9 +427,10 @@ describe('runInbound', () => {
     });
     expect(tasks.applyUserTurn).toHaveBeenCalledOnce();
     expect(generations[1]).toEqual(expect.objectContaining({ detailReads: 1 }));
-    expect(generations[1]!.instructions).toContain('当前活动价格£45');
-    expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('30 minutes');
-    expect(JSON.stringify(model.calls[1]?.request.systemInstructions)).toContain('E14');
+    expect(generations[1]!.instructions).not.toContain('当前活动价格£45');
+    expect(generations[1]!.input).toContain('当前活动价格£45');
+    expect(JSON.stringify(model.calls[1]?.request.input)).toContain('30 minutes');
+    expect(JSON.stringify(model.calls[1]?.request.input)).toContain('E14');
     expect(repos.outbound.create).toHaveBeenCalledOnce();
     model.assertComplete();
   });
@@ -502,7 +504,10 @@ describe('runInbound', () => {
       ctx: { ...ctx(2), task },
       input: '半小时以内',
     });
-    const instructions = JSON.stringify(model.calls[0]?.request.systemInstructions);
+    expect(JSON.stringify(model.calls[0]?.request.systemInstructions)).not.toContain(
+      '初学者羽毛球',
+    );
+    const instructions = JSON.stringify(model.calls[0]?.request.input);
     expect(instructions).toContain('初学者羽毛球');
     expect(instructions).toContain('E14');
     expect(instructions).toContain('30 minutes');

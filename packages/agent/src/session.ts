@@ -1,3 +1,4 @@
+import { isRuntimeContextItem } from './prompts/runtime-context.js';
 import type { Repositories } from '@matchbot/db';
 import type { AgentInputItem, Session } from '@openai/agents';
 
@@ -117,7 +118,10 @@ export function createPgSession(p: {
       return archiveEphemeralToolResult(stripProviderData(item));
     },
     async addItems(items: AgentInputItem[]) {
-      await p.repos.sessionItems.append(p.userId, items.map(stripProviderData));
+      await p.repos.sessionItems.append(
+        p.userId,
+        items.filter((i) => !isRuntimeContextItem(i)).map(stripProviderData),
+      );
     },
     async popItem() {
       const item = (await p.repos.sessionItems.popLast(p.userId)) as AgentInputItem | null;

@@ -172,6 +172,7 @@ export async function runInbound(p: {
   const ambiguous = p.ctx.taskUpdate?.kind === 'ambiguous' || p.ctx.taskUpdate?.kind === 'unbound';
   if (!ambiguous) await refreshTaskSourceMemory({ ...p, agentVersion: AGENT_VERSION });
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: p.ctx,
     phase: p.ctx.phase,
     input: p.ctx.currentRequest?.text ?? p.input,
     checkpointInput: p.input,
@@ -248,6 +249,7 @@ async function finalizeRequest(
     p.ctx.sourceFailures.push('processing:invalid_evidence');
   }
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: p.ctx,
     phase: p.ctx.phase,
     input: p.input,
     finalAnswerOnly: true,
@@ -319,6 +321,7 @@ async function respondRequestStatus(
     return { kind: 'completed', toolsCalled: ['reply_request_status'] };
   }
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: p.ctx,
     phase: p.ctx.phase,
     input: p.input,
     requestStatusOnly: true,
@@ -406,6 +409,8 @@ export async function resumeRun(p: {
     if (ctx.task && ctx.marketPlan) ctx.marketPlan = bindTaskMarketPlan(ctx.marketPlan, ctx.task);
   }
   const { agent, runner } = createMatchAgent(p.deps, {
+    context: ctx,
+    finalAnswerOnly: !!ctx.isAnswerFinalization,
     phase: ctx.phase,
     requestStatusOnly: !!ctx.isRequestStatusRun,
   });

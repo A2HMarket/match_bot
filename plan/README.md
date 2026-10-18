@@ -8,6 +8,8 @@
 
 ## 看板
 
+P37：提示词架构本地实现与回归完成，真实模型质量验收待凭据，见 [P37-prompt-architecture.md](P37-prompt-architecture.md)。
+
 P36：Jev targeted 策略与本地无 Telegram 对话验证，Codex 本地实现与回归完成，真实模型验收待凭据（2026-10-18）。用户授权减少 Jev 强依赖；保留事实核验、Phase 0/1、主动群聊门控。见 [P36-targeted-jev-local.md](P36-targeted-jev-local.md)。
 
 状态取值：`待开始` / `进行中` / `评审中` / `完成` / `阻塞`。依赖列出的工作包必须 `完成` 后才能开始（PoC 例外，见各文件）。

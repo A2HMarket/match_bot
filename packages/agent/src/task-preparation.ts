@@ -1,3 +1,4 @@
+import { runtimeContext } from './prompts/runtime-context.js';
 import { createMatchAgent } from './agent.js';
 import type { AgentDeps, MatchContext } from './context.js';
 
@@ -48,7 +49,10 @@ export async function prepareTaskTurn(p: {
       userId: p.ctx.userId,
       scope: { channel: p.ctx.channel ?? 'telegram', chatId: p.ctx.chatId },
     });
-    if (p.ctx.taskCandidates.length > 100) {
+    if (
+      p.ctx.taskCandidates.length > 100 ||
+      JSON.stringify(runtimeContext(p.ctx, 'planning')).length > 32000
+    ) {
       p.ctx.taskUpdate = { kind: 'ambiguous' };
       await p.deps.repos.traces.create({
         kind: 'gate',
@@ -66,6 +70,7 @@ export async function prepareTaskTurn(p: {
       return true;
     }
     const { agent, runner } = createMatchAgent(p.deps, {
+      context: p.ctx,
       phase: p.ctx.phase,
       input: p.input,
       taskPlanningOnly: true,

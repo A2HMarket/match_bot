@@ -54,3 +54,14 @@ Targeted 减少的是直接请求的入站评价、固定模板状态的出站�
 ```sh
 docker compose -f scripts/local/compose.yaml down
 ```
+
+## 提示词结构审计
+
+无需模型凭据、数据库或网络：
+
+```sh
+node --import tsx scripts/local/prompt-audit.mts
+```
+
+输出各场景/阶段的实际工具、系统提示词字符数和哈希；检查协议引用及字符预算。
+架构及历史案例归属见 [提示词架构](../../packages/agent/src/prompts/README.md)。此命令不评价真实模型回答质量。
